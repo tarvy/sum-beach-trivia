@@ -16,24 +16,6 @@ def test_build_prompt_includes_questions_and_answers():
     assert "items_correct" in prompt.lower() or "in order" in prompt.lower()
 
 
-class _FakeClient:
-    """Mimics anthropic client: .messages.parse(...) -> object with .parsed_output."""
-    def __init__(self, payload):
-        self._payload = payload
-        self.messages = self
-
-    def parse(self, **kwargs):
-        # capture for assertions
-        self.last_kwargs = kwargs
-        class R:  # noqa: N801
-            parsed_output = self_payload = self._payload
-        return R
-
-    @property
-    def _payload_obj(self):
-        return self._payload
-
-
 def test_grade_sheet_returns_parsed_grades():
     payload = SheetGrade(grades=[
         QuestionGrade(question_id=1, transcription="Paris", is_correct=True, confidence=0.95),

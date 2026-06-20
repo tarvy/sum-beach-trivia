@@ -36,7 +36,6 @@ def team_totals(conn: sqlite3.Connection) -> list[dict]:
 
 
 def _final_total(conn: sqlite3.Connection, team_id: int, round_id: int) -> int:
-    from app.scoring import final_round_delta  # self-ref kept explicit
     w = conn.execute(
         "SELECT amount FROM wager WHERE team_id = ? AND round_id = ?",
         (team_id, round_id),
