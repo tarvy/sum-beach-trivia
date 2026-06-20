@@ -53,6 +53,19 @@ class QuestionEditIn(BaseModel):
     acceptable: Optional[list] = None
 
 
+class QuestionSetItem(BaseModel):
+    category: str
+    text: str
+    answer: str = ""
+    acceptable: Optional[list] = None
+
+
+class QuestionSetIn(BaseModel):
+    contributor_id: int
+    author: str
+    questions: list[QuestionSetItem]
+
+
 class SubmissionsIn(BaseModel):
     open: bool
 
@@ -206,6 +219,19 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             raise HTTPException(status_code=400, detail=str(e))
         return {"id": qid}
 
+    @app.post("/api/questions/set")
+    def submit_set(body: QuestionSetIn):
+        g = models.get_game(db())
+        if not g["submissions_open"]:
+            raise HTTPException(status_code=409, detail="submissions are closed")
+        try:
+            ids = models.submit_question_set(
+                db(), body.contributor_id, body.author,
+                [q.model_dump() for q in body.questions])
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return {"ids": ids}
+
     @app.put("/api/questions/{question_id}")
     def edit_question(question_id: int, q: QuestionEditIn):
         # Trust boundary: open/closed and ownership are enforced here, not in the UI.
@@ -254,17 +280,23 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         "final_wager", "final_open", "tiebreak", "done", "paused",
     }
 
-    def _round_public(round_id: int) -> dict | None:
+    def _round_public(round_id: int, reveal: bool = False) -> dict | None:
         r = db().execute("SELECT * FROM round WHERE id = ?", (round_id,)).fetchone()
         if r is None:
             return None
         qs = db().execute(
             "SELECT * FROM question WHERE round_id = ? ORDER BY display_order", (round_id,)
         ).fetchall()
+        out = []
+        for q in qs:
+            pq = public_question(q)
+            # Author is a spoiler during play — only attach it at reveal.
+            if reveal:
+                pq["author_name"] = q["author_name"]
+            out.append(pq)
         return {
             "id": r["id"], "title": r["title"], "is_final": bool(r["is_final"]),
-            "wager_cap": r["wager_cap"],
-            "questions": [public_question(q) for q in qs],
+            "wager_cap": r["wager_cap"], "questions": out,
         }
 
     @app.post("/api/host/build-rounds")
@@ -318,7 +350,8 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     @app.get("/api/state")
     def state():
         g = models.get_game(db())
-        cur = _round_public(g["current_round_id"]) if g["current_round_id"] else None
+        cur = _round_public(g["current_round_id"], reveal=g["phase"] == "reveal") \
+            if g["current_round_id"] else None
         return {"phase": g["phase"], "paused": bool(g["paused"]),
                 "submissions_open": bool(g["submissions_open"]), "current_round": cur}
 
@@ -380,8 +413,10 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     def host_marks(host_key: str, round_id: int):
         require_host(host_key)
         teams = db().execute("SELECT id, name FROM team ORDER BY id").fetchall()
-        qids = [r["id"] for r in db().execute(
-            "SELECT id FROM question WHERE round_id = ?", (round_id,))]
+        qrows = db().execute(
+            "SELECT id, author_name FROM question WHERE round_id = ?", (round_id,)).fetchall()
+        qids = [r["id"] for r in qrows]
+        authors = {r["id"]: r["author_name"] for r in qrows}
         out = []
         for t in teams:
             sub = db().execute(
@@ -394,6 +429,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                     (t["id"], qid)).fetchone()
                 marks.append({
                     "question_id": qid,
+                    "author_name": authors.get(qid),
                     "transcription": m["transcription"] if m else "",
                     "is_correct": bool(m["is_correct"]) if m else False,
                     "score": m["score"] if m else 0,

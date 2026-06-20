@@ -188,6 +188,94 @@ async def test_cannot_edit_someone_elses_question(client):
     assert r.status_code in (403, 404)
 
 
+def _set(client, cid, n=3, **bad):
+    qs = [{"category": "History", "text": f"Q{i}?", "answer": "a"} for i in range(n)]
+    qs = bad.get("questions", qs)
+    return client.post("/api/questions/set",
+                       json={"contributor_id": cid, "author": "Set", "questions": qs})
+
+
+@pytest.mark.anyio
+async def test_set_requires_three_complete(client):
+    cid = (await client.post("/api/contributor", json={"token": "s1", "name": "Set"})).json()["contributor_id"]
+    # 2 questions -> rejected
+    assert (await _set(client, cid, n=2)).status_code == 400
+    # 3 questions -> accepted
+    r = await _set(client, cid, n=3)
+    assert r.status_code == 200 and len(r.json()["ids"]) == 3
+
+
+@pytest.mark.anyio
+async def test_set_allows_up_to_five_rejects_six(client):
+    cid = (await client.post("/api/contributor", json={"token": "s2", "name": "Set"})).json()["contributor_id"]
+    assert (await _set(client, cid, n=5)).status_code == 200
+    assert (await _set(client, cid, n=6)).status_code == 400
+
+
+@pytest.mark.anyio
+async def test_set_rejects_missing_field_and_bad_category(client):
+    cid = (await client.post("/api/contributor", json={"token": "s3", "name": "Set"})).json()["contributor_id"]
+    # missing answer
+    qs = [{"category": "History", "text": "Q?", "answer": ""},
+          {"category": "History", "text": "Q2?", "answer": "a"},
+          {"category": "History", "text": "Q3?", "answer": "a"}]
+    assert (await _set(client, cid, questions=qs)).status_code == 400
+    # category off the list
+    qs[0] = {"category": "Bogus", "text": "Q?", "answer": "a"}
+    assert (await _set(client, cid, questions=qs)).status_code == 400
+
+
+@pytest.mark.anyio
+async def test_individual_add_requires_all_three(client):
+    # missing answer rejected
+    r = await client.post("/api/questions", json={
+        "author": "X", "category": "History", "text": "Q?", "answer": ""})
+    assert r.status_code == 400
+    # bad category rejected
+    r = await client.post("/api/questions", json={
+        "author": "X", "category": "Nope", "text": "Q?", "answer": "a"})
+    assert r.status_code == 400
+
+
+@pytest.mark.anyio
+async def test_set_blocked_when_closed(client):
+    hk = _host_key(client)
+    cid = (await client.post("/api/contributor", json={"token": "s4", "name": "Set"})).json()["contributor_id"]
+    await client.post("/api/host/submissions", params={"host_key": hk}, json={"open": False})
+    assert (await _set(client, cid, n=3)).status_code == 409
+
+
+@pytest.mark.anyio
+async def test_author_hidden_during_play_revealed_at_reveal(client):
+    hk = _host_key(client)
+    cid = (await client.post("/api/contributor", json={"token": "s5", "name": "Auth"})).json()["contributor_id"]
+    await _set(client, cid, n=3)
+    # build rounds + open the first round
+    rounds = (await client.post("/api/host/build-rounds", params={"host_key": hk})).json()["rounds"]
+    rid = rounds[0]["id"] if isinstance(rounds[0], dict) else rounds[0]
+    # round_open: author NOT exposed
+    await client.post("/api/host/phase", params={"host_key": hk},
+                      json={"phase": "round_open", "round_id": rid})
+    cur = (await client.get("/api/state")).json()["current_round"]
+    assert all("author_name" not in q for q in cur["questions"])
+    # reveal: author exposed
+    await client.post("/api/host/phase", params={"host_key": hk}, json={"phase": "reveal"})
+    cur = (await client.get("/api/state")).json()["current_round"]
+    assert all(q.get("author_name") == "Set" for q in cur["questions"])
+
+
+@pytest.mark.anyio
+async def test_host_marks_include_author(client):
+    hk = _host_key(client)
+    cid = (await client.post("/api/contributor", json={"token": "s6", "name": "Auth"})).json()["contributor_id"]
+    await _set(client, cid, n=3)
+    rounds = (await client.post("/api/host/build-rounds", params={"host_key": hk})).json()["rounds"]
+    rid = rounds[0]["id"] if isinstance(rounds[0], dict) else rounds[0]
+    await client.post("/api/teams", json={"name": "T1"})
+    marks = (await client.get("/api/host/marks", params={"host_key": hk, "round_id": rid})).json()
+    assert marks["teams"][0]["marks"][0]["author_name"] == "Set"
+
+
 @pytest.mark.anyio
 async def test_recover_contributor_by_code(client):
     c = (await client.post("/api/contributor", json={"token": "t3", "name": "Mo"})).json()

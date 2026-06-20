@@ -22,8 +22,18 @@ def _category_id(conn: sqlite3.Connection, name: str) -> int:
     return row["id"]
 
 
+def _require_complete(text, answer):
+    # Trust boundary: a provided question needs Question + Answer (category is
+    # validated by _category_id, which raises on anything off the standard list).
+    if not (text or "").strip():
+        raise ValueError("Question text required")
+    if not (answer or "").strip():
+        raise ValueError("Answer required")
+
+
 def add_question(conn, author_name, category_name, text, answer, acceptable=None,
                  contributor_id=None) -> int:
+    _require_complete(text, answer)
     cat_id = _category_id(conn, category_name)
     cur = conn.execute(
         "INSERT INTO question (author_name, category_id, text, answer, acceptable_answers, "
@@ -43,6 +53,7 @@ def update_question(conn, question_id, contributor_id, category_name, text, answ
     ).fetchone()
     if row is None or row["contributor_id"] != contributor_id:
         return False
+    _require_complete(text, answer)
     cat_id = _category_id(conn, category_name)
     conn.execute(
         "UPDATE question SET category_id=?, text=?, answer=?, acceptable_answers=? WHERE id=?",
@@ -50,6 +61,31 @@ def update_question(conn, question_id, contributor_id, category_name, text, answ
     )
     conn.commit()
     return True
+
+
+def submit_question_set(conn, contributor_id, author_name, questions) -> list[int]:
+    """Atomic set submission: 3 required, 5 max, each complete with a valid
+    category. Replaces the contributor's existing set. Raises ValueError on any
+    rule violation so the route returns 400 (the form's HTML5 rules mirror this,
+    but the server is the trust boundary)."""
+    if not (3 <= len(questions) <= 5):
+        raise ValueError("Provide between 3 and 5 questions")
+    for q in questions:  # validate all before writing anything
+        _require_complete(q.get("text"), q.get("answer"))
+        _category_id(conn, q.get("category"))
+    conn.execute("DELETE FROM question WHERE contributor_id = ?", (contributor_id,))
+    ids = []
+    for q in questions:
+        cat_id = _category_id(conn, q["category"])
+        cur = conn.execute(
+            "INSERT INTO question (author_name, category_id, text, answer, "
+            "acceptable_answers, contributor_id) VALUES (?, ?, ?, ?, ?, ?)",
+            (author_name, cat_id, q["text"], q["answer"],
+             json.dumps(q.get("acceptable") or []), contributor_id),
+        )
+        ids.append(cur.lastrowid)
+    conn.commit()
+    return ids
 
 
 def set_submissions_open(conn, is_open: bool) -> None:

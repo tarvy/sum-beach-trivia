@@ -432,6 +432,7 @@
           <div class="mark-q-row" data-team="${team.team_id}" data-qid="${m.question_id}">
             <div>
               <span class="q-num" style="display:inline">Q${m.question_id}</span>
+              ${m.author_name ? `<span class="badge badge--dim">by ${esc(m.author_name)}</span>` : ''}
               <span class="mark-transcript">${esc(m.transcription) || '(not graded)'}</span>
               ${m.flagged ? '<span class="badge badge--red">flagged</span>' : ''}
             </div>
