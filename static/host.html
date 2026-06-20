@@ -92,6 +92,16 @@
               <div class="stack">
 
                 <div class="card stack">
+                  <h3>Submissions window</h3>
+                  <p class="text-dim" style="font-size: var(--fs-sm);">
+                    Currently <strong id="subs-state">…</strong>. Contributors can add or edit only while open.
+                  </p>
+                  <div class="cluster">
+                    <button class="btn btn--secondary" id="btn-toggle-subs">Toggle</button>
+                  </div>
+                </div>
+
+                <div class="card stack">
                   <h3>Build rounds</h3>
                   <p class="text-dim" style="font-size: var(--fs-sm);">Assigns submitted questions to rounds.</p>
                   <div class="cluster">
@@ -266,6 +276,22 @@
       toast(paused ? 'Game paused' : 'Game resumed', 'ok');
     }
 
+    // ── submissions window ───────────────────────────────────
+    let subsOpen = true;
+    document.getElementById('btn-toggle-subs').addEventListener('click', async () => {
+      const r = await fetch(`/api/host/submissions?${hk()}`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({open: !subsOpen})
+      });
+      if (!r.ok) { toast('Toggle failed','err'); return; }
+      subsOpen = !subsOpen;
+      renderSubs();
+      toast(subsOpen ? 'Submissions opened' : 'Submissions closed', 'ok');
+    });
+    function renderSubs() {
+      document.getElementById('subs-state').textContent = subsOpen ? 'OPEN' : 'CLOSED';
+    }
+
     // ── build rounds ─────────────────────────────────────────
     document.getElementById('btn-build').addEventListener('click', async () => {
       const r = await fetch(`/api/host/build-rounds?${hk()}`, {method:'POST'});
@@ -406,6 +432,7 @@
           <div class="mark-q-row" data-team="${team.team_id}" data-qid="${m.question_id}">
             <div>
               <span class="q-num" style="display:inline">Q${m.question_id}</span>
+              ${m.author_name ? `<span class="badge badge--dim">by ${esc(m.author_name)}</span>` : ''}
               <span class="mark-transcript">${esc(m.transcription) || '(not graded)'}</span>
               ${m.flagged ? '<span class="badge badge--red">flagged</span>' : ''}
             </div>
@@ -512,6 +539,8 @@
           // update phase strip
           document.getElementById('phase-text').textContent = state.phase.replace(/_/g,' ');
           document.getElementById('pause-badge').classList.toggle('hidden', !state.paused);
+          subsOpen = state.submissions_open;
+          renderSubs();
           // highlight current phase button
           document.querySelectorAll('[data-phase]').forEach(b => {
             b.classList.toggle('btn--teal', b.dataset.phase === state.phase);
