@@ -1,0 +1,16 @@
+# game data lives on the sprite, not in git
+*.db
+*.db-wal
+*.db-shm
+uploads/
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# os
+.DS_Store
