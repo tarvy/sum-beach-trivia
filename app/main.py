@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from app import models, scoring
+from app import models, rounds as rounds_mod, scoring
 from app.db import connect, init_db
 from app.serializers import host_question, public_question
 
@@ -21,6 +21,15 @@ class QuestionIn(BaseModel):
 
 class TeamIn(BaseModel):
     name: str
+
+
+class PhaseIn(BaseModel):
+    phase: str
+    round_id: Optional[int] = None
+
+
+class PauseIn(BaseModel):
+    paused: bool
 
 
 def create_app(db_path: Optional[str] = None) -> FastAPI:
@@ -99,6 +108,52 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         require_host(host_key)
         rows = db().execute("SELECT * FROM question ORDER BY id").fetchall()
         return {"questions": [host_question(r) for r in rows]}
+
+    VALID_PHASES = {
+        "draft", "lobby", "round_open", "round_closed", "marking", "reveal",
+        "final_wager", "final_open", "tiebreak", "done", "paused",
+    }
+
+    def _round_public(round_id: int) -> dict | None:
+        r = db().execute("SELECT * FROM round WHERE id = ?", (round_id,)).fetchone()
+        if r is None:
+            return None
+        qs = db().execute(
+            "SELECT * FROM question WHERE round_id = ? ORDER BY display_order", (round_id,)
+        ).fetchall()
+        return {
+            "id": r["id"], "title": r["title"], "is_final": bool(r["is_final"]),
+            "wager_cap": r["wager_cap"],
+            "questions": [public_question(q) for q in qs],
+        }
+
+    @app.post("/api/host/build-rounds")
+    def build(host_key: str):
+        require_host(host_key)
+        rs = rounds_mod.build_rounds(db())
+        return {"rounds": rs, "warnings": rounds_mod.imbalance_warnings(db())}
+
+    @app.post("/api/host/phase")
+    def set_phase_route(body: PhaseIn, host_key: str):
+        require_host(host_key)
+        if body.phase not in VALID_PHASES:
+            raise HTTPException(status_code=400, detail="unknown phase")
+        models.set_phase(db(), body.phase)
+        if body.round_id is not None:
+            models.set_current_round(db(), body.round_id)
+        return {"ok": True}
+
+    @app.post("/api/host/pause")
+    def pause_route(body: PauseIn, host_key: str):
+        require_host(host_key)
+        models.set_paused(db(), body.paused)
+        return {"ok": True}
+
+    @app.get("/api/state")
+    def state():
+        g = models.get_game(db())
+        cur = _round_public(g["current_round_id"]) if g["current_round_id"] else None
+        return {"phase": g["phase"], "paused": bool(g["paused"]), "current_round": cur}
 
     return app
 
