@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS game (
     phase TEXT NOT NULL DEFAULT 'draft',
     current_round_id INTEGER,
     paused INTEGER NOT NULL DEFAULT 0,
+    submissions_open INTEGER NOT NULL DEFAULT 1,
     host_key TEXT NOT NULL,
     tiebreak_question TEXT,
     tiebreak_value REAL,
@@ -139,6 +140,9 @@ def init_db(conn: sqlite3.Connection) -> None:
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(question)")}
     if "contributor_id" not in cols:
         conn.execute("ALTER TABLE question ADD COLUMN contributor_id INTEGER REFERENCES contributor(id)")
+    gcols = {r["name"] for r in conn.execute("PRAGMA table_info(game)")}
+    if "submissions_open" not in gcols:
+        conn.execute("ALTER TABLE game ADD COLUMN submissions_open INTEGER NOT NULL DEFAULT 1")
     for order, name in enumerate(STANDARD_CATEGORIES):
         conn.execute(
             "INSERT OR IGNORE INTO category (name, display_order) VALUES (?, ?)",

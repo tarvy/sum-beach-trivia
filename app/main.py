@@ -45,6 +45,18 @@ class QuestionIn(BaseModel):
     contributor_id: Optional[int] = None
 
 
+class QuestionEditIn(BaseModel):
+    contributor_id: int
+    category: str
+    text: str
+    answer: str = ""
+    acceptable: Optional[list] = None
+
+
+class SubmissionsIn(BaseModel):
+    open: bool
+
+
 class ContributorIn(BaseModel):
     token: str
     name: str
@@ -185,14 +197,29 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     @app.post("/api/questions")
     def add_question(q: QuestionIn):
         g = models.get_game(db())
-        if g["phase"] != "draft":
-            raise HTTPException(status_code=409, detail="game already started")
+        if not g["submissions_open"]:
+            raise HTTPException(status_code=409, detail="submissions are closed")
         try:
             qid = models.add_question(db(), q.author, q.category, q.text, q.answer,
                                       q.acceptable, q.contributor_id)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         return {"id": qid}
+
+    @app.put("/api/questions/{question_id}")
+    def edit_question(question_id: int, q: QuestionEditIn):
+        # Trust boundary: open/closed and ownership are enforced here, not in the UI.
+        g = models.get_game(db())
+        if not g["submissions_open"]:
+            raise HTTPException(status_code=409, detail="submissions are closed")
+        try:
+            ok = models.update_question(db(), question_id, q.contributor_id,
+                                        q.category, q.text, q.answer, q.acceptable)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        if not ok:
+            raise HTTPException(status_code=404, detail="not your question")
+        return {"ok": True}
 
     @app.get("/api/questions/mine")
     def my_questions(contributor_id: Optional[int] = None, author: Optional[str] = None):
@@ -207,7 +234,14 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             ).fetchall()
         else:
             raise HTTPException(status_code=400, detail="contributor_id or author required")
-        return {"questions": [public_question(r) for r in rows]}
+        # Owner-facing: include category name + answer/acceptable so the contributor
+        # can review and edit their OWN set. (public_question omits answers for display.)
+        cats = {r["id"]: r["name"] for r in db().execute("SELECT id, name FROM category")}
+        return {"questions": [{
+            "id": r["id"], "text": r["text"], "answer": r["answer"],
+            "acceptable": json.loads(r["acceptable_answers"]),
+            "category": cats.get(r["category_id"]),
+        } for r in rows]}
 
     @app.get("/api/questions")
     def all_questions(host_key: str):
@@ -275,11 +309,18 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         models.set_paused(db(), body.paused)
         return {"ok": True}
 
+    @app.post("/api/host/submissions")
+    def set_submissions(body: SubmissionsIn, host_key: str):
+        require_host(host_key)
+        models.set_submissions_open(db(), body.open)
+        return {"submissions_open": body.open}
+
     @app.get("/api/state")
     def state():
         g = models.get_game(db())
         cur = _round_public(g["current_round_id"]) if g["current_round_id"] else None
-        return {"phase": g["phase"], "paused": bool(g["paused"]), "current_round": cur}
+        return {"phase": g["phase"], "paused": bool(g["paused"]),
+                "submissions_open": bool(g["submissions_open"]), "current_round": cur}
 
     SUBMIT_PHASES = {"round_open", "final_open"}
 

@@ -35,11 +35,11 @@ async def test_submit_question_then_host_sees_answer(client):
     assert r.status_code == 200
     qid = r.json()["id"]
 
-    # public listing of mine must NOT leak the answer
+    # owner listing of mine shows the author their OWN answer (for review/edit)
     mine = await client.get("/api/questions/mine", params={"author": "Travis"})
     body = mine.json()
     assert any(q["id"] == qid for q in body["questions"])
-    assert all("answer" not in q for q in body["questions"])
+    assert any(q.get("answer") == "1945" for q in body["questions"])
 
     # host listing (with key) DOES include the answer
     hk = _host_key(client)
@@ -95,6 +95,97 @@ async def test_authors_listed_once_per_person(client):
     authors = (await client.get("/api/authors")).json()["authors"]
     lees = [a for a in authors if a["name"] == "Lee"]
     assert len(lees) == 1
+
+
+@pytest.mark.anyio
+async def test_state_exposes_submissions_open_default(client):
+    s = (await client.get("/api/state")).json()
+    assert s["submissions_open"] is True
+
+
+@pytest.mark.anyio
+async def test_host_can_close_and_reopen_submissions(client):
+    hk = _host_key(client)
+    r = await client.post("/api/host/submissions", params={"host_key": hk}, json={"open": False})
+    assert r.status_code == 200
+    assert (await client.get("/api/state")).json()["submissions_open"] is False
+    # reopenable: flip back
+    await client.post("/api/host/submissions", params={"host_key": hk}, json={"open": True})
+    assert (await client.get("/api/state")).json()["submissions_open"] is True
+
+
+@pytest.mark.anyio
+async def test_close_requires_host_key(client):
+    r = await client.post("/api/host/submissions", params={"host_key": "wrong"}, json={"open": False})
+    assert r.status_code == 403
+
+
+@pytest.mark.anyio
+async def test_closed_window_blocks_add_but_preserves_data(client):
+    hk = _host_key(client)
+    cid = (await client.post("/api/contributor", json={"token": "tc", "name": "Cee"})).json()["contributor_id"]
+    qid = (await client.post("/api/questions", json={
+        "author": "Cee", "category": "History", "text": "Open Q?", "answer": "x",
+        "contributor_id": cid,
+    })).json()["id"]
+    # close
+    await client.post("/api/host/submissions", params={"host_key": hk}, json={"open": False})
+    # cannot add
+    blocked = await client.post("/api/questions", json={
+        "author": "Cee", "category": "History", "text": "Late Q?", "answer": "y",
+        "contributor_id": cid,
+    })
+    assert blocked.status_code == 409
+    # existing data preserved
+    mine = await client.get("/api/questions/mine", params={"contributor_id": cid})
+    qs = mine.json()["questions"]
+    assert len(qs) == 1 and qs[0]["id"] == qid
+
+
+@pytest.mark.anyio
+async def test_contributor_edits_own_question_while_open(client):
+    cid = (await client.post("/api/contributor", json={"token": "te", "name": "Ed"})).json()["contributor_id"]
+    qid = (await client.post("/api/questions", json={
+        "author": "Ed", "category": "History", "text": "Old text?", "answer": "old",
+        "contributor_id": cid,
+    })).json()["id"]
+    r = await client.put(f"/api/questions/{qid}", json={
+        "contributor_id": cid, "category": "Science & Nature",
+        "text": "New text?", "answer": "new", "acceptable": ["n"],
+    })
+    assert r.status_code == 200
+    # still one question (replaced in place, no second set)
+    mine = (await client.get("/api/questions/mine", params={"contributor_id": cid})).json()["questions"]
+    assert len(mine) == 1 and mine[0]["text"] == "New text?"
+
+
+@pytest.mark.anyio
+async def test_edit_blocked_when_closed(client):
+    hk = _host_key(client)
+    cid = (await client.post("/api/contributor", json={"token": "tx", "name": "Ex"})).json()["contributor_id"]
+    qid = (await client.post("/api/questions", json={
+        "author": "Ex", "category": "History", "text": "T?", "answer": "a",
+        "contributor_id": cid,
+    })).json()["id"]
+    await client.post("/api/host/submissions", params={"host_key": hk}, json={"open": False})
+    r = await client.put(f"/api/questions/{qid}", json={
+        "contributor_id": cid, "category": "History", "text": "Edited?", "answer": "b",
+    })
+    assert r.status_code == 409
+
+
+@pytest.mark.anyio
+async def test_cannot_edit_someone_elses_question(client):
+    a = (await client.post("/api/contributor", json={"token": "ta", "name": "A"})).json()["contributor_id"]
+    b = (await client.post("/api/contributor", json={"token": "tb", "name": "B"})).json()["contributor_id"]
+    qid = (await client.post("/api/questions", json={
+        "author": "A", "category": "History", "text": "Mine?", "answer": "a",
+        "contributor_id": a,
+    })).json()["id"]
+    r = await client.put(f"/api/questions/{qid}", json={
+        "contributor_id": b, "category": "History", "text": "Stolen?", "answer": "x",
+    })
+    assert r.status_code in (403, 404)
 
 
 @pytest.mark.anyio

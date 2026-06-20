@@ -26,6 +26,11 @@
         <p class="text-dim mt-sm">You can submit up to 3. The host picks the best for the rotation.</p>
       </div>
 
+      <div class="card mb-sm hidden" id="closed-banner" style="border-color: var(--accent);">
+        <strong>Submissions are closed.</strong>
+        <span class="text-dim">Here are the questions you submitted — they're locked in.</span>
+      </div>
+
       <div class="steps" id="steps" role="tablist">
         <div class="step active" id="step-tab-1">1 — Your name</div>
         <div class="step" id="step-tab-2">2 — Category</div>
@@ -103,7 +108,20 @@
     let selectedCategory = '';
     let submitCount = 0;
     let contributorId = null;
+    let submissionsOpen = true;
+    let editingId = null;   // question id being edited, or null = adding new
+    let myQuestions = [];
     const MAX_Q = 3;
+
+    async function loadSubmissionsState() {
+      try {
+        const d = await (await fetch('/api/state')).json();
+        submissionsOpen = d.submissions_open;
+      } catch (_) {}
+      // When closed, hide the add/edit steps; the read-only list still shows.
+      document.getElementById('closed-banner').classList.toggle('hidden', submissionsOpen);
+      document.getElementById('steps').classList.toggle('hidden', !submissionsOpen);
+    }
 
     // Persisted browser identity: a random token in localStorage IS the contributor.
     // Name is just an editable label.
@@ -159,6 +177,7 @@
       if (!val) { toast('Enter your name first', 'err'); return; }
       authorName = val;
       if (!(await resolveContributor(val))) return;
+      if (!submissionsOpen) { showStep(0); return; }  // closed: read-only list only
       loadCategories();
       showStep(2);
     });
@@ -188,7 +207,7 @@
 
     // ── submit question ──────────────────────────────────────
     document.getElementById('btn-submit-q').addEventListener('click', async () => {
-      if (submitCount >= MAX_Q) { toast(`You've submitted ${MAX_Q} questions — that's the limit`, 'info'); return; }
+      if (editingId == null && submitCount >= MAX_Q) { toast(`You've submitted ${MAX_Q} questions — that's the limit`, 'info'); return; }
       const text = document.getElementById('q-text').value.trim();
       const answer = document.getElementById('q-answer').value.trim();
       if (!text)   { toast('Write a question', 'err'); return; }
@@ -201,33 +220,54 @@
       const btn = document.getElementById('btn-submit-q');
       btn.disabled = true;
       try {
-        const r = await fetch('/api/questions', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ author: authorName, category: selectedCategory, text, answer, acceptable, contributor_id: contributorId })
-        });
+        const editing = editingId != null;
+        const r = editing
+          ? await fetch(`/api/questions/${editingId}`, {
+              method: 'PUT', headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ contributor_id: contributorId, category: selectedCategory, text, answer, acceptable })
+            })
+          : await fetch('/api/questions', {
+              method: 'POST', headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ author: authorName, category: selectedCategory, text, answer, acceptable, contributor_id: contributorId })
+            });
         if (!r.ok) {
           const e = await r.json().catch(() => ({}));
-          toast(e.detail || 'Submission failed', 'err');
+          toast(e.detail || 'Save failed', 'err');
           return;
         }
-        submitCount++;
-        updateCount();
-        toast('Question submitted!', 'ok');
+        toast(editing ? 'Question updated!' : 'Question submitted!', 'ok');
+        editingId = null;
+        btn.textContent = 'Submit question';
         // clear form
         document.getElementById('q-text').value = '';
         document.getElementById('q-answer').value = '';
         document.getElementById('q-alt1').value = '';
         document.getElementById('q-alt2').value = '';
-        // go back to category step for next question
-        if (submitCount < MAX_Q) showStep(2);
         await loadMyQuestions();
+        if (submitCount < MAX_Q) showStep(2); else showStep(0);
       } catch (_) {
         toast('Network error', 'err');
       } finally {
         btn.disabled = false;
       }
     });
+
+    // Populate the form from an existing question for editing.
+    function startEdit(qid) {
+      const q = myQuestions.find(x => x.id === qid);
+      if (!q) return;
+      editingId = qid;
+      selectedCategory = q.category;
+      const sel = document.getElementById('category-select');
+      if (![...sel.options].find(o => o.value === q.category)) sel.add(new Option(q.category, q.category));
+      sel.value = q.category;
+      document.getElementById('q-text').value = q.text;
+      document.getElementById('q-answer').value = q.answer || '';
+      document.getElementById('q-alt1').value = (q.acceptable || [])[0] || '';
+      document.getElementById('q-alt2').value = (q.acceptable || [])[1] || '';
+      document.getElementById('btn-submit-q').textContent = 'Save changes';
+      showStep(3);
+    }
 
     function updateCount() {
       document.getElementById('submit-count').textContent = `${submitCount} of ${MAX_Q} submitted this session`;
@@ -239,6 +279,7 @@
       try {
         const r = await fetch(`/api/questions/mine?contributor_id=${contributorId}`);
         const d = await r.json();
+        myQuestions = d.questions;
         submitCount = d.questions.length;  // returning visit: reflect existing set
         updateCount();
         const list = document.getElementById('my-q-list');
@@ -249,13 +290,18 @@
           <li class="q-item">
             <span class="q-num">${String(i+1).padStart(2,'0')}</span>
             <span class="q-text">${esc(q.text)}<br><span class="badge badge--dim">${esc(q.category)}</span></span>
+            ${submissionsOpen ? `<button class="btn btn--secondary btn--sm" data-edit="${q.id}">Edit</button>` : ''}
           </li>`).join('');
+        list.querySelectorAll('[data-edit]').forEach(b =>
+          b.addEventListener('click', () => startEdit(parseInt(b.dataset.edit))));
       } catch (_) {}
     }
 
     function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
+
+    loadSubmissionsState();
 
     // Restore name from sessionStorage
     const savedName = sessionStorage.getItem('contribute_author');

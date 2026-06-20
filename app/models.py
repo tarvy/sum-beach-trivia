@@ -34,6 +34,29 @@ def add_question(conn, author_name, category_name, text, answer, acceptable=None
     return cur.lastrowid
 
 
+def update_question(conn, question_id, contributor_id, category_name, text, answer,
+                    acceptable=None) -> bool:
+    """Replace an existing question in place. Returns False if it isn't owned by
+    this contributor (so the route can 404/403). Edits the set, never grows it."""
+    row = conn.execute(
+        "SELECT contributor_id FROM question WHERE id = ?", (question_id,)
+    ).fetchone()
+    if row is None or row["contributor_id"] != contributor_id:
+        return False
+    cat_id = _category_id(conn, category_name)
+    conn.execute(
+        "UPDATE question SET category_id=?, text=?, answer=?, acceptable_answers=? WHERE id=?",
+        (cat_id, text, answer, json.dumps(acceptable or []), question_id),
+    )
+    conn.commit()
+    return True
+
+
+def set_submissions_open(conn, is_open: bool) -> None:
+    conn.execute("UPDATE game SET submissions_open = ? WHERE id = 1", (1 if is_open else 0,))
+    conn.commit()
+
+
 def resolve_contributor(conn, token: str, name: str) -> dict:
     """Identity = browser token. Upsert by token; name is an editable label."""
     token = (token or "").strip()
