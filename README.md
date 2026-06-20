@@ -17,6 +17,21 @@ FastAPI + SQLite, plain HTML/JS (no build step), polling for live updates, Claud
 for handwriting grading. Deployed to a sprite; the SQLite DB and uploaded photos live on
 the sprite's persistent disk.
 
+## Quickstart (just)
+
+Requires [`just`](https://github.com/casey/just) (`brew install just`).
+
+```bash
+just install              # one-time: create .venv and install deps
+cp .env.example .env      # then put your ANTHROPIC_API_KEY in .env
+just run                  # start the app on http://localhost:8000
+just keys                 # print the game's join code + HOST KEY
+```
+
+Other commands: `just test` (no API key needed), `just dev` (autoreload),
+`just reset` (wipe game data for a fresh game), `just` (list all).
+Set a port with `just run 9000`. Cheaper grading: add `GRADING_MODEL=claude-haiku-4-5` to `.env`.
+
 ## Run locally
 
 ```bash
