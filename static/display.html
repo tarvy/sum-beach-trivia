@@ -138,7 +138,7 @@
           break;
 
         case 'reveal':
-          renderLeaderboard(lb.teams, 'Scores so far');
+          renderReveal(current_round, lb.teams);
           break;
 
         case 'done':
@@ -193,6 +193,31 @@
         <div class="display-phase">${round.is_final ? 'FINAL ROUND' : 'ROUND OPEN'}</div>
         <div class="display-title" style="margin-bottom: 1.5rem;">${esc(round.title || '')}</div>
         <ol class="display-q-list" aria-label="Questions">${qItems}</ol>
+      `;
+    }
+
+    // Reveal: who wrote each question in the just-graded round, plus scores.
+    function renderReveal(round, teams) {
+      const root = document.getElementById('display-root');
+      const qItems = ((round && round.questions) || []).map((q, i) =>
+        `<li class="display-q-item">
+          <span class="display-q-num">${String(i+1).padStart(2,'0')}</span>
+          <span>${esc(q.text)}${q.author_name ? ` <span class="badge badge--dim">by ${esc(q.author_name)}</span>` : ''}</span>
+        </li>`
+      ).join('');
+      const rows = (teams || []).map((t, i) =>
+        `<div class="lb-display-row">
+          <span class="lb-display-rank">${i+1}</span>
+          <span class="lb-display-name">${esc(t.name)}</span>
+          <span class="lb-display-score">${t.total}</span>
+        </div>`
+      ).join('');
+      root.innerHTML = `
+        <div class="display-phase">REVEAL</div>
+        ${round ? `<div class="display-title" style="margin-bottom: 1rem;">${esc(round.title || '')}</div>
+        <ol class="display-q-list" aria-label="Questions and authors">${qItems}</ol>` : ''}
+        <div class="display-phase" style="margin-top: 1.5rem;">SCORES SO FAR</div>
+        <div class="lb-display-wrap lb-display">${rows}</div>
       `;
     }
 

@@ -23,67 +23,32 @@
       <div class="mb-sm">
         <p class="eyebrow">Question bank</p>
         <h1>Write your best questions</h1>
-        <p class="text-dim mt-sm">You can submit up to 3. The host picks the best for the rotation.</p>
+        <p class="text-dim mt-sm">3 required, 2 optional (5 max). Each needs a question, an answer, and a category.</p>
       </div>
 
-      <div class="steps" id="steps" role="tablist">
-        <div class="step active" id="step-tab-1">1 — Your name</div>
-        <div class="step" id="step-tab-2">2 — Category</div>
-        <div class="step" id="step-tab-3">3 — Question</div>
+      <div class="card mb-sm hidden" id="closed-banner" style="border-color: var(--accent);">
+        <strong>Submissions are closed.</strong>
+        <span class="text-dim">Here are the questions you submitted — they're locked in.</span>
       </div>
 
-      <!-- Step 1: Name -->
-      <div id="step-1" class="card stack">
-        <h2>What should we call you?</h2>
-        <div class="field">
-          <label for="author-name">Your name or team name</label>
-          <input type="text" id="author-name" placeholder="e.g. Sandy Bottoms" maxlength="80" autocomplete="off">
+      <!-- Native form validation: required attributes enforce the 3 required blocks
+           and per-field presence; the server re-checks everything (trust boundary). -->
+      <form id="contribute-form">
+        <div class="card stack mb-sm">
+          <div class="field">
+            <label for="author-name">Your name or team name</label>
+            <input type="text" id="author-name" name="author" placeholder="e.g. Sandy Bottoms"
+                   maxlength="80" autocomplete="off" required>
+          </div>
         </div>
-        <div>
-          <button class="btn btn--primary" id="btn-name">Next — pick a category</button>
-        </div>
-      </div>
 
-      <!-- Step 2: Category -->
-      <div id="step-2" class="card stack hidden">
-        <h2>Pick a category</h2>
-        <div class="field">
-          <label for="category-select">Category</label>
-          <select id="category-select">
-            <option value="">Loading categories…</option>
-          </select>
-        </div>
-        <div class="cluster">
-          <button class="btn btn--secondary btn--sm" id="btn-back-1">Back</button>
-          <button class="btn btn--primary" id="btn-category">Next — write your question</button>
-        </div>
-      </div>
+        <div id="question-blocks"></div>
 
-      <!-- Step 3: Question form -->
-      <div id="step-3" class="card stack hidden">
-        <h2>The question</h2>
-        <div class="field">
-          <label for="q-text">Question text</label>
-          <textarea id="q-text" placeholder="What year did the Margaritaville concept album drop?" rows="3"></textarea>
+        <div class="cluster mt-sm">
+          <button type="submit" class="btn btn--primary" id="btn-submit">Submit my questions</button>
+          <span class="label text-dim" id="submit-hint">3 required, up to 5 total</span>
         </div>
-        <div class="field">
-          <label for="q-answer">Correct answer</label>
-          <input type="text" id="q-answer" placeholder="The answer the host will accept" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="q-alt1">Alternate accepted answer <span class="text-dim">(optional)</span></label>
-          <input type="text" id="q-alt1" placeholder="Another way to spell or phrase it" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="q-alt2">Second alternate <span class="text-dim">(optional)</span></label>
-          <input type="text" id="q-alt2" placeholder="" autocomplete="off">
-        </div>
-        <div class="cluster">
-          <button class="btn btn--secondary btn--sm" id="btn-back-2">Back</button>
-          <button class="btn btn--primary" id="btn-submit-q">Submit question</button>
-        </div>
-        <p class="label text-dim" id="submit-count">0 of 3 submitted this session</p>
-      </div>
+      </form>
 
       <!-- My questions list -->
       <section id="my-questions-wrap" class="mt-lg hidden">
@@ -98,13 +63,15 @@
   <div class="toast-area" id="toasts" role="status" aria-live="polite"></div>
 
   <script>
-    // ── state ────────────────────────────────────────────────
-    let authorName = '';
-    let selectedCategory = '';
-    let submitCount = 0;
-    const MAX_Q = 3;
+    let contributorId = null;
+    let submissionsOpen = true;
+    let categories = [];
+    const REQUIRED = 3, MAX_Q = 5;
 
-    // ── toast ────────────────────────────────────────────────
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
     function toast(msg, type = 'info') {
       const area = document.getElementById('toasts');
       const el = document.createElement('div');
@@ -114,84 +81,141 @@
       setTimeout(() => el.remove(), 3500);
     }
 
-    // ── step navigation ──────────────────────────────────────
-    function showStep(n) {
-      [1,2,3].forEach(i => {
-        document.getElementById(`step-${i}`).classList.toggle('hidden', i !== n);
-        const tab = document.getElementById(`step-tab-${i}`);
-        tab.classList.remove('active', 'done');
-        if (i < n) tab.classList.add('done');
-        if (i === n) tab.classList.add('active');
-      });
+    // Persisted browser identity: a random token in localStorage IS the contributor.
+    function browserToken() {
+      let t = localStorage.getItem('contributor_token');
+      if (!t) {
+        t = (crypto.randomUUID && crypto.randomUUID()) ||
+            (Date.now() + '-' + Math.random().toString(36).slice(2));
+        localStorage.setItem('contributor_token', t);
+      }
+      return t;
     }
 
-    document.getElementById('btn-name').addEventListener('click', () => {
-      const val = document.getElementById('author-name').value.trim();
-      if (!val) { toast('Enter your name first', 'err'); return; }
-      authorName = val;
-      loadCategories();
-      showStep(2);
-    });
-    document.getElementById('btn-back-1').addEventListener('click', () => showStep(1));
+    function catOptions(selected) {
+      return ['<option value="">Pick a category…</option>']
+        .concat(categories.map(c =>
+          `<option value="${esc(c)}"${c === selected ? ' selected' : ''}>${esc(c)}</option>`))
+        .join('');
+    }
 
-    document.getElementById('btn-category').addEventListener('click', () => {
-      const sel = document.getElementById('category-select');
-      selectedCategory = sel.value;
-      if (!selectedCategory) { toast('Pick a category', 'err'); return; }
-      showStep(3);
-    });
-    document.getElementById('btn-back-2').addEventListener('click', () => showStep(2));
+    // 5 blocks: first 3 required (HTML5 `required`), last 2 optional.
+    function renderBlocks(existing = []) {
+      const wrap = document.getElementById('question-blocks');
+      let html = '';
+      for (let i = 0; i < MAX_Q; i++) {
+        const q = existing[i] || {};
+        const req = i < REQUIRED;
+        const reqAttr = req ? ' required' : '';
+        const tag = req
+          ? '<span class="badge">Required</span>'
+          : '<span class="badge badge--dim">Optional</span>';
+        html += `
+          <div class="card stack mb-sm q-block" data-i="${i}">
+            <div class="cluster" style="justify-content: space-between;">
+              <h2 style="margin:0;">Question ${i + 1}</h2>${tag}
+            </div>
+            <div class="field">
+              <label>Category</label>
+              <select class="q-category"${reqAttr}>${catOptions(q.category)}</select>
+            </div>
+            <div class="field">
+              <label>Question text</label>
+              <textarea class="q-text" rows="2" placeholder="What year did the album drop?"${reqAttr}>${esc(q.text || '')}</textarea>
+            </div>
+            <div class="field">
+              <label>Correct answer</label>
+              <input type="text" class="q-answer" autocomplete="off" value="${esc(q.answer || '')}"${reqAttr}>
+            </div>
+            <div class="field">
+              <label>Alternate accepted answers <span class="text-dim">(optional)</span></label>
+              <input type="text" class="q-alt1" autocomplete="off" placeholder="Another spelling / phrasing" value="${esc((q.acceptable||[])[0] || '')}">
+              <input type="text" class="q-alt2" autocomplete="off" placeholder="" value="${esc((q.acceptable||[])[1] || '')}" style="margin-top:0.5rem;">
+            </div>
+          </div>`;
+      }
+      wrap.innerHTML = html;
+    }
 
-    // ── categories ───────────────────────────────────────────
+    // Collect blocks that have any content. Optional empty blocks are dropped.
+    function collectQuestions() {
+      const out = [];
+      document.querySelectorAll('.q-block').forEach(b => {
+        const category = b.querySelector('.q-category').value;
+        const text = b.querySelector('.q-text').value.trim();
+        const answer = b.querySelector('.q-answer').value.trim();
+        const acceptable = [b.querySelector('.q-alt1').value.trim(),
+                            b.querySelector('.q-alt2').value.trim()].filter(Boolean);
+        if (category || text || answer) out.push({ category, text, answer, acceptable });
+      });
+      return out;
+    }
+
     async function loadCategories() {
       try {
-        const r = await fetch('/api/categories');
-        const d = await r.json();
-        const sel = document.getElementById('category-select');
-        sel.innerHTML = d.categories.length
-          ? d.categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
-          : '<option value="">No categories available</option>';
-      } catch (_) {
-        toast('Could not load categories', 'err');
-      }
+        categories = (await (await fetch('/api/categories')).json()).categories || [];
+      } catch (_) { toast('Could not load categories', 'err'); }
     }
 
-    // ── submit question ──────────────────────────────────────
-    document.getElementById('btn-submit-q').addEventListener('click', async () => {
-      if (submitCount >= MAX_Q) { toast(`You've submitted ${MAX_Q} questions — that's the limit`, 'info'); return; }
-      const text = document.getElementById('q-text').value.trim();
-      const answer = document.getElementById('q-answer').value.trim();
-      if (!text)   { toast('Write a question', 'err'); return; }
-      if (!answer) { toast('Add the answer', 'err'); return; }
+    async function loadSubmissionsState() {
+      try {
+        submissionsOpen = (await (await fetch('/api/state')).json()).submissions_open;
+      } catch (_) {}
+      document.getElementById('closed-banner').classList.toggle('hidden', submissionsOpen);
+      document.getElementById('contribute-form').classList.toggle('hidden', !submissionsOpen);
+    }
 
-      const alt1 = document.getElementById('q-alt1').value.trim();
-      const alt2 = document.getElementById('q-alt2').value.trim();
-      const acceptable = [alt1, alt2].filter(Boolean);
+    async function resolveContributor(name) {
+      const r = await fetch('/api/contributor', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ token: browserToken(), name })
+      });
+      if (!r.ok) return null;
+      const d = await r.json();
+      localStorage.setItem('contributor_recovery', d.recovery_code);
+      return d.contributor_id;
+    }
 
-      const btn = document.getElementById('btn-submit-q');
+    async function loadMyQuestions() {
+      if (contributorId == null) return [];
+      try {
+        const d = await (await fetch(`/api/questions/mine?contributor_id=${contributorId}`)).json();
+        const list = document.getElementById('my-q-list');
+        const wrap = document.getElementById('my-questions-wrap');
+        if (!d.questions.length) { wrap.classList.add('hidden'); return []; }
+        wrap.classList.remove('hidden');
+        list.innerHTML = d.questions.map((q, i) => `
+          <li class="q-item">
+            <span class="q-num">${String(i+1).padStart(2,'0')}</span>
+            <span class="q-text">${esc(q.text)}<br><span class="badge badge--dim">${esc(q.category)}</span></span>
+          </li>`).join('');
+        return d.questions;
+      } catch (_) { return []; }
+    }
+
+    document.getElementById('contribute-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('author-name').value.trim();
+      contributorId = await resolveContributor(name);
+      if (contributorId == null) { toast('Could not save your name', 'err'); return; }
+
+      const questions = collectQuestions();
+      if (questions.length < REQUIRED) { toast(`Fill in at least ${REQUIRED} questions`, 'err'); return; }
+
+      const btn = document.getElementById('btn-submit');
       btn.disabled = true;
       try {
-        const r = await fetch('/api/questions', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ author: authorName, category: selectedCategory, text, answer, acceptable })
+        const r = await fetch('/api/questions/set', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ contributor_id: contributorId, author: name, questions })
         });
         if (!r.ok) {
-          const e = await r.json().catch(() => ({}));
-          toast(e.detail || 'Submission failed', 'err');
+          const er = await r.json().catch(() => ({}));
+          toast(er.detail || 'Save failed', 'err');
           return;
         }
-        submitCount++;
-        updateCount();
-        toast('Question submitted!', 'ok');
-        // clear form
-        document.getElementById('q-text').value = '';
-        document.getElementById('q-answer').value = '';
-        document.getElementById('q-alt1').value = '';
-        document.getElementById('q-alt2').value = '';
-        // go back to category step for next question
-        if (submitCount < MAX_Q) showStep(2);
-        await loadMyQuestions();
+        toast('Questions saved!', 'ok');
+        renderBlocks(await loadMyQuestions());
       } catch (_) {
         toast('Network error', 'err');
       } finally {
@@ -199,41 +223,21 @@
       }
     });
 
-    function updateCount() {
-      document.getElementById('submit-count').textContent = `${submitCount} of ${MAX_Q} submitted this session`;
-    }
+    (async function init() {
+      await Promise.all([loadCategories(), loadSubmissionsState()]);
+      // Returning visit: resolve identity from the browser token and prefill.
+      const savedName = localStorage.getItem('contributor_name') || '';
+      let mine = [];
+      if (savedName) {
+        document.getElementById('author-name').value = savedName;
+        contributorId = await resolveContributor(savedName).catch(() => null);
+        mine = contributorId != null ? await loadMyQuestions() : [];
+      }
+      renderBlocks(mine);
+    })();
 
-    // ── my questions ─────────────────────────────────────────
-    async function loadMyQuestions() {
-      if (!authorName) return;
-      try {
-        const r = await fetch(`/api/questions/mine?author=${encodeURIComponent(authorName)}`);
-        const d = await r.json();
-        const list = document.getElementById('my-q-list');
-        const wrap = document.getElementById('my-questions-wrap');
-        if (!d.questions.length) { wrap.classList.add('hidden'); return; }
-        wrap.classList.remove('hidden');
-        list.innerHTML = d.questions.map((q, i) => `
-          <li class="q-item">
-            <span class="q-num">${String(i+1).padStart(2,'0')}</span>
-            <span class="q-text">${esc(q.text)}<br><span class="badge badge--dim">${esc(q.category)}</span></span>
-          </li>`).join('');
-      } catch (_) {}
-    }
-
-    function esc(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    // Restore name from sessionStorage
-    const savedName = sessionStorage.getItem('contribute_author');
-    if (savedName) {
-      document.getElementById('author-name').value = savedName;
-      authorName = savedName;
-    }
-    document.getElementById('author-name').addEventListener('input', e => {
-      sessionStorage.setItem('contribute_author', e.target.value);
-    });
+    document.getElementById('author-name').addEventListener('input', e =>
+      localStorage.setItem('contributor_name', e.target.value));
   </script>
 </body>
 </html>

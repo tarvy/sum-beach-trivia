@@ -42,6 +42,37 @@ class QuestionIn(BaseModel):
     text: str
     answer: str = ""
     acceptable: Optional[list] = None
+    contributor_id: Optional[int] = None
+
+
+class QuestionEditIn(BaseModel):
+    contributor_id: int
+    category: str
+    text: str
+    answer: str = ""
+    acceptable: Optional[list] = None
+
+
+class QuestionSetItem(BaseModel):
+    category: str
+    text: str
+    answer: str = ""
+    acceptable: Optional[list] = None
+
+
+class QuestionSetIn(BaseModel):
+    contributor_id: int
+    author: str
+    questions: list[QuestionSetItem]
+
+
+class SubmissionsIn(BaseModel):
+    open: bool
+
+
+class ContributorIn(BaseModel):
+    token: str
+    name: str
 
 
 class TeamIn(BaseModel):
@@ -145,6 +176,28 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="unknown recovery code")
         return {"team_id": row["id"], "name": row["name"]}
 
+    @app.post("/api/contributor")
+    def resolve_contributor(c: ContributorIn):
+        try:
+            return models.resolve_contributor(db(), c.token, c.name)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    @app.get("/api/contributor/recover")
+    def recover_contributor(recovery_code: str):
+        row = models.contributor_by_recovery(db(), recovery_code)
+        if row is None:
+            raise HTTPException(status_code=404, detail="unknown recovery code")
+        return {"contributor_id": row["id"], "name": row["name"], "token": row["token"]}
+
+    @app.get("/api/authors")
+    def list_authors():
+        # One row per contributing person (host's final-round author excluded).
+        rows = db().execute(
+            "SELECT id, name FROM contributor ORDER BY id"
+        ).fetchall()
+        return {"authors": [{"contributor_id": r["id"], "name": r["name"]} for r in rows]}
+
     @app.get("/api/leaderboard")
     def leaderboard():
         return {"teams": scoring.team_totals(db())}
@@ -157,20 +210,64 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     @app.post("/api/questions")
     def add_question(q: QuestionIn):
         g = models.get_game(db())
-        if g["phase"] != "draft":
-            raise HTTPException(status_code=409, detail="game already started")
+        if not g["submissions_open"]:
+            raise HTTPException(status_code=409, detail="submissions are closed")
         try:
-            qid = models.add_question(db(), q.author, q.category, q.text, q.answer, q.acceptable)
+            qid = models.add_question(db(), q.author, q.category, q.text, q.answer,
+                                      q.acceptable, q.contributor_id)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         return {"id": qid}
 
+    @app.post("/api/questions/set")
+    def submit_set(body: QuestionSetIn):
+        g = models.get_game(db())
+        if not g["submissions_open"]:
+            raise HTTPException(status_code=409, detail="submissions are closed")
+        try:
+            ids = models.submit_question_set(
+                db(), body.contributor_id, body.author,
+                [q.model_dump() for q in body.questions])
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return {"ids": ids}
+
+    @app.put("/api/questions/{question_id}")
+    def edit_question(question_id: int, q: QuestionEditIn):
+        # Trust boundary: open/closed and ownership are enforced here, not in the UI.
+        g = models.get_game(db())
+        if not g["submissions_open"]:
+            raise HTTPException(status_code=409, detail="submissions are closed")
+        try:
+            ok = models.update_question(db(), question_id, q.contributor_id,
+                                        q.category, q.text, q.answer, q.acceptable)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        if not ok:
+            raise HTTPException(status_code=404, detail="not your question")
+        return {"ok": True}
+
     @app.get("/api/questions/mine")
-    def my_questions(author: str):
-        rows = db().execute(
-            "SELECT * FROM question WHERE author_name = ? ORDER BY id", (author,)
-        ).fetchall()
-        return {"questions": [public_question(r) for r in rows]}
+    def my_questions(contributor_id: Optional[int] = None, author: Optional[str] = None):
+        # contributor_id is the identity key; author kept for back-compat.
+        if contributor_id is not None:
+            rows = db().execute(
+                "SELECT * FROM question WHERE contributor_id = ? ORDER BY id", (contributor_id,)
+            ).fetchall()
+        elif author is not None:
+            rows = db().execute(
+                "SELECT * FROM question WHERE author_name = ? ORDER BY id", (author,)
+            ).fetchall()
+        else:
+            raise HTTPException(status_code=400, detail="contributor_id or author required")
+        # Owner-facing: include category name + answer/acceptable so the contributor
+        # can review and edit their OWN set. (public_question omits answers for display.)
+        cats = {r["id"]: r["name"] for r in db().execute("SELECT id, name FROM category")}
+        return {"questions": [{
+            "id": r["id"], "text": r["text"], "answer": r["answer"],
+            "acceptable": json.loads(r["acceptable_answers"]),
+            "category": cats.get(r["category_id"]),
+        } for r in rows]}
 
     @app.get("/api/questions")
     def all_questions(host_key: str):
@@ -183,17 +280,23 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         "final_wager", "final_open", "tiebreak", "done", "paused",
     }
 
-    def _round_public(round_id: int) -> dict | None:
+    def _round_public(round_id: int, reveal: bool = False) -> dict | None:
         r = db().execute("SELECT * FROM round WHERE id = ?", (round_id,)).fetchone()
         if r is None:
             return None
         qs = db().execute(
             "SELECT * FROM question WHERE round_id = ? ORDER BY display_order", (round_id,)
         ).fetchall()
+        out = []
+        for q in qs:
+            pq = public_question(q)
+            # Author is a spoiler during play — only attach it at reveal.
+            if reveal:
+                pq["author_name"] = q["author_name"]
+            out.append(pq)
         return {
             "id": r["id"], "title": r["title"], "is_final": bool(r["is_final"]),
-            "wager_cap": r["wager_cap"],
-            "questions": [public_question(q) for q in qs],
+            "wager_cap": r["wager_cap"], "questions": out,
         }
 
     @app.post("/api/host/build-rounds")
@@ -238,11 +341,19 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         models.set_paused(db(), body.paused)
         return {"ok": True}
 
+    @app.post("/api/host/submissions")
+    def set_submissions(body: SubmissionsIn, host_key: str):
+        require_host(host_key)
+        models.set_submissions_open(db(), body.open)
+        return {"submissions_open": body.open}
+
     @app.get("/api/state")
     def state():
         g = models.get_game(db())
-        cur = _round_public(g["current_round_id"]) if g["current_round_id"] else None
-        return {"phase": g["phase"], "paused": bool(g["paused"]), "current_round": cur}
+        cur = _round_public(g["current_round_id"], reveal=g["phase"] == "reveal") \
+            if g["current_round_id"] else None
+        return {"phase": g["phase"], "paused": bool(g["paused"]),
+                "submissions_open": bool(g["submissions_open"]), "current_round": cur}
 
     SUBMIT_PHASES = {"round_open", "final_open"}
 
@@ -302,8 +413,10 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     def host_marks(host_key: str, round_id: int):
         require_host(host_key)
         teams = db().execute("SELECT id, name FROM team ORDER BY id").fetchall()
-        qids = [r["id"] for r in db().execute(
-            "SELECT id FROM question WHERE round_id = ?", (round_id,))]
+        qrows = db().execute(
+            "SELECT id, author_name FROM question WHERE round_id = ?", (round_id,)).fetchall()
+        qids = [r["id"] for r in qrows]
+        authors = {r["id"]: r["author_name"] for r in qrows}
         out = []
         for t in teams:
             sub = db().execute(
@@ -316,6 +429,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                     (t["id"], qid)).fetchone()
                 marks.append({
                     "question_id": qid,
+                    "author_name": authors.get(qid),
                     "transcription": m["transcription"] if m else "",
                     "is_correct": bool(m["is_correct"]) if m else False,
                     "score": m["score"] if m else 0,
