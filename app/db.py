@@ -103,6 +103,8 @@ CREATE TABLE IF NOT EXISTS mark (
 
 
 def connect(path: str, check_same_thread: bool = True) -> sqlite3.Connection:
+    # Note: For file-backed connections used in FastAPI, pass check_same_thread=False
+    # since sync handlers run in a thread pool.
     conn = sqlite3.connect(path, check_same_thread=check_same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")

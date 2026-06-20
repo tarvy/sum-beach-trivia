@@ -79,7 +79,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     app = FastAPI(title="Sum Beach Trivia")
 
     # FastAPI runs sync route handlers in a thread pool, so we need
-    # check_same_thread=False for all connections (both file-backed and :memory:).
+    # check_same_thread=False for all connections.
     conn = connect(db_path, check_same_thread=False)
     app.state.conn = conn
 
