@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
 import pathlib
@@ -8,6 +10,7 @@ import time
 from typing import Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -51,6 +54,24 @@ class PhaseIn(BaseModel):
 
 class PauseIn(BaseModel):
     paused: bool
+
+
+class FinalIn(BaseModel):
+    text: str
+    items: list[str]
+    ordered: bool = False
+    wager_cap: int = 10
+
+
+class WagerIn(BaseModel):
+    team_id: int
+    round_id: int
+    amount: int
+
+
+class TiebreakIn(BaseModel):
+    question: str
+    value: float
 
 
 def create_app(db_path: Optional[str] = None) -> FastAPI:
@@ -294,6 +315,96 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                      (json.dumps(acc), body.question_id))
         db().commit()
         return {"ok": True}
+
+    @app.post("/api/host/final")
+    def create_final(body: FinalIn, host_key: str):
+        require_host(host_key)
+        (max_order,) = db().execute(
+            "SELECT COALESCE(MAX(display_order), -1) FROM round").fetchone()
+        cur = db().execute(
+            "INSERT INTO round (title, display_order, is_final, wager_cap, bonus_multiplier) "
+            "VALUES ('Final Round', ?, 1, ?, 1)", (max_order + 1, body.wager_cap))
+        rid = cur.lastrowid
+        db().execute(
+            "INSERT INTO question (author_name, category_id, text, answer_items, ordered, "
+            "round_id, point_value, display_order) "
+            "VALUES ('host', (SELECT id FROM category ORDER BY display_order LIMIT 1), "
+            "?, ?, ?, ?, 0, 0)",
+            (body.text, json.dumps(body.items), int(body.ordered), rid))
+        db().commit()
+        return {"round_id": rid}
+
+    @app.post("/api/wager")
+    def place_wager(body: WagerIn):
+        g = models.get_game(db())
+        if g["phase"] != "final_wager":
+            raise HTTPException(status_code=409, detail="wagering closed")
+        cap = db().execute("SELECT wager_cap FROM round WHERE id=?",
+                           (body.round_id,)).fetchone()["wager_cap"] or 0
+        amount = max(0, min(body.amount, cap))
+        db().execute(
+            "INSERT INTO wager (team_id, round_id, amount) VALUES (?, ?, ?) "
+            "ON CONFLICT(team_id, round_id) DO UPDATE SET amount=excluded.amount",
+            (body.team_id, body.round_id, amount))
+        db().commit()
+        return {"amount": amount}
+
+    @app.post("/api/host/tiebreak")
+    def set_tiebreak(body: TiebreakIn, host_key: str):
+        require_host(host_key)
+        db().execute("UPDATE game SET tiebreak_question=?, tiebreak_value=? WHERE id=1",
+                     (body.question, body.value))
+        db().commit()
+        app.state.tiebreak_guesses = {}
+        return {"ok": True}
+
+    @app.post("/api/tiebreak")
+    def guess_tiebreak(team_id: int, value: float):
+        guesses = getattr(app.state, "tiebreak_guesses", None)
+        if guesses is None:
+            guesses = app.state.tiebreak_guesses = {}
+        guesses[team_id] = value
+        return {"ok": True}
+
+    @app.get("/api/host/tiebreak-result")
+    def tiebreak_result(host_key: str):
+        require_host(host_key)
+        g = models.get_game(db())
+        target = g["tiebreak_value"]
+        guesses = getattr(app.state, "tiebreak_guesses", {})
+        names = {t["id"]: t["name"] for t in db().execute("SELECT id, name FROM team")}
+        ranked = sorted(
+            ({"team_id": tid, "name": names.get(tid, "?"), "guess": v,
+              "delta": abs(v - target)} for tid, v in guesses.items()),
+            key=lambda x: x["delta"])
+        return {"target": target, "ranked": ranked}
+
+    @app.get("/api/host/export.csv")
+    def export_csv(host_key: str):
+        require_host(host_key)
+        rounds = db().execute(
+            "SELECT id, title FROM round ORDER BY display_order").fetchall()
+        totals = {t["team_id"]: t for t in scoring.team_totals(db())}
+        buf = io.StringIO()
+        w = csv.writer(buf)
+        w.writerow(["team"] + [r["title"] for r in rounds] + ["total"])
+        for t in db().execute("SELECT id, name FROM team ORDER BY name").fetchall():
+            row = [t["name"]]
+            for r in rounds:
+                if db().execute("SELECT is_final FROM round WHERE id=?",
+                                (r["id"],)).fetchone()["is_final"]:
+                    row.append(scoring._final_total(db(), t["id"], r["id"]))
+                else:
+                    s = db().execute(
+                        "SELECT COALESCE(SUM(m.score),0) AS s FROM mark m "
+                        "JOIN question q ON q.id=m.question_id "
+                        "WHERE m.team_id=? AND q.round_id=?", (t["id"], r["id"])).fetchone()["s"]
+                    bonus = db().execute("SELECT bonus_multiplier FROM round WHERE id=?",
+                                         (r["id"],)).fetchone()["bonus_multiplier"]
+                    row.append(s * bonus)
+            row.append(totals.get(t["id"], {}).get("total", 0))
+            w.writerow(row)
+        return PlainTextResponse(buf.getvalue(), media_type="text/csv")
 
     app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
