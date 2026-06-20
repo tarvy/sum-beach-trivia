@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contribute Questions — Sum Beach Trivia</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav__brand">Sum Beach Trivia</a>
+    <div class="nav__links">
+      <a href="/contribute.html" class="active">Contribute</a>
+      <a href="/play.html">Play</a>
+      <a href="/host.html">Host</a>
+      <a href="/display.html">Display</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container container--narrow" style="padding-top: 2rem; padding-bottom: 4rem;">
+
+      <div class="mb-sm">
+        <p class="eyebrow">Question bank</p>
+        <h1>Write your best questions</h1>
+        <p class="text-dim mt-sm">You can submit up to 3. The host picks the best for the rotation.</p>
+      </div>
+
+      <div class="steps" id="steps" role="tablist">
+        <div class="step active" id="step-tab-1">1 — Your name</div>
+        <div class="step" id="step-tab-2">2 — Category</div>
+        <div class="step" id="step-tab-3">3 — Question</div>
+      </div>
+
+      <!-- Step 1: Name -->
+      <div id="step-1" class="card stack">
+        <h2>What should we call you?</h2>
+        <div class="field">
+          <label for="author-name">Your name or team name</label>
+          <input type="text" id="author-name" placeholder="e.g. Sandy Bottoms" maxlength="80" autocomplete="off">
+        </div>
+        <div>
+          <button class="btn btn--primary" id="btn-name">Next — pick a category</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Category -->
+      <div id="step-2" class="card stack hidden">
+        <h2>Pick a category</h2>
+        <div class="field">
+          <label for="category-select">Category</label>
+          <select id="category-select">
+            <option value="">Loading categories…</option>
+          </select>
+        </div>
+        <div class="cluster">
+          <button class="btn btn--secondary btn--sm" id="btn-back-1">Back</button>
+          <button class="btn btn--primary" id="btn-category">Next — write your question</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Question form -->
+      <div id="step-3" class="card stack hidden">
+        <h2>The question</h2>
+        <div class="field">
+          <label for="q-text">Question text</label>
+          <textarea id="q-text" placeholder="What year did the Margaritaville concept album drop?" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label for="q-answer">Correct answer</label>
+          <input type="text" id="q-answer" placeholder="The answer the host will accept" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="q-alt1">Alternate accepted answer <span class="text-dim">(optional)</span></label>
+          <input type="text" id="q-alt1" placeholder="Another way to spell or phrase it" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="q-alt2">Second alternate <span class="text-dim">(optional)</span></label>
+          <input type="text" id="q-alt2" placeholder="" autocomplete="off">
+        </div>
+        <div class="cluster">
+          <button class="btn btn--secondary btn--sm" id="btn-back-2">Back</button>
+          <button class="btn btn--primary" id="btn-submit-q">Submit question</button>
+        </div>
+        <p class="label text-dim" id="submit-count">0 of 3 submitted this session</p>
+      </div>
+
+      <!-- My questions list -->
+      <section id="my-questions-wrap" class="mt-lg hidden">
+        <hr class="sep" style="margin-top: 0;">
+        <p class="eyebrow mb-sm">Your submissions</p>
+        <ul class="q-list" id="my-q-list"></ul>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="toast-area" id="toasts" role="status" aria-live="polite"></div>
+
+  <script>
+    // ── state ────────────────────────────────────────────────
+    let authorName = '';
+    let selectedCategory = '';
+    let submitCount = 0;
+    const MAX_Q = 3;
+
+    // ── toast ────────────────────────────────────────────────
+    function toast(msg, type = 'info') {
+      const area = document.getElementById('toasts');
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      area.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    // ── step navigation ──────────────────────────────────────
+    function showStep(n) {
+      [1,2,3].forEach(i => {
+        document.getElementById(`step-${i}`).classList.toggle('hidden', i !== n);
+        const tab = document.getElementById(`step-tab-${i}`);
+        tab.classList.remove('active', 'done');
+        if (i < n) tab.classList.add('done');
+        if (i === n) tab.classList.add('active');
+      });
+    }
+
+    document.getElementById('btn-name').addEventListener('click', () => {
+      const val = document.getElementById('author-name').value.trim();
+      if (!val) { toast('Enter your name first', 'err'); return; }
+      authorName = val;
+      loadCategories();
+      showStep(2);
+    });
+    document.getElementById('btn-back-1').addEventListener('click', () => showStep(1));
+
+    document.getElementById('btn-category').addEventListener('click', () => {
+      const sel = document.getElementById('category-select');
+      selectedCategory = sel.value;
+      if (!selectedCategory) { toast('Pick a category', 'err'); return; }
+      showStep(3);
+    });
+    document.getElementById('btn-back-2').addEventListener('click', () => showStep(2));
+
+    // ── categories ───────────────────────────────────────────
+    async function loadCategories() {
+      try {
+        const r = await fetch('/api/categories');
+        const d = await r.json();
+        const sel = document.getElementById('category-select');
+        sel.innerHTML = d.categories.length
+          ? d.categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
+          : '<option value="">No categories available</option>';
+      } catch (_) {
+        toast('Could not load categories', 'err');
+      }
+    }
+
+    // ── submit question ──────────────────────────────────────
+    document.getElementById('btn-submit-q').addEventListener('click', async () => {
+      if (submitCount >= MAX_Q) { toast(`You've submitted ${MAX_Q} questions — that's the limit`, 'info'); return; }
+      const text = document.getElementById('q-text').value.trim();
+      const answer = document.getElementById('q-answer').value.trim();
+      if (!text)   { toast('Write a question', 'err'); return; }
+      if (!answer) { toast('Add the answer', 'err'); return; }
+
+      const alt1 = document.getElementById('q-alt1').value.trim();
+      const alt2 = document.getElementById('q-alt2').value.trim();
+      const acceptable = [alt1, alt2].filter(Boolean);
+
+      const btn = document.getElementById('btn-submit-q');
+      btn.disabled = true;
+      try {
+        const r = await fetch('/api/questions', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ author: authorName, category: selectedCategory, text, answer, acceptable })
+        });
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}));
+          toast(e.detail || 'Submission failed', 'err');
+          return;
+        }
+        submitCount++;
+        updateCount();
+        toast('Question submitted!', 'ok');
+        // clear form
+        document.getElementById('q-text').value = '';
+        document.getElementById('q-answer').value = '';
+        document.getElementById('q-alt1').value = '';
+        document.getElementById('q-alt2').value = '';
+        // go back to category step for next question
+        if (submitCount < MAX_Q) showStep(2);
+        await loadMyQuestions();
+      } catch (_) {
+        toast('Network error', 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    function updateCount() {
+      document.getElementById('submit-count').textContent = `${submitCount} of ${MAX_Q} submitted this session`;
+    }
+
+    // ── my questions ─────────────────────────────────────────
+    async function loadMyQuestions() {
+      if (!authorName) return;
+      try {
+        const r = await fetch(`/api/questions/mine?author=${encodeURIComponent(authorName)}`);
+        const d = await r.json();
+        const list = document.getElementById('my-q-list');
+        const wrap = document.getElementById('my-questions-wrap');
+        if (!d.questions.length) { wrap.classList.add('hidden'); return; }
+        wrap.classList.remove('hidden');
+        list.innerHTML = d.questions.map((q, i) => `
+          <li class="q-item">
+            <span class="q-num">${String(i+1).padStart(2,'0')}</span>
+            <span class="q-text">${esc(q.text)}<br><span class="badge badge--dim">${esc(q.category)}</span></span>
+          </li>`).join('');
+      } catch (_) {}
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // Restore name from sessionStorage
+    const savedName = sessionStorage.getItem('contribute_author');
+    if (savedName) {
+      document.getElementById('author-name').value = savedName;
+      authorName = savedName;
+    }
+    document.getElementById('author-name').addEventListener('input', e => {
+      sessionStorage.setItem('contribute_author', e.target.value);
+    });
+  </script>
+</body>
+</html>

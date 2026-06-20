@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Display — Sum Beach Trivia</title>
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    body { overflow: hidden; }
+    .display-root {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+    .display-brand {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .display-teams-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.8rem;
+      width: 100%;
+      max-width: 900px;
+      margin-top: 1.5rem;
+    }
+    .team-chip {
+      background: var(--ground-2);
+      border: 1px solid var(--ground-3);
+      border-radius: var(--radius);
+      padding: 0.6rem 1rem;
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+    }
+    .display-q-list {
+      list-style: none;
+      width: 100%;
+      max-width: 700px;
+      text-align: left;
+    }
+    .display-q-item {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--ground-3);
+      font-family: var(--font-body);
+      font-size: clamp(1rem, 2.5vw, 1.4rem);
+      line-height: 1.4;
+    }
+    .display-q-item:last-child { border-bottom: none; }
+    .display-q-num {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      flex-shrink: 0;
+      padding-top: 0.3em;
+      min-width: 2.5em;
+    }
+    .lb-display-wrap {
+      width: 100%;
+      max-width: 700px;
+    }
+  </style>
+</head>
+<body>
+  <span class="display-brand">Sum Beach Trivia</span>
+
+  <div class="display-root" id="display-root">
+    <!-- populated by JS -->
+    <div class="display-phase" id="d-phase">CONNECTING</div>
+    <div class="display-title" id="d-title">Sum Beach<br><span>Trivia</span></div>
+  </div>
+
+  <script>
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    let lastPhase = null;
+
+    async function poll() {
+      try {
+        const [stateRes, lbRes, teamsRes] = await Promise.all([
+          fetch('/api/state'),
+          fetch('/api/leaderboard'),
+          fetch('/api/teams')
+        ]);
+        if (!stateRes.ok) return;
+        const state = await stateRes.json();
+        const lb    = lbRes.ok ? await lbRes.json() : {teams:[]};
+        const teams = teamsRes.ok ? await teamsRes.json() : {teams:[]};
+        render(state, lb, teams);
+      } catch (_) {}
+    }
+
+    function render(state, lb, teamsData) {
+      const {phase, paused, current_round} = state;
+      const root = document.getElementById('display-root');
+
+      switch (phase) {
+        case 'draft':
+          renderStandby('Draft mode', 'Questions being written');
+          break;
+
+        case 'lobby':
+          renderLobby(teamsData.teams || []);
+          break;
+
+        case 'round_open':
+        case 'final_open':
+          renderRound(current_round, phase, paused);
+          break;
+
+        case 'final_wager':
+          renderStandby('Final round', 'Wagers closing…');
+          break;
+
+        case 'round_closed':
+        case 'marking':
+          renderStandby('Marking', 'Hang tight while we mark your answers');
+          break;
+
+        case 'reveal':
+          renderLeaderboard(lb.teams, 'Scores so far');
+          break;
+
+        case 'done':
+          renderLeaderboard(lb.teams, 'Final scores');
+          break;
+
+        case 'tiebreak':
+          renderStandby('Tiebreak!', current_round ? 'Guess closest to win' : '');
+          break;
+
+        default:
+          renderStandby(phase.replace(/_/g,' '), paused ? '— paused —' : '');
+      }
+    }
+
+    function renderStandby(phaseLabel, message) {
+      const root = document.getElementById('display-root');
+      root.innerHTML = `
+        <div class="display-phase">${esc(phaseLabel.toUpperCase())}</div>
+        <div class="display-title">${esc(message)}</div>
+      `;
+    }
+
+    function renderLobby(teams) {
+      const root = document.getElementById('display-root');
+      const teamChips = teams.length
+        ? `<div class="display-teams-grid">${teams.map(t => `<div class="team-chip">${esc(t.name)}</div>`).join('')}</div>`
+        : `<p style="color: var(--text-dim); font-family: var(--font-mono); letter-spacing: 0.1em; font-size: 0.75rem; text-transform: uppercase; margin-top: 1rem;">No teams yet</p>`;
+
+      root.innerHTML = `
+        <div class="display-phase">LOBBY — SCAN TO JOIN</div>
+        <div class="display-title">Sum Beach<br><span>Trivia</span></div>
+        ${teamChips}
+      `;
+    }
+
+    function renderRound(round, phase, paused) {
+      const root = document.getElementById('display-root');
+      if (!round) { renderStandby('Round open', ''); return; }
+
+      const pauseTag = paused ? `<span style="color: var(--danger); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.2em; display: block; margin-bottom: 0.5rem;">— PAUSED —</span>` : '';
+
+      const qItems = (round.questions || []).map((q, i) =>
+        `<li class="display-q-item">
+          <span class="display-q-num">${String(i+1).padStart(2,'0')}</span>
+          <span>${esc(q.text)}</span>
+        </li>`
+      ).join('');
+
+      root.innerHTML = `
+        ${pauseTag}
+        <div class="display-phase">${round.is_final ? 'FINAL ROUND' : 'ROUND OPEN'}</div>
+        <div class="display-title" style="margin-bottom: 1.5rem;">${esc(round.title || '')}</div>
+        <ol class="display-q-list" aria-label="Questions">${qItems}</ol>
+      `;
+    }
+
+    function renderLeaderboard(teams, label) {
+      const root = document.getElementById('display-root');
+      const rows = (teams || []).map((t, i) =>
+        `<div class="lb-display-row">
+          <span class="lb-display-rank">${i+1}</span>
+          <span class="lb-display-name">${esc(t.name)}</span>
+          <span class="lb-display-score">${t.total}</span>
+        </div>`
+      ).join('');
+
+      root.innerHTML = `
+        <div class="display-phase">${esc(label.toUpperCase())}</div>
+        <div class="lb-display-wrap lb-display" id="lb-display-inner">${rows}</div>
+      `;
+    }
+
+    poll();
+    setInterval(poll, 2500);
+  </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sum Beach Trivia</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav__brand">Sum Beach Trivia</span>
+    <div class="nav__links">
+      <a href="/contribute.html">Contribute</a>
+      <a href="/play.html">Play</a>
+      <a href="/host.html">Host</a>
+      <a href="/display.html">Display</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container container--narrow">
+      <section class="hero">
+        <span class="hero__wave">Sum Beach Trivia</span>
+        <p class="hero__sub">Live trivia — write questions, play as a team, win the bar</p>
+
+        <div id="game-code-wrap" class="hidden mt-md">
+          <p class="label mb-sm">Tonight's game code</p>
+          <div class="hero__code" id="game-code">—</div>
+        </div>
+      </section>
+
+      <hr class="sep">
+
+      <nav class="nav-cards" aria-label="Section navigation">
+        <a href="/contribute.html" class="nav-card">
+          <span class="nav-card__icon" aria-hidden="true">✏️</span>
+          <span class="nav-card__title">Contribute</span>
+          <span class="nav-card__desc">Write questions before the game starts. Your best stuff goes in the rotation.</span>
+        </a>
+        <a href="/play.html" class="nav-card">
+          <span class="nav-card__icon" aria-hidden="true">📸</span>
+          <span class="nav-card__title">Play</span>
+          <span class="nav-card__desc">Join a team and snap your answer sheet each round. Wager everything on the final.</span>
+        </a>
+        <a href="/host.html" class="nav-card">
+          <span class="nav-card__icon" aria-hidden="true">🎙️</span>
+          <span class="nav-card__title">Host</span>
+          <span class="nav-card__desc">Run the game. Build rounds, open questions, mark answers, crown a winner.</span>
+        </a>
+        <a href="/display.html" class="nav-card">
+          <span class="nav-card__icon" aria-hidden="true">📺</span>
+          <span class="nav-card__title">Display</span>
+          <span class="nav-card__desc">Big-screen view for the room — shows questions, scores, and the live leaderboard.</span>
+        </a>
+      </nav>
+    </div>
+  </main>
+
+  <div class="toast-area" id="toasts" role="status" aria-live="polite"></div>
+
+  <script>
+    async function loadState() {
+      try {
+        const r = await fetch('/api/state');
+        if (!r.ok) return;
+        const d = await r.json();
+        const wrap = document.getElementById('game-code-wrap');
+        // Show join code only in lobby
+        if (d.phase === 'lobby' || d.phase === 'draft') {
+          // code not exposed via state; show reminder to check host terminal
+        }
+      } catch (_) {}
+    }
+    loadState();
+  </script>
+</body>
+</html>

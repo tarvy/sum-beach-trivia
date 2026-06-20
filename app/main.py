@@ -407,6 +407,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         return PlainTextResponse(buf.getvalue(), media_type="text/csv")
 
     app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
     return app
 

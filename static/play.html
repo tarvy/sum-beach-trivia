@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Play — Sum Beach Trivia</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav__brand">Sum Beach Trivia</a>
+    <div class="nav__links">
+      <a href="/contribute.html">Contribute</a>
+      <a href="/play.html" class="active">Play</a>
+      <a href="/host.html">Host</a>
+      <a href="/display.html">Display</a>
+    </div>
+  </nav>
+
+  <!-- Phase status bar -->
+  <div class="phase-strip" id="phase-strip" role="status" aria-live="polite">
+    <span class="phase-dot" id="phase-dot"></span>
+    <span id="phase-text">Connecting…</span>
+    <span id="pause-badge" class="badge badge--red hidden">Paused</span>
+  </div>
+
+  <main>
+    <div class="container container--narrow" style="padding-top: 1.5rem; padding-bottom: 4rem;">
+
+      <!-- ── JOIN / REJOIN ── -->
+      <div id="join-panel" class="hidden">
+        <p class="eyebrow mb-sm">Join the game</p>
+        <h1 class="mb-sm">Pick a team name</h1>
+
+        <div class="card stack--lg">
+          <div class="stack">
+            <div class="field">
+              <label for="team-name">Team name</label>
+              <input type="text" id="team-name" placeholder="Sandy Bottoms" maxlength="60" autocomplete="off">
+            </div>
+            <div>
+              <button class="btn btn--primary" id="btn-join">Join the game</button>
+            </div>
+          </div>
+
+          <hr class="sep" style="margin: 0;">
+
+          <div class="stack">
+            <p class="label">Already joined? Recover your session</p>
+            <div class="field">
+              <label for="recovery-input">Recovery code</label>
+              <input type="text" id="recovery-input" placeholder="Your 8-character code" maxlength="20" autocomplete="off">
+            </div>
+            <div>
+              <button class="btn btn--secondary" id="btn-recover">Rejoin</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LOBBY ── -->
+      <div id="lobby-panel" class="hidden">
+        <p class="eyebrow mb-sm">You're in</p>
+        <h1 id="lobby-team-name" class="text-accent">—</h1>
+        <p class="text-dim mt-sm">Waiting for the host to start the game…</p>
+        <div class="panel mt-md">
+          <p class="label mb-sm">Recovery code — save this to rejoin if you close the tab</p>
+          <p class="mono text-teal" id="lobby-recovery" style="font-size: 1.3rem; letter-spacing: 0.12em;">—</p>
+        </div>
+      </div>
+
+      <!-- ── ROUND OPEN / FINAL OPEN ── -->
+      <div id="round-panel" class="hidden">
+        <p class="eyebrow" id="round-eyebrow">Round open</p>
+        <h1 id="round-title" class="text-accent mb-sm">—</h1>
+
+        <ol class="q-list" id="round-questions" aria-label="Round questions"></ol>
+
+        <div class="card card--accent mt-md" id="submit-panel">
+          <h2 class="mb-sm">Snap your answer sheet</h2>
+          <p class="text-dim" style="font-size: var(--fs-sm);">Write all your answers on paper, then photograph the sheet and submit it below.</p>
+          <div class="field mt-sm">
+            <label for="photo-input">Answer sheet photo</label>
+            <input type="file" id="photo-input" accept="image/*" capture="environment">
+          </div>
+          <div class="cluster mt-sm">
+            <button class="btn btn--primary" id="btn-submit-photo">Submit answers</button>
+            <span id="submit-status" class="label text-dim"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── FINAL WAGER ── -->
+      <div id="wager-panel" class="hidden">
+        <p class="eyebrow mb-sm">Final round</p>
+        <h1 class="mb-sm">Place your wager</h1>
+        <p class="text-dim" style="font-size: var(--fs-sm);">How much of your total score do you want to risk? You win the wager if you get the final question right.</p>
+
+        <div class="card card--accent mt-md stack">
+          <div class="wager-display" id="wager-display">0</div>
+          <input type="range" id="wager-slider" min="0" max="10" value="0">
+          <div class="cluster" style="justify-content: space-between;">
+            <span class="label text-dim">0</span>
+            <span class="label text-dim" id="wager-cap-label">max: 10</span>
+          </div>
+          <button class="btn btn--primary" id="btn-wager">Lock in wager</button>
+        </div>
+      </div>
+
+      <!-- ── MARKING / REVEAL / DONE ── -->
+      <div id="results-panel" class="hidden">
+        <p class="eyebrow mb-sm" id="results-eyebrow">Standing by</p>
+        <h1 id="results-heading">Answers are being marked</h1>
+        <p class="text-dim mt-sm">Sit tight while the host reviews your sheet.</p>
+      </div>
+
+      <!-- ── TIEBREAK ── -->
+      <div id="tiebreak-panel" class="hidden">
+        <p class="eyebrow mb-sm">Tiebreak</p>
+        <h1 id="tiebreak-q" class="mb-sm">—</h1>
+        <p class="text-dim" style="font-size: var(--fs-sm);">Closest guess wins. Enter a number.</p>
+        <div class="card card--teal mt-md stack">
+          <div class="field">
+            <label for="tb-guess">Your answer</label>
+            <input type="number" id="tb-guess" step="any" placeholder="0">
+          </div>
+          <button class="btn btn--teal" id="btn-tb">Submit tiebreak guess</button>
+        </div>
+      </div>
+
+      <!-- ── OWN RANK ── -->
+      <div id="rank-panel" class="mt-lg hidden">
+        <hr class="sep">
+        <p class="label mb-sm">Your standing</p>
+        <div class="panel cluster" style="gap: var(--spacing-md);">
+          <div>
+            <p class="label">Rank</p>
+            <p class="text-accent" style="font-family: var(--font-display); font-size: 2rem; font-weight: 900;" id="own-rank">—</p>
+          </div>
+          <div>
+            <p class="label">Score</p>
+            <p class="text-teal" style="font-family: var(--font-display); font-size: 2rem; font-weight: 900;" id="own-score">—</p>
+          </div>
+          <div style="flex: 1;">
+            <p class="label">Team</p>
+            <p style="font-size: var(--fs-sm);" id="own-name">—</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="toast-area" id="toasts" role="status" aria-live="polite"></div>
+
+  <script>
+    // ── helpers ──────────────────────────────────────────────
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function toast(msg, type = 'info') {
+      const area = document.getElementById('toasts');
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      area.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    // ── local storage ────────────────────────────────────────
+    let teamId   = parseInt(localStorage.getItem('trivia_team_id'))   || null;
+    let teamName = localStorage.getItem('trivia_team_name')           || '';
+    let recovery = localStorage.getItem('trivia_recovery_code')       || '';
+
+    function saveTeam(id, name, code) {
+      teamId = id; teamName = name; recovery = code;
+      localStorage.setItem('trivia_team_id',       id);
+      localStorage.setItem('trivia_team_name',      name);
+      localStorage.setItem('trivia_recovery_code',  code);
+    }
+
+    // ── panel visibility ─────────────────────────────────────
+    const panels = ['join', 'lobby', 'round', 'wager', 'results', 'tiebreak'];
+    function showPanel(name) {
+      panels.forEach(p => document.getElementById(`${p}-panel`).classList.add('hidden'));
+      document.getElementById(`${name}-panel`).classList.remove('hidden');
+    }
+
+    // ── JOIN ─────────────────────────────────────────────────
+    document.getElementById('btn-join').addEventListener('click', async () => {
+      const name = document.getElementById('team-name').value.trim();
+      if (!name) { toast('Enter a team name', 'err'); return; }
+      const btn = document.getElementById('btn-join');
+      btn.disabled = true;
+      try {
+        const r = await fetch('/api/teams', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name})
+        });
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}));
+          toast(e.detail || 'Could not join', 'err');
+          return;
+        }
+        const d = await r.json();
+        saveTeam(d.id, d.name, d.recovery_code);
+        afterJoin();
+      } catch (_) {
+        toast('Network error', 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('btn-recover').addEventListener('click', async () => {
+      const code = document.getElementById('recovery-input').value.trim();
+      if (!code) { toast('Enter your recovery code', 'err'); return; }
+      try {
+        const r = await fetch(`/api/teams/recover?recovery_code=${encodeURIComponent(code)}`);
+        if (!r.ok) { toast('Code not found', 'err'); return; }
+        const d = await r.json();
+        saveTeam(d.team_id, d.name, code);
+        afterJoin();
+      } catch (_) {
+        toast('Network error', 'err');
+      }
+    });
+
+    function afterJoin() {
+      document.getElementById('lobby-team-name').textContent = teamName;
+      document.getElementById('lobby-recovery').textContent  = recovery;
+      toast(`Joined as ${teamName}`, 'ok');
+      startPolling();
+    }
+
+    // ── STATE POLL ───────────────────────────────────────────
+    let lastPhase = null;
+    let lastRoundId = null;
+    let wagerLocked = false;
+    let tbSubmitted = false;
+
+    async function poll() {
+      try {
+        const [stateRes, lbRes] = await Promise.all([
+          fetch('/api/state'),
+          fetch('/api/leaderboard')
+        ]);
+        if (!stateRes.ok) return;
+        const state = await stateRes.json();
+        const lb    = lbRes.ok ? await lbRes.json() : {teams:[]};
+        applyState(state, lb);
+      } catch (_) {}
+    }
+
+    function applyState(state, lb) {
+      const {phase, paused, current_round} = state;
+
+      // phase strip
+      const dot  = document.getElementById('phase-dot');
+      const ptxt = document.getElementById('phase-text');
+      const pb   = document.getElementById('pause-badge');
+      ptxt.textContent = phase.replace(/_/g, ' ');
+      pb.classList.toggle('hidden', !paused);
+      dot.className = 'phase-dot';
+      if (paused)                                         dot.classList.add('paused');
+      else if (phase === 'round_open'||phase==='final_open') dot.classList.add('live');
+      else if (phase === 'lobby'||phase==='draft')            dot.classList.add('amber');
+
+      // own rank
+      const myEntry = lb.teams.find(t => t.team_id === teamId);
+      const rankPanel = document.getElementById('rank-panel');
+      if (myEntry && teamId) {
+        const myRank = lb.teams.indexOf(myEntry) + 1;
+        document.getElementById('own-rank').textContent  = `#${myRank}`;
+        document.getElementById('own-score').textContent = myEntry.total;
+        document.getElementById('own-name').textContent  = myEntry.name;
+        rankPanel.classList.remove('hidden');
+      }
+
+      // reset per-round wager lock when round changes
+      if (current_round && current_round.id !== lastRoundId) {
+        wagerLocked = false;
+        tbSubmitted = false;
+        lastRoundId = current_round.id;
+      }
+
+      if (!teamId) { showPanel('join'); return; }
+
+      switch (phase) {
+        case 'draft':
+        case 'lobby':
+          showPanel('lobby');
+          break;
+
+        case 'round_open':
+        case 'final_open':
+          showPanel('round');
+          renderRound(current_round, phase);
+          break;
+
+        case 'final_wager':
+          showPanel('wager');
+          if (current_round) {
+            const cap = current_round.wager_cap || 10;
+            const slider = document.getElementById('wager-slider');
+            const capLabel = document.getElementById('wager-cap-label');
+            slider.max = cap;
+            capLabel.textContent = `max: ${cap}`;
+          }
+          break;
+
+        case 'tiebreak':
+          showPanel('tiebreak');
+          break;
+
+        case 'round_closed':
+        case 'marking':
+          showPanel('results');
+          document.getElementById('results-eyebrow').textContent = 'Marking in progress';
+          document.getElementById('results-heading').textContent = 'Answers are being marked';
+          break;
+
+        case 'reveal':
+        case 'done':
+          showPanel('results');
+          document.getElementById('results-eyebrow').textContent = phase === 'done' ? 'Game over' : 'Scores revealed';
+          document.getElementById('results-heading').textContent = phase === 'done' ? 'Thanks for playing!' : 'Check the big screen for scores';
+          break;
+
+        default:
+          showPanel('lobby');
+      }
+    }
+
+    // ── RENDER ROUND ─────────────────────────────────────────
+    function renderRound(round, phase) {
+      if (!round) return;
+      document.getElementById('round-eyebrow').textContent = round.is_final ? 'Final round' : 'Round open';
+      document.getElementById('round-title').textContent   = round.title || 'Current Round';
+      const ql = document.getElementById('round-questions');
+      ql.innerHTML = (round.questions || []).map((q, i) =>
+        `<li class="q-item">
+          <span class="q-num">${String(i+1).padStart(2,'0')}</span>
+          <span class="q-text">${esc(q.text)}</span>
+        </li>`
+      ).join('');
+    }
+
+    // ── SUBMIT PHOTO ─────────────────────────────────────────
+    document.getElementById('btn-submit-photo').addEventListener('click', async () => {
+      const file = document.getElementById('photo-input').files[0];
+      if (!file) { toast('Select a photo first', 'err'); return; }
+
+      // Get current round id from state
+      const stateRes = await fetch('/api/state').catch(() => null);
+      if (!stateRes || !stateRes.ok) { toast('Cannot reach server', 'err'); return; }
+      const state = await stateRes.json();
+      if (!state.current_round) { toast('No active round', 'err'); return; }
+
+      const fd = new FormData();
+      fd.append('team_id', teamId);
+      fd.append('round_id', state.current_round.id);
+      fd.append('photo', file);
+
+      const btn = document.getElementById('btn-submit-photo');
+      const status = document.getElementById('submit-status');
+      btn.disabled = true;
+      status.textContent = 'Uploading…';
+      try {
+        const r = await fetch('/api/submit', {method: 'POST', body: fd});
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}));
+          toast(e.detail || 'Submit failed', 'err');
+          status.textContent = 'Failed';
+        } else {
+          toast('Answers submitted!', 'ok');
+          status.textContent = 'Submitted ✓';
+          document.getElementById('photo-input').value = '';
+        }
+      } catch (_) {
+        toast('Network error', 'err');
+        status.textContent = '';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ── WAGER ────────────────────────────────────────────────
+    const slider = document.getElementById('wager-slider');
+    const wagerDisplay = document.getElementById('wager-display');
+    slider.addEventListener('input', () => { wagerDisplay.textContent = slider.value; });
+
+    document.getElementById('btn-wager').addEventListener('click', async () => {
+      if (wagerLocked) { toast('Wager already locked in', 'info'); return; }
+      const stateRes = await fetch('/api/state').catch(() => null);
+      if (!stateRes || !stateRes.ok) { toast('Cannot reach server', 'err'); return; }
+      const state = await stateRes.json();
+      if (!state.current_round) { toast('No active final round', 'err'); return; }
+
+      const btn = document.getElementById('btn-wager');
+      btn.disabled = true;
+      try {
+        const r = await fetch('/api/wager', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({team_id: teamId, round_id: state.current_round.id, amount: parseInt(slider.value)})
+        });
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}));
+          toast(e.detail || 'Wager failed', 'err');
+          btn.disabled = false;
+        } else {
+          wagerLocked = true;
+          toast(`Wager of ${slider.value} locked in`, 'ok');
+        }
+      } catch (_) {
+        toast('Network error', 'err');
+        btn.disabled = false;
+      }
+    });
+
+    // ── TIEBREAK ─────────────────────────────────────────────
+    document.getElementById('btn-tb').addEventListener('click', async () => {
+      if (tbSubmitted) { toast('Already submitted', 'info'); return; }
+      const val = parseFloat(document.getElementById('tb-guess').value);
+      if (isNaN(val)) { toast('Enter a number', 'err'); return; }
+      const btn = document.getElementById('btn-tb');
+      btn.disabled = true;
+      try {
+        const r = await fetch(`/api/tiebreak?team_id=${teamId}&value=${val}`, {method: 'POST'});
+        if (!r.ok) { toast('Submit failed', 'err'); btn.disabled = false; return; }
+        tbSubmitted = true;
+        toast('Tiebreak guess submitted', 'ok');
+      } catch (_) {
+        toast('Network error', 'err');
+        btn.disabled = false;
+      }
+    });
+
+    // ── BOOT ─────────────────────────────────────────────────
+    function startPolling() {
+      poll();
+      setInterval(poll, 2500);
+    }
+
+    // If already have a team, skip join screen and start polling
+    if (teamId) {
+      document.getElementById('lobby-team-name').textContent = teamName;
+      document.getElementById('lobby-recovery').textContent  = recovery;
+      startPolling();
+    } else {
+      showPanel('join');
+    }
+  </script>
+</body>
+</html>
