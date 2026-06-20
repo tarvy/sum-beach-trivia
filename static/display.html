@@ -77,6 +77,14 @@
       width: 100%;
       max-width: 700px;
     }
+    .writing-cue {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+    }
   </style>
 </head>
 <body>
@@ -191,7 +199,8 @@
       root.innerHTML = `
         ${pauseTag}
         <div class="display-phase">${round.is_final ? 'FINAL ROUND' : 'ROUND OPEN'}</div>
-        <div class="display-title" style="margin-bottom: 1.5rem;">${esc(round.title || '')}</div>
+        <div class="display-title" style="margin-bottom: 0.5rem;">${esc(round.title || '')}</div>
+        <div class="writing-cue" aria-live="polite">✍️ Writing in progress…</div>
         <ol class="display-q-list" aria-label="Questions">${qItems}</ol>
       `;
     }
