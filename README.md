@@ -9,7 +9,7 @@ See the design spec: [`docs/superpowers/specs/2026-06-19-sum-beach-trivia-design
 
 ## Status
 
-Pre-implementation. Spec approved; implementation plan next.
+Implemented. Backend + four web views complete; 46 tests passing. Ready for a game-night dry run.
 
 ## Stack
 

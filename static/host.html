@@ -214,8 +214,8 @@
     document.getElementById('btn-set-key').addEventListener('click', async () => {
       const val = document.getElementById('host-key-input').value.trim();
       if (!val) { toast('Enter the host key', 'err'); return; }
-      // Quick verify
-      const r = await fetch(`/api/host/marks?round_id=0&${hk().replace(hostKey, val)}`).catch(() => null);
+      // Quick verify — build URL directly from val so an empty hostKey doesn't corrupt the substitution
+      const r = await fetch('/api/host/marks?round_id=0&host_key=' + encodeURIComponent(val)).catch(() => null);
       // 403 = bad key, anything else = key accepted (even 404 for no round)
       if (r && r.status === 403) { toast('Invalid host key', 'err'); return; }
       hostKey = val;

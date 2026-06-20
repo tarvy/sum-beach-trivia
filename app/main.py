@@ -359,8 +359,11 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         g = models.get_game(db())
         if g["phase"] != "final_wager":
             raise HTTPException(status_code=409, detail="wagering closed")
-        cap = db().execute("SELECT wager_cap FROM round WHERE id=?",
-                           (body.round_id,)).fetchone()["wager_cap"] or 0
+        round_row = db().execute("SELECT wager_cap FROM round WHERE id=?",
+                                 (body.round_id,)).fetchone()
+        if round_row is None:
+            raise HTTPException(status_code=404, detail="no such round")
+        cap = round_row["wager_cap"] or 0
         amount = max(0, min(body.amount, cap))
         db().execute(
             "INSERT INTO wager (team_id, round_id, amount) VALUES (?, ?, ?) "
@@ -374,16 +377,17 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         require_host(host_key)
         db().execute("UPDATE game SET tiebreak_question=?, tiebreak_value=? WHERE id=1",
                      (body.question, body.value))
+        db().execute("DELETE FROM tiebreak_guess")
         db().commit()
-        app.state.tiebreak_guesses = {}
         return {"ok": True}
 
     @app.post("/api/tiebreak")
     def guess_tiebreak(team_id: int, value: float):
-        guesses = getattr(app.state, "tiebreak_guesses", None)
-        if guesses is None:
-            guesses = app.state.tiebreak_guesses = {}
-        guesses[team_id] = value
+        db().execute(
+            "INSERT INTO tiebreak_guess (team_id, value) VALUES (?, ?) "
+            "ON CONFLICT(team_id) DO UPDATE SET value=excluded.value",
+            (team_id, value))
+        db().commit()
         return {"ok": True}
 
     @app.get("/api/host/tiebreak-result")
@@ -391,11 +395,13 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         require_host(host_key)
         g = models.get_game(db())
         target = g["tiebreak_value"]
-        guesses = getattr(app.state, "tiebreak_guesses", {})
-        names = {t["id"]: t["name"] for t in db().execute("SELECT id, name FROM team")}
+        rows = db().execute(
+            "SELECT tg.team_id, t.name, tg.value FROM tiebreak_guess tg "
+            "JOIN team t ON t.id = tg.team_id"
+        ).fetchall()
         ranked = sorted(
-            ({"team_id": tid, "name": names.get(tid, "?"), "guess": v,
-              "delta": abs(v - target)} for tid, v in guesses.items()),
+            ({"team_id": r["team_id"], "name": r["name"], "guess": r["value"],
+              "delta": abs(r["value"] - target)} for r in rows),
             key=lambda x: x["delta"])
         return {"target": target, "ranked": ranked}
 

@@ -85,6 +85,12 @@ CREATE TABLE IF NOT EXISTS wager (
     UNIQUE (team_id, round_id)
 );
 
+CREATE TABLE IF NOT EXISTS tiebreak_guess (
+    team_id INTEGER PRIMARY KEY REFERENCES team(id),
+    value REAL NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS mark (
     id INTEGER PRIMARY KEY,
     team_id INTEGER NOT NULL REFERENCES team(id),
