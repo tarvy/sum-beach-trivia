@@ -42,6 +42,12 @@ class QuestionIn(BaseModel):
     text: str
     answer: str = ""
     acceptable: Optional[list] = None
+    contributor_id: Optional[int] = None
+
+
+class ContributorIn(BaseModel):
+    token: str
+    name: str
 
 
 class TeamIn(BaseModel):
@@ -145,6 +151,28 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="unknown recovery code")
         return {"team_id": row["id"], "name": row["name"]}
 
+    @app.post("/api/contributor")
+    def resolve_contributor(c: ContributorIn):
+        try:
+            return models.resolve_contributor(db(), c.token, c.name)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    @app.get("/api/contributor/recover")
+    def recover_contributor(recovery_code: str):
+        row = models.contributor_by_recovery(db(), recovery_code)
+        if row is None:
+            raise HTTPException(status_code=404, detail="unknown recovery code")
+        return {"contributor_id": row["id"], "name": row["name"], "token": row["token"]}
+
+    @app.get("/api/authors")
+    def list_authors():
+        # One row per contributing person (host's final-round author excluded).
+        rows = db().execute(
+            "SELECT id, name FROM contributor ORDER BY id"
+        ).fetchall()
+        return {"authors": [{"contributor_id": r["id"], "name": r["name"]} for r in rows]}
+
     @app.get("/api/leaderboard")
     def leaderboard():
         return {"teams": scoring.team_totals(db())}
@@ -160,16 +188,25 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         if g["phase"] != "draft":
             raise HTTPException(status_code=409, detail="game already started")
         try:
-            qid = models.add_question(db(), q.author, q.category, q.text, q.answer, q.acceptable)
+            qid = models.add_question(db(), q.author, q.category, q.text, q.answer,
+                                      q.acceptable, q.contributor_id)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         return {"id": qid}
 
     @app.get("/api/questions/mine")
-    def my_questions(author: str):
-        rows = db().execute(
-            "SELECT * FROM question WHERE author_name = ? ORDER BY id", (author,)
-        ).fetchall()
+    def my_questions(contributor_id: Optional[int] = None, author: Optional[str] = None):
+        # contributor_id is the identity key; author kept for back-compat.
+        if contributor_id is not None:
+            rows = db().execute(
+                "SELECT * FROM question WHERE contributor_id = ? ORDER BY id", (contributor_id,)
+            ).fetchall()
+        elif author is not None:
+            rows = db().execute(
+                "SELECT * FROM question WHERE author_name = ? ORDER BY id", (author,)
+            ).fetchall()
+        else:
+            raise HTTPException(status_code=400, detail="contributor_id or author required")
         return {"questions": [public_question(r) for r in rows]}
 
     @app.get("/api/questions")

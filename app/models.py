@@ -22,15 +22,45 @@ def _category_id(conn: sqlite3.Connection, name: str) -> int:
     return row["id"]
 
 
-def add_question(conn, author_name, category_name, text, answer, acceptable=None) -> int:
+def add_question(conn, author_name, category_name, text, answer, acceptable=None,
+                 contributor_id=None) -> int:
     cat_id = _category_id(conn, category_name)
     cur = conn.execute(
-        "INSERT INTO question (author_name, category_id, text, answer, acceptable_answers) "
-        "VALUES (?, ?, ?, ?, ?)",
-        (author_name, cat_id, text, answer, json.dumps(acceptable or [])),
+        "INSERT INTO question (author_name, category_id, text, answer, acceptable_answers, "
+        "contributor_id) VALUES (?, ?, ?, ?, ?, ?)",
+        (author_name, cat_id, text, answer, json.dumps(acceptable or []), contributor_id),
     )
     conn.commit()
     return cur.lastrowid
+
+
+def resolve_contributor(conn, token: str, name: str) -> dict:
+    """Identity = browser token. Upsert by token; name is an editable label."""
+    token = (token or "").strip()
+    name = (name or "").strip()
+    if not token:
+        raise ValueError("Token required")
+    if not name:
+        raise ValueError("Name required")
+    row = conn.execute("SELECT * FROM contributor WHERE token = ?", (token,)).fetchone()
+    if row is None:
+        recovery = gen_recovery()
+        cur = conn.execute(
+            "INSERT INTO contributor (token, name, recovery_code) VALUES (?, ?, ?)",
+            (token, name, recovery),
+        )
+        conn.commit()
+        return {"contributor_id": cur.lastrowid, "name": name, "recovery_code": recovery}
+    if name != row["name"]:
+        conn.execute("UPDATE contributor SET name = ? WHERE id = ?", (name, row["id"]))
+        conn.commit()
+    return {"contributor_id": row["id"], "name": name, "recovery_code": row["recovery_code"]}
+
+
+def contributor_by_recovery(conn, recovery_code: str) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT * FROM contributor WHERE recovery_code = ?", (recovery_code,)
+    ).fetchone()
 
 
 def create_game(conn, code: str, host_key: str) -> None:

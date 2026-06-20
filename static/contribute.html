@@ -102,7 +102,36 @@
     let authorName = '';
     let selectedCategory = '';
     let submitCount = 0;
+    let contributorId = null;
     const MAX_Q = 3;
+
+    // Persisted browser identity: a random token in localStorage IS the contributor.
+    // Name is just an editable label.
+    function browserToken() {
+      let t = localStorage.getItem('contributor_token');
+      if (!t) {
+        t = (crypto.randomUUID && crypto.randomUUID()) ||
+            (Date.now() + '-' + Math.random().toString(36).slice(2));
+        localStorage.setItem('contributor_token', t);
+      }
+      return t;
+    }
+
+    // Resolve (create-or-fetch) the contributor for this browser + name, then load
+    // their existing set so a returning person edits rather than starts fresh.
+    async function resolveContributor(name) {
+      const r = await fetch('/api/contributor', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ token: browserToken(), name })
+      });
+      if (!r.ok) { toast('Could not save your name', 'err'); return false; }
+      const d = await r.json();
+      contributorId = d.contributor_id;
+      localStorage.setItem('contributor_recovery', d.recovery_code);
+      await loadMyQuestions();
+      return true;
+    }
 
     // ── toast ────────────────────────────────────────────────
     function toast(msg, type = 'info') {
@@ -125,10 +154,11 @@
       });
     }
 
-    document.getElementById('btn-name').addEventListener('click', () => {
+    document.getElementById('btn-name').addEventListener('click', async () => {
       const val = document.getElementById('author-name').value.trim();
       if (!val) { toast('Enter your name first', 'err'); return; }
       authorName = val;
+      if (!(await resolveContributor(val))) return;
       loadCategories();
       showStep(2);
     });
@@ -174,7 +204,7 @@
         const r = await fetch('/api/questions', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ author: authorName, category: selectedCategory, text, answer, acceptable })
+          body: JSON.stringify({ author: authorName, category: selectedCategory, text, answer, acceptable, contributor_id: contributorId })
         });
         if (!r.ok) {
           const e = await r.json().catch(() => ({}));
@@ -205,10 +235,12 @@
 
     // ── my questions ─────────────────────────────────────────
     async function loadMyQuestions() {
-      if (!authorName) return;
+      if (contributorId == null) return;
       try {
-        const r = await fetch(`/api/questions/mine?author=${encodeURIComponent(authorName)}`);
+        const r = await fetch(`/api/questions/mine?contributor_id=${contributorId}`);
         const d = await r.json();
+        submitCount = d.questions.length;  // returning visit: reflect existing set
+        updateCount();
         const list = document.getElementById('my-q-list');
         const wrap = document.getElementById('my-questions-wrap');
         if (!d.questions.length) { wrap.classList.add('hidden'); return; }
