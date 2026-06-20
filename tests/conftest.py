@@ -9,3 +9,8 @@ def db():
     init_db(conn)
     yield conn
     conn.close()
+
+
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"

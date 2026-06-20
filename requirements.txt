@@ -4,3 +4,4 @@ anthropic
 pydantic
 pytest
 httpx
+anyio[trio]
