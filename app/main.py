@@ -175,6 +175,26 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         rs = rounds_mod.build_rounds(db())
         return {"rounds": rs, "warnings": rounds_mod.imbalance_warnings(db())}
 
+    @app.get("/api/host/rounds")
+    def list_rounds(host_key: str):
+        require_host(host_key)
+        rows = db().execute(
+            "SELECT r.id, r.title, r.is_final, r.wager_cap, "
+            "COUNT(q.id) AS question_count "
+            "FROM round r LEFT JOIN question q ON q.round_id = r.id "
+            "GROUP BY r.id ORDER BY r.display_order"
+        ).fetchall()
+        return {"rounds": [
+            {
+                "id": row["id"],
+                "title": row["title"],
+                "is_final": bool(row["is_final"]),
+                "wager_cap": row["wager_cap"],
+                "question_count": row["question_count"],
+            }
+            for row in rows
+        ]}
+
     @app.post("/api/host/phase")
     def set_phase_route(body: PhaseIn, host_key: str):
         require_host(host_key)

@@ -281,25 +281,22 @@
     // ── rounds ───────────────────────────────────────────────
     let rounds = [];
     async function loadRounds() {
-      // Fetch via state to get round list — use a quick state call
-      const r = await fetch('/api/state');
+      const r = await fetch(`/api/host/rounds?${hk()}`);
       if (!r.ok) return;
-      // The state endpoint doesn't return full round list; we'll get them from marks round select
-      // Use a workaround: try to get all rounds via the CSV endpoint structure isn't exposed,
-      // so we'll rely on the open-round select being populated from state + memory.
-      // Instead, we populate on demand from build result.
+      const d = await r.json();
+      rounds = d.rounds;
+      // Clear stale options (keep only the placeholder if present)
+      [document.getElementById('round-select'), document.getElementById('marks-round-select')].forEach(sel => {
+        while (sel.options.length > 0) sel.remove(0);
+      });
+      // Re-add placeholder options
+      document.getElementById('round-select').add(new Option('Select a round…', ''));
+      document.getElementById('marks-round-select').add(new Option('Pick a round to mark…', ''));
+      d.rounds.forEach(r => addRoundOption(r.id, r.title));
     }
 
     async function loadRoundSelects() {
-      // We can't enumerate rounds without a host endpoint that lists them.
-      // The only exposure is via state's current_round. We'll fetch state and
-      // populate if available; users can also type in the select.
-      const r = await fetch('/api/state');
-      if (!r.ok) return;
-      const d = await r.json();
-      if (d.current_round) {
-        addRoundOption(d.current_round.id, d.current_round.title);
-      }
+      await loadRounds();
     }
 
     function addRoundOption(id, title) {
