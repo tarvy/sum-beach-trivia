@@ -75,6 +75,13 @@ CREATE TABLE IF NOT EXISTS team (
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS team_member (
+    id INTEGER PRIMARY KEY,
+    team_id INTEGER NOT NULL REFERENCES team(id),
+    name TEXT NOT NULL,
+    contributor_id INTEGER REFERENCES contributor(id)  -- NULL for manual entries
+);
+
 CREATE TABLE IF NOT EXISTS submission (
     id INTEGER PRIMARY KEY,
     team_id INTEGER NOT NULL REFERENCES team(id),

@@ -54,6 +54,11 @@ class TeamIn(BaseModel):
     name: str
 
 
+class MemberIn(BaseModel):
+    name: str
+    contributor_id: Optional[int] = None
+
+
 class PhaseIn(BaseModel):
     phase: str
     round_id: Optional[int] = None
@@ -150,6 +155,23 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         if row is None:
             raise HTTPException(status_code=404, detail="unknown recovery code")
         return {"team_id": row["id"], "name": row["name"]}
+
+    @app.get("/api/teams/{team_id}/members")
+    def list_members(team_id: int):
+        return {"members": models.list_team_members(db(), team_id)}
+
+    @app.post("/api/teams/{team_id}/members")
+    def add_member(team_id: int, m: MemberIn):
+        try:
+            mid = models.add_team_member(db(), team_id, m.name, m.contributor_id)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return {"id": mid}
+
+    @app.delete("/api/teams/{team_id}/members/{member_id}")
+    def remove_member(team_id: int, member_id: int):
+        models.remove_team_member(db(), team_id, member_id)
+        return {"ok": True}
 
     @app.post("/api/contributor")
     def resolve_contributor(c: ContributorIn):
