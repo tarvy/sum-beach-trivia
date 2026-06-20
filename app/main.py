@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import re
+import threading
 import time
 from typing import Optional
 
@@ -77,21 +78,47 @@ class TiebreakIn(BaseModel):
 def create_app(db_path: Optional[str] = None) -> FastAPI:
     db_path = db_path or os.environ.get("TRIVIA_DB", "trivia.db")
     app = FastAPI(title="Sum Beach Trivia")
+    app.state.db_path = db_path
 
-    # FastAPI runs sync route handlers in a thread pool, so we need
-    # check_same_thread=False for all connections.
-    conn = connect(db_path, check_same_thread=False)
-    app.state.conn = conn
+    # FastAPI runs each sync route handler on a thread-pool thread. A single SQLite
+    # connection MUST NOT be shared across threads — concurrent use corrupts memory
+    # and crashes the process. So every thread gets its own connection (thread-local).
+    # Exception: an in-memory ":memory:" db only exists for the lifetime of one
+    # connection, so tests that use it share a single connection (they run requests
+    # sequentially, so there is no concurrency).
+    is_memory = db_path == ":memory:"
+    app.state.is_memory = is_memory
 
-    init_db(conn)
-    if models.get_game(conn) is None:
-        code = models.gen_code()
-        host_key = models.gen_recovery()
-        models.create_game(conn, code=code, host_key=host_key)
-        print(f"[sum-beach-trivia] game code={code}  HOST KEY={host_key}")
+    init_conn = connect(db_path, check_same_thread=False)
+    init_db(init_conn)
+    if is_memory:
+        app.state.shared_conn = init_conn
+    else:
+        init_conn.close()
+        app.state.shared_conn = None
+
+    _local = threading.local()
 
     def db():
-        return app.state.conn
+        if is_memory:
+            return app.state.shared_conn
+        conn = getattr(_local, "conn", None)
+        if conn is None:
+            conn = _local.conn = connect(db_path, check_same_thread=False)
+        return conn
+
+    # exposed for tests/diagnostics
+    app.state.get_conn = db
+    # Back-compat alias: tests read the host key via app.state.conn. This is the
+    # connection for whatever thread create_app runs on (the main thread); it's
+    # safe for test reads. Production routes never touch it — they use db().
+    app.state.conn = db()
+
+    if models.get_game(db()) is None:
+        code = models.gen_code()
+        host_key = models.gen_recovery()
+        models.create_game(db(), code=code, host_key=host_key)
+        print(f"[sum-beach-trivia] game code={code}  HOST KEY={host_key}", flush=True)
 
     def require_host(host_key: str):
         g = models.get_game(db())

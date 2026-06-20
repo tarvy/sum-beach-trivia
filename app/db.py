@@ -110,10 +110,17 @@ CREATE TABLE IF NOT EXISTS mark (
 
 def connect(path: str, check_same_thread: bool = True) -> sqlite3.Connection:
     # Note: For file-backed connections used in FastAPI, pass check_same_thread=False
-    # since sync handlers run in a thread pool.
+    # since sync handlers run in a thread pool. Each thread gets its OWN connection
+    # (see app.main.create_app) — a single connection must never be shared across
+    # threads, which corrupts SQLite and crashes the process.
     conn = sqlite3.connect(path, check_same_thread=check_same_thread)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    if path != ":memory:":
+        # WAL lets readers and a writer work concurrently; busy_timeout makes a
+        # blocked statement wait instead of raising SQLITE_BUSY.
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA busy_timeout = 5000")
     return conn
 
 
