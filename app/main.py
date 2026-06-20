@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import time
 from typing import Optional
 
@@ -191,7 +192,8 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         if g["phase"] not in SUBMIT_PHASES or g["current_round_id"] != round_id:
             raise HTTPException(status_code=409, detail="submissions closed for this round")
         data = await photo.read()
-        ext = (photo.filename or "sheet.png").rsplit(".", 1)[-1]
+        raw_ext = (photo.filename or "sheet.png").rsplit(".", 1)[-1]
+        ext = re.sub(r"[^a-zA-Z0-9]", "", raw_ext)[:5].lower() or "bin"
         fname = f"team{team_id}_round{round_id}.{ext}"
         (UPLOAD_DIR / fname).write_bytes(data)
         db().execute(
