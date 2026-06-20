@@ -119,7 +119,10 @@ SQLite; every client polls and renders the right view for its role.
 | **marking** | review AI grades per team; confirm/override; add alternates | wait | (interstitial) |
 | **reveal** | reveal correct answers; push scores | see own result + rank | correct answers + leaderboard |
 | → next round | advance to next `round_open` | wait | interstitial |
-| **tiebreak** | pose nearest-wins numeric question (only if tied) | submit one number | tiebreak prompt |
+| **final_wager** | open wager entry (final question hidden) | commit a wager (0..cap), question not yet shown | "place your wagers" |
+| **final_open** | reveal the multi-item final question | write answer on paper, then photo | the final question |
+| → final marking/reveal | mark items correct; apply proportional wager scoring | wait, then see swing | correct items + final leaderboard |
+| **tiebreak** | pose nearest-wins numeric question (only if still tied) | submit one number | tiebreak prompt |
 | **done** | final standings; export CSV | final standings | podium |
 | **paused** | pause/resume at any time (for the bar/break) | "paused" notice | "paused" |
 
@@ -140,19 +143,26 @@ never stored as a mutable total.
 - **category** — `id`, `name`, `display_order`. Seeded with the standard set (§7).
 - **question** — `id`, `author_name`, `category_id`, `text`, `answer` (canonical),
   `acceptable_answers` (JSON list of alternates), `point_value` (default 1),
-  `round_id` (nullable until assigned), `display_order`, `media_url` (nullable; schema
-  room for picture/music rounds later — no UI in v1).
+  `answer_items` (JSON list, nullable — the expected items for a multi-item/final
+  question), `ordered` (bool, default false — when true, position matters), `round_id`
+  (nullable until assigned), `display_order`, `media_url` (nullable; schema room for
+  picture/music rounds later — no UI in v1).
 - **round** — `id`, `title`, `category_id`, `display_order`, `bonus_multiplier`
-  (default 1; set 2 for a double-points round), `phase_locked` (bool).
+  (default 1; set 2 for a double-points round), `is_final` (bool), `wager_cap`
+  (int, nullable; the wager ceiling for a final round), `phase_locked` (bool).
 - **team** — `id`, `name` (case-insensitive unique per game), `recovery_code`,
   `created_at`. No stored total — derived.
 - **submission** — `id`, `team_id`, `round_id`, `photo_path`, `submitted_at`.
   One per (team, round); upload replaces if re-submitted before close.
+- **wager** *(final round only)* — `id`, `team_id`, `round_id`, `amount`,
+  `committed_at`. Committed during `final_wager`, before the question is revealed;
+  capped at the round's `wager_cap`.
 - **mark** — `id`, `team_id`, `question_id`, `transcription` (what the AI read),
   `is_correct` (bool), `score` (numeric; free-form, supports partial credit),
   `confidence` (AI 0–1), `flagged` (AI unsure → host attention), `manually_corrected`
-  (host override beats AI), `created_at`. The unit scores are summed (× round bonus)
-  to derive team totals.
+  (host override beats AI), `created_at`. For a multi-item question, the host marks how
+  many items are correct (drives the fraction used by final scoring). Unit scores are
+  summed (× round bonus) to derive team totals; the final round is scored separately (§8).
 - **tiebreak** *(only if needed)* — `team_id`, `value` (the numeric guess), plus the
   question/correct value stored on the round/game.
 
@@ -174,9 +184,24 @@ Music, Art & Literature, Food & Drink, General Knowledge.
 - **Host marking UI:** per team per question — shows the photo, the transcription, and the
   proposed correct/incorrect. Host can toggle correct/incorrect, set a custom score, and
   **add an accepted alternate** to the question (which can re-grade matching answers).
-  `manually_corrected` always wins over the AI.
-- **Tiebreaker:** nearest-wins numeric question, used only when the top teams are tied at
-  `done`. Closest guess wins (over or under); tied teams answer simultaneously.
+  For a multi-item question the host sets the **count of correct items** rather than a
+  binary. `manually_corrected` always wins over the AI.
+- **Final round (wager + multi-item question):** the climactic last round.
+  - *Question format (generic):* one question with `answer_items` — covers "put these
+    in order" (`ordered = true`, 1 point per correct position), "match the year"
+    (item = "thing → year"), and "list a set of things" (`ordered = false`, set
+    membership). Max points = number of items. The vision model reads the team's
+    handwritten list/ordering off the photo; the host confirms the **count correct**.
+  - *Wager:* during `final_wager` (question hidden) each team commits a wager from
+    `0` to the round's `wager_cap`.
+  - *Scoring — proportional:* let `f = items_correct / total_items` (0..1). The team's
+    final-round delta is `round(amount × (2·f − 1))`. So `f = 1 → +amount`,
+    `f = 0.5 → ~0`, `f = 0 → −amount`. This delta replaces the normal per-question sum
+    for the final round and is applied on top of the team's pre-final total. (Derived
+    like everything else: editing item counts or wagers recomputes standings.)
+- **Tiebreaker:** nearest-wins numeric question, used only when the top teams are still
+  tied after the final round at `done`. Closest guess wins (over or under); tied teams
+  answer simultaneously.
 - **Export:** at `done`, download results as CSV (teams × rounds, totals).
 
 ## 9. Edge cases explicitly handled
@@ -197,7 +222,6 @@ Music, Art & Literature, Food & Drink, General Knowledge.
 YAGNI for a fun night with ~5 friends. Schema leaves room where cheap; no UI:
 
 - Picture/music rounds (media field exists; no upload/playback UI yet).
-- Jeopardy-style wagers / final-question betting.
 - Answer-distribution histograms, animated rank-change leaderboard.
 - Swap-marking / self-marking modes (we use AI-proposes-host-confirms only).
 - Profanity/duplicate-question filtering.
@@ -207,8 +231,10 @@ YAGNI for a fun night with ~5 friends. Schema leaves room where cheap; no UI:
 ## 11. Testing approach
 
 - **Unit:** scoring derivation (incl. corrections cascading, bonus multiplier, partial
-  credit), balanced-round builder, grading-response parser (against canned model JSON),
-  role-filtered serialization (assert `answer` never leaks to non-host).
+  credit), **final-round proportional wager math** (`round(amount × (2f − 1))` across
+  f = 0, 0.5, 1 and wager-cap clamping), balanced-round builder, grading-response parser
+  (against canned model JSON), role-filtered serialization (assert `answer` /
+  `answer_items` never leak to non-host).
 - **Integration:** phase transitions, submission accept/reject by phase, team-name
   uniqueness, recovery-code rejoin, missing-submission = 0.
 - **Grading:** mock the Anthropic call in tests; one optional live smoke test behind a
