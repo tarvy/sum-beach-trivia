@@ -1,14 +1,34 @@
 from __future__ import annotations
 
+import json
 import os
+import pathlib
+import time
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app import models, rounds as rounds_mod, scoring
 from app.db import connect, init_db
 from app.serializers import host_question, public_question
+
+UPLOAD_DIR = pathlib.Path(os.environ.get("TRIVIA_UPLOADS", "uploads"))
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+
+class MarkIn(BaseModel):
+    team_id: int
+    question_id: int
+    is_correct: Optional[bool] = None
+    score: Optional[float] = None
+    items_correct: Optional[int] = None
+
+
+class AlternateIn(BaseModel):
+    question_id: int
+    alternate: str
 
 
 class QuestionIn(BaseModel):
@@ -154,6 +174,126 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         g = models.get_game(db())
         cur = _round_public(g["current_round_id"]) if g["current_round_id"] else None
         return {"phase": g["phase"], "paused": bool(g["paused"]), "current_round": cur}
+
+    SUBMIT_PHASES = {"round_open", "final_open"}
+
+    def _grade(image_bytes, media_type, questions):
+        grader = getattr(app.state, "grading_client", None)
+        if grader is not None:
+            return grader.grade(image_bytes, media_type, questions)
+        from app import grading
+        return grading.grade_sheet(image_bytes, media_type, questions)
+
+    @app.post("/api/submit")
+    async def submit(team_id: int = Form(...), round_id: int = Form(...),
+                     photo: UploadFile = File(...)):
+        g = models.get_game(db())
+        if g["phase"] not in SUBMIT_PHASES or g["current_round_id"] != round_id:
+            raise HTTPException(status_code=409, detail="submissions closed for this round")
+        data = await photo.read()
+        ext = (photo.filename or "sheet.png").rsplit(".", 1)[-1]
+        fname = f"team{team_id}_round{round_id}.{ext}"
+        (UPLOAD_DIR / fname).write_bytes(data)
+        db().execute(
+            "INSERT INTO submission (team_id, round_id, photo_path) VALUES (?, ?, ?) "
+            "ON CONFLICT(team_id, round_id) DO UPDATE SET photo_path=excluded.photo_path, "
+            "submitted_at=datetime('now')",
+            (team_id, round_id, fname))
+        db().commit()
+
+        rows = db().execute(
+            "SELECT * FROM question WHERE round_id = ? ORDER BY display_order", (round_id,)
+        ).fetchall()
+        questions = [host_question(r) for r in rows]
+        qpayload = [{"id": q["id"], "text": q["text"], "answer": q["answer"],
+                     "acceptable": q["acceptable_answers"], "answer_items": q["answer_items"],
+                     "ordered": q["ordered"]} for q in questions]
+        result = _grade(data, photo.content_type or "image/png", qpayload)
+
+        by_id = {q["id"]: q for q in questions}
+        for gr in result.grades:
+            q = by_id.get(gr.question_id)
+            if q is None:
+                continue
+            score = q["point_value"] if gr.is_correct else 0
+            db().execute(
+                "INSERT INTO mark (team_id, question_id, transcription, is_correct, score, "
+                "items_correct, confidence, flagged) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT(team_id, question_id) DO UPDATE SET transcription=excluded.transcription, "
+                "is_correct=excluded.is_correct, score=excluded.score, items_correct=excluded.items_correct, "
+                "confidence=excluded.confidence, flagged=excluded.flagged "
+                "WHERE manually_corrected = 0",
+                (team_id, gr.question_id, gr.transcription, int(gr.is_correct), score,
+                 gr.items_correct, gr.confidence, int(gr.confidence < 0.5)))
+        db().commit()
+        return {"ok": True}
+
+    @app.get("/api/host/marks")
+    def host_marks(host_key: str, round_id: int):
+        require_host(host_key)
+        teams = db().execute("SELECT id, name FROM team ORDER BY id").fetchall()
+        qids = [r["id"] for r in db().execute(
+            "SELECT id FROM question WHERE round_id = ?", (round_id,))]
+        out = []
+        for t in teams:
+            sub = db().execute(
+                "SELECT photo_path FROM submission WHERE team_id=? AND round_id=?",
+                (t["id"], round_id)).fetchone()
+            marks = []
+            for qid in qids:
+                m = db().execute(
+                    "SELECT * FROM mark WHERE team_id=? AND question_id=?",
+                    (t["id"], qid)).fetchone()
+                marks.append({
+                    "question_id": qid,
+                    "transcription": m["transcription"] if m else "",
+                    "is_correct": bool(m["is_correct"]) if m else False,
+                    "score": m["score"] if m else 0,
+                    "items_correct": m["items_correct"] if m else None,
+                    "flagged": bool(m["flagged"]) if m else False,
+                    "submitted": sub is not None,
+                })
+            out.append({"team_id": t["id"], "name": t["name"],
+                        "photo_url": f"/uploads/{sub['photo_path']}" if sub else None,
+                        "marks": marks})
+        return {"teams": out}
+
+    @app.post("/api/host/mark")
+    def host_mark(body: MarkIn, host_key: str):
+        require_host(host_key)
+        existing = db().execute(
+            "SELECT * FROM mark WHERE team_id=? AND question_id=?",
+            (body.team_id, body.question_id)).fetchone()
+        is_correct = body.is_correct if body.is_correct is not None else (
+            bool(existing["is_correct"]) if existing else False)
+        score = body.score if body.score is not None else (
+            existing["score"] if existing else 0)
+        db().execute(
+            "INSERT INTO mark (team_id, question_id, is_correct, score, items_correct, "
+            "manually_corrected) VALUES (?, ?, ?, ?, ?, 1) "
+            "ON CONFLICT(team_id, question_id) DO UPDATE SET is_correct=?, score=?, "
+            "items_correct=COALESCE(?, items_correct), manually_corrected=1",
+            (body.team_id, body.question_id, int(is_correct), score, body.items_correct,
+             int(is_correct), score, body.items_correct))
+        db().commit()
+        return {"ok": True}
+
+    @app.post("/api/host/add-alternate")
+    def add_alternate(body: AlternateIn, host_key: str):
+        require_host(host_key)
+        row = db().execute("SELECT acceptable_answers FROM question WHERE id=?",
+                           (body.question_id,)).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="no such question")
+        acc = json.loads(row["acceptable_answers"])
+        if body.alternate not in acc:
+            acc.append(body.alternate)
+        db().execute("UPDATE question SET acceptable_answers=? WHERE id=?",
+                     (json.dumps(acc), body.question_id))
+        db().commit()
+        return {"ok": True}
+
+    app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
     return app
 
