@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from app import models
+from app import models, scoring
 from app.db import connect, init_db
 from app.serializers import host_question, public_question
 
@@ -17,6 +17,10 @@ class QuestionIn(BaseModel):
     text: str
     answer: str = ""
     acceptable: Optional[list] = None
+
+
+class TeamIn(BaseModel):
+    name: str
 
 
 def create_app(db_path: Optional[str] = None) -> FastAPI:
@@ -43,6 +47,29 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         if g is None or host_key != g["host_key"]:
             raise HTTPException(status_code=403, detail="bad host key")
         return g
+
+    @app.post("/api/teams")
+    def create_team(t: TeamIn):
+        try:
+            return models.join_team(db(), t.name)
+        except ValueError as e:
+            raise HTTPException(status_code=409, detail=str(e))
+
+    @app.get("/api/teams")
+    def list_teams():
+        rows = db().execute("SELECT id, name FROM team ORDER BY id").fetchall()
+        return {"teams": [{"id": r["id"], "name": r["name"]} for r in rows]}
+
+    @app.get("/api/teams/recover")
+    def recover_team(recovery_code: str):
+        row = models.team_by_recovery(db(), recovery_code)
+        if row is None:
+            raise HTTPException(status_code=404, detail="unknown recovery code")
+        return {"team_id": row["id"], "name": row["name"]}
+
+    @app.get("/api/leaderboard")
+    def leaderboard():
+        return {"teams": scoring.team_totals(db())}
 
     @app.get("/api/categories")
     def categories():
