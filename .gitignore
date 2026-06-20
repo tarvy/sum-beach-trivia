@@ -14,3 +14,7 @@ venv/
 
 # os
 .DS_Store
+
+# build-process scratch (superpowers SDD, worktrees)
+.superpowers/
+.claude/
