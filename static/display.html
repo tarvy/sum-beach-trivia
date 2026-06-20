@@ -38,13 +38,13 @@
     }
     .team-chip {
       background: var(--ground-2);
-      border: 1px solid var(--ground-3);
+      border: 1px solid var(--ink);
+      box-shadow: var(--shadow-sm);
       border-radius: var(--radius);
       padding: 0.6rem 1rem;
       font-family: var(--font-display);
       font-size: 1.2rem;
       font-weight: 700;
-      text-transform: uppercase;
       letter-spacing: -0.01em;
     }
     .display-q-list {
@@ -58,7 +58,7 @@
       gap: 1rem;
       align-items: flex-start;
       padding: 0.8rem 0;
-      border-bottom: 1px solid var(--ground-3);
+      border-bottom: 1px solid var(--ink);
       font-family: var(--font-body);
       font-size: clamp(1rem, 2.5vw, 1.4rem);
       line-height: 1.4;
@@ -68,7 +68,8 @@
       font-family: var(--font-mono);
       font-size: 0.7rem;
       letter-spacing: 0.12em;
-      color: var(--accent);
+      font-weight: 700;
+      color: var(--ink);
       flex-shrink: 0;
       padding-top: 0.3em;
       min-width: 2.5em;

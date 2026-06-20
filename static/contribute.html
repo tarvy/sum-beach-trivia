@@ -20,35 +20,56 @@
   <main>
     <div class="container container--narrow" style="padding-top: 2rem; padding-bottom: 4rem;">
 
-      <div class="mb-sm">
-        <p class="eyebrow">Question bank</p>
-        <h1>Write your best questions</h1>
-        <p class="text-dim mt-sm">3 required, 2 optional (5 max). Each needs a question, an answer, and a category.</p>
-      </div>
-
       <div class="card mb-sm hidden" id="closed-banner" style="border-color: var(--accent);">
         <strong>Submissions are closed.</strong>
         <span class="text-dim">Here are the questions you submitted — they're locked in.</span>
       </div>
 
-      <!-- Native form validation: required attributes enforce the 3 required blocks
-           and per-field presence; the server re-checks everything (trust boundary). -->
-      <form id="contribute-form">
-        <div class="card stack mb-sm">
-          <div class="field">
-            <label for="author-name">Your name or team name</label>
-            <input type="text" id="author-name" name="author" placeholder="e.g. Sandy Bottoms"
-                   maxlength="80" autocomplete="off" required>
-          </div>
-        </div>
+      <div class="progress" id="progress" role="img" aria-label="Submission progress">
+        <span class="node" data-i="1">1</span>
+        <span class="node-line"></span>
+        <span class="node" data-i="2">2</span>
+        <span class="node-line"></span>
+        <span class="node" data-i="3">3</span>
+        <span class="node-line node-line--opt"></span>
+        <span class="node node--opt" data-i="4">4</span>
+        <span class="node-line node-line--opt"></span>
+        <span class="node node--opt" data-i="5">5</span>
+      </div>
 
-        <div id="question-blocks"></div>
-
-        <div class="cluster mt-sm">
-          <button type="submit" class="btn btn--primary" id="btn-submit">Submit my questions</button>
-          <span class="label text-dim" id="submit-hint">3 required, up to 5 total</span>
+      <!-- Single question form -->
+      <div class="card stack" id="form-card">
+        <div class="field">
+          <label for="author-name">Name</label>
+          <input type="text" id="author-name" placeholder="Gladys" maxlength="80" autocomplete="off">
         </div>
-      </form>
+        <div class="field">
+          <label for="category-select">Category</label>
+          <select id="category-select">
+            <option value="">Loading categories…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="q-text">Question text</label>
+          <textarea id="q-text" placeholder="What year did the Margaritaville concept album drop?" rows="3"></textarea>
+        </div>
+        <div class="field">
+          <label for="q-answer">Correct answer</label>
+          <input type="text" id="q-answer" placeholder="The answer the host will accept" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="q-alt1">Alternate accepted answer <span class="text-dim">(optional)</span></label>
+          <input type="text" id="q-alt1" placeholder="Another way to spell or phrase it" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="q-alt2">Second alternate <span class="text-dim">(optional)</span></label>
+          <input type="text" id="q-alt2" placeholder="" autocomplete="off">
+        </div>
+        <div class="cluster">
+          <button class="btn btn--primary" id="btn-submit-q">Submit question</button>
+          <button class="btn btn--secondary btn--sm hidden" id="btn-cancel-edit">Cancel edit</button>
+        </div>
+      </div>
 
       <!-- My questions list -->
       <section id="my-questions-wrap" class="mt-lg hidden">
@@ -63,15 +84,20 @@
   <div class="toast-area" id="toasts" role="status" aria-live="polite"></div>
 
   <script>
+    // ── state ────────────────────────────────────────────────
+    let submitCount = 0;     // = number of questions saved by this contributor
+    let editingId = null;    // id of the question currently being edited, or null
+    let myQuestions = [];    // cache of this contributor's saved questions
     let contributorId = null;
     let submissionsOpen = true;
-    let categories = [];
-    const REQUIRED = 3, MAX_Q = 5;
+    const REQUIRED_Q = 3;
+    const MAX_Q = 5;
 
     function esc(s) {
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    // ── toast ────────────────────────────────────────────────
     function toast(msg, type = 'info') {
       const area = document.getElementById('toasts');
       const el = document.createElement('div');
@@ -81,141 +107,87 @@
       setTimeout(() => el.remove(), 3500);
     }
 
-    // Persisted browser identity: a random token in localStorage IS the contributor.
+    // ── identity ─────────────────────────────────────────────
+    // A random browser token IS the contributor; the server upserts it to a
+    // contributor row (+ recovery code) and returns its id. Name is an editable label.
     function browserToken() {
       let t = localStorage.getItem('contributor_token');
-      if (!t) {
-        t = (crypto.randomUUID && crypto.randomUUID()) ||
-            (Date.now() + '-' + Math.random().toString(36).slice(2));
-        localStorage.setItem('contributor_token', t);
-      }
+      if (!t) { t = crypto.randomUUID(); localStorage.setItem('contributor_token', t); }
       return t;
     }
-
-    function catOptions(selected) {
-      return ['<option value="">Pick a category…</option>']
-        .concat(categories.map(c =>
-          `<option value="${esc(c)}"${c === selected ? ' selected' : ''}>${esc(c)}</option>`))
-        .join('');
+    async function resolveContributor(name) {
+      try {
+        const r = await fetch('/api/contributor', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ token: browserToken(), name })
+        });
+        if (!r.ok) return null;
+        const d = await r.json();
+        localStorage.setItem('contributor_recovery', d.recovery_code);
+        return d.contributor_id;
+      } catch (_) { return null; }
     }
 
-    // 5 blocks: first 3 required (HTML5 `required`), last 2 optional.
-    function renderBlocks(existing = []) {
-      const wrap = document.getElementById('question-blocks');
-      let html = '';
-      for (let i = 0; i < MAX_Q; i++) {
-        const q = existing[i] || {};
-        const req = i < REQUIRED;
-        const reqAttr = req ? ' required' : '';
-        const tag = req
-          ? '<span class="badge">Required</span>'
-          : '<span class="badge badge--dim">Optional</span>';
-        html += `
-          <div class="card stack mb-sm q-block" data-i="${i}">
-            <div class="cluster" style="justify-content: space-between;">
-              <h2 style="margin:0;">Question ${i + 1}</h2>${tag}
-            </div>
-            <div class="field">
-              <label>Category</label>
-              <select class="q-category"${reqAttr}>${catOptions(q.category)}</select>
-            </div>
-            <div class="field">
-              <label>Question text</label>
-              <textarea class="q-text" rows="2" placeholder="What year did the album drop?"${reqAttr}>${esc(q.text || '')}</textarea>
-            </div>
-            <div class="field">
-              <label>Correct answer</label>
-              <input type="text" class="q-answer" autocomplete="off" value="${esc(q.answer || '')}"${reqAttr}>
-            </div>
-            <div class="field">
-              <label>Alternate accepted answers <span class="text-dim">(optional)</span></label>
-              <input type="text" class="q-alt1" autocomplete="off" placeholder="Another spelling / phrasing" value="${esc((q.acceptable||[])[0] || '')}">
-              <input type="text" class="q-alt2" autocomplete="off" placeholder="" value="${esc((q.acceptable||[])[1] || '')}" style="margin-top:0.5rem;">
-            </div>
-          </div>`;
-      }
-      wrap.innerHTML = html;
-    }
-
-    // Collect blocks that have any content. Optional empty blocks are dropped.
-    function collectQuestions() {
-      const out = [];
-      document.querySelectorAll('.q-block').forEach(b => {
-        const category = b.querySelector('.q-category').value;
-        const text = b.querySelector('.q-text').value.trim();
-        const answer = b.querySelector('.q-answer').value.trim();
-        const acceptable = [b.querySelector('.q-alt1').value.trim(),
-                            b.querySelector('.q-alt2').value.trim()].filter(Boolean);
-        if (category || text || answer) out.push({ category, text, answer, acceptable });
-      });
-      return out;
-    }
-
+    // ── categories + submission window ───────────────────────
     async function loadCategories() {
       try {
-        categories = (await (await fetch('/api/categories')).json()).categories || [];
-      } catch (_) { toast('Could not load categories', 'err'); }
+        const r = await fetch('/api/categories');
+        const d = await r.json();
+        const sel = document.getElementById('category-select');
+        sel.innerHTML = d.categories.length
+          ? d.categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
+          : '<option value="">No categories available</option>';
+      } catch (_) {
+        toast('Could not load categories', 'err');
+      }
     }
-
     async function loadSubmissionsState() {
-      try {
-        submissionsOpen = (await (await fetch('/api/state')).json()).submissions_open;
-      } catch (_) {}
+      try { submissionsOpen = (await (await fetch('/api/state')).json()).submissions_open; } catch (_) {}
       document.getElementById('closed-banner').classList.toggle('hidden', submissionsOpen);
-      document.getElementById('contribute-form').classList.toggle('hidden', !submissionsOpen);
+      document.getElementById('progress').classList.toggle('hidden', !submissionsOpen);
+      document.getElementById('form-card').classList.toggle('hidden', !submissionsOpen);
     }
 
-    async function resolveContributor(name) {
-      const r = await fetch('/api/contributor', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ token: browserToken(), name })
-      });
-      if (!r.ok) return null;
-      const d = await r.json();
-      localStorage.setItem('contributor_recovery', d.recovery_code);
-      return d.contributor_id;
-    }
+    // ── submit / save question ───────────────────────────────
+    document.getElementById('btn-submit-q').addEventListener('click', async () => {
+      if (!editingId && submitCount >= MAX_Q) { toast(`You've submitted ${MAX_Q} questions — that's the limit`, 'info'); return; }
+      const authorName = document.getElementById('author-name').value.trim();
+      const selectedCategory = document.getElementById('category-select').value;
+      const text = document.getElementById('q-text').value.trim();
+      const answer = document.getElementById('q-answer').value.trim();
+      if (!authorName)       { toast('Enter your name first', 'err'); return; }
+      if (!selectedCategory) { toast('Pick a category', 'err'); return; }
+      if (!text)             { toast('Write a question', 'err'); return; }
+      if (!answer)           { toast('Add the answer', 'err'); return; }
 
-    async function loadMyQuestions() {
-      if (contributorId == null) return [];
-      try {
-        const d = await (await fetch(`/api/questions/mine?contributor_id=${contributorId}`)).json();
-        const list = document.getElementById('my-q-list');
-        const wrap = document.getElementById('my-questions-wrap');
-        if (!d.questions.length) { wrap.classList.add('hidden'); return []; }
-        wrap.classList.remove('hidden');
-        list.innerHTML = d.questions.map((q, i) => `
-          <li class="q-item">
-            <span class="q-num">${String(i+1).padStart(2,'0')}</span>
-            <span class="q-text">${esc(q.text)}<br><span class="badge badge--dim">${esc(q.category)}</span></span>
-          </li>`).join('');
-        return d.questions;
-      } catch (_) { return []; }
-    }
+      const alt1 = document.getElementById('q-alt1').value.trim();
+      const alt2 = document.getElementById('q-alt2').value.trim();
+      const acceptable = [alt1, alt2].filter(Boolean);
 
-    document.getElementById('contribute-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('author-name').value.trim();
-      contributorId = await resolveContributor(name);
-      if (contributorId == null) { toast('Could not save your name', 'err'); return; }
-
-      const questions = collectQuestions();
-      if (questions.length < REQUIRED) { toast(`Fill in at least ${REQUIRED} questions`, 'err'); return; }
-
-      const btn = document.getElementById('btn-submit');
+      const btn = document.getElementById('btn-submit-q');
       btn.disabled = true;
       try {
-        const r = await fetch('/api/questions/set', {
-          method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ contributor_id: contributorId, author: name, questions })
+        // ensure we have a contributor id (also refreshes the display name)
+        contributorId = await resolveContributor(authorName);
+        if (contributorId == null) { toast('Could not save your name', 'err'); return; }
+
+        const r = await fetch(editingId ? `/api/questions/${editingId}` : '/api/questions', {
+          method: editingId ? 'PUT' : 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: editingId
+            ? JSON.stringify({ contributor_id: contributorId, category: selectedCategory, text, answer, acceptable })
+            : JSON.stringify({ author: authorName, category: selectedCategory, text, answer, acceptable, contributor_id: contributorId })
         });
         if (!r.ok) {
-          const er = await r.json().catch(() => ({}));
-          toast(er.detail || 'Save failed', 'err');
+          const e = await r.json().catch(() => ({}));
+          if (r.status === 409) loadSubmissionsState();   // window just closed
+          toast(e.detail || 'Save failed', 'err');
           return;
         }
-        toast('Questions saved!', 'ok');
-        renderBlocks(await loadMyQuestions());
+        toast(editingId ? 'Changes saved!' : 'Question submitted!', 'ok');
+        clearForm();              // resets fields + edit mode
+        await loadMyQuestions();  // refreshes list + node bar
+        document.getElementById('q-text').focus();
       } catch (_) {
         toast('Network error', 'err');
       } finally {
@@ -223,21 +195,91 @@
       }
     });
 
+    document.getElementById('btn-cancel-edit').addEventListener('click', clearForm);
+
+    function clearForm() {
+      editingId = null;
+      ['q-text','q-answer','q-alt1','q-alt2'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('btn-cancel-edit').classList.add('hidden');
+      updateCount();
+    }
+
+    function updateCount() {
+      const current = submitCount + 1;  // the next step to fill ("you are here")
+      document.querySelectorAll('#progress .node').forEach(n => {
+        const i = Number(n.dataset.i);
+        const done = i <= submitCount;
+        n.classList.toggle('done', done);
+        n.classList.toggle('current', i === current && current <= MAX_Q);
+        n.textContent = done ? '✓' : i;   // check on done, number otherwise
+      });
+      document.querySelectorAll('#progress .node-line').forEach((l, i) => {
+        l.classList.toggle('filled', i + 1 < submitCount);
+      });
+      const btn = document.getElementById('btn-submit-q');
+      if (editingId) {
+        btn.disabled = false;
+        btn.textContent = 'Save changes';
+      } else if (submitCount >= MAX_Q) {
+        btn.disabled = true;
+        btn.textContent = 'Limit reached';
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Submit question';
+      }
+    }
+
+    // ── my questions (editable) ──────────────────────────────
+    async function loadMyQuestions() {
+      if (contributorId == null) return;
+      try {
+        const r = await fetch(`/api/questions/mine?contributor_id=${contributorId}`);
+        const d = await r.json();
+        myQuestions = d.questions;
+        submitCount = d.questions.length;
+        const list = document.getElementById('my-q-list');
+        const wrap = document.getElementById('my-questions-wrap');
+        wrap.classList.toggle('hidden', !d.questions.length);
+        list.innerHTML = d.questions.map((q, i) => `
+          <li class="q-item">
+            <span class="q-num">${String(i+1).padStart(2,'0')}</span>
+            <span class="q-text">${esc(q.text)}<br><span class="badge badge--dim">${esc(q.category)}</span></span>
+            <button class="btn btn--secondary btn--sm" data-edit="${q.id}" style="margin-left:auto">Edit</button>
+          </li>`).join('');
+        updateCount();
+      } catch (_) {}
+    }
+
+    // load a saved question into the form for editing
+    document.getElementById('my-q-list').addEventListener('click', e => {
+      const id = e.target.dataset.edit;
+      if (!id) return;
+      const q = myQuestions.find(x => String(x.id) === id);
+      if (!q) return;
+      editingId = q.id;
+      document.getElementById('category-select').value = q.category;
+      document.getElementById('q-text').value = q.text;
+      document.getElementById('q-answer').value = q.answer;
+      document.getElementById('q-alt1').value = q.acceptable[0] || '';
+      document.getElementById('q-alt2').value = q.acceptable[1] || '';
+      document.getElementById('btn-cancel-edit').classList.remove('hidden');
+      updateCount();
+      document.getElementById('q-text').scrollIntoView({behavior:'smooth', block:'center'});
+    });
+
+    // ── init ─────────────────────────────────────────────────
     (async function init() {
+      updateCount();   // paint the stepper's initial state (step 1 = current)
       await Promise.all([loadCategories(), loadSubmissionsState()]);
-      // Returning visit: resolve identity from the browser token and prefill.
-      const savedName = localStorage.getItem('contributor_name') || '';
-      let mine = [];
+      const savedName = localStorage.getItem('contributor_name');
       if (savedName) {
         document.getElementById('author-name').value = savedName;
-        contributorId = await resolveContributor(savedName).catch(() => null);
-        mine = contributorId != null ? await loadMyQuestions() : [];
+        contributorId = await resolveContributor(savedName);  // returning visitor
+        await loadMyQuestions();
       }
-      renderBlocks(mine);
     })();
-
-    document.getElementById('author-name').addEventListener('input', e =>
-      localStorage.setItem('contributor_name', e.target.value));
+    document.getElementById('author-name').addEventListener('input',
+      e => localStorage.setItem('contributor_name', e.target.value));
   </script>
 </body>
 </html>
