@@ -69,8 +69,23 @@ Scoring note: final-round delta is proportional and can go **negative** — `sco
 | `just run` / `just run 9000` | Run without reload (override port). |
 | `just test` | Full test suite (no API key — grading is mocked). |
 | `just keys` | Print the current game's join code + HOST KEY. |
-| `just reset` | Wipe game data (questions, teams, scores, photos). |
+| `just reset` | Wipe local game data (questions, teams, scores, photos). |
+| `just deploy` | Push `app/` + `static/` + `requirements.txt` to the sprite, restart it, print the URL. |
+| `just deploy-reset` | Wipe the **sprite's** game data (regenerates the host key). |
+| `just sprite-keys` | Print the **sprite** game's join code + HOST KEY. |
 
 - **Single test file / case:** `.venv/bin/python -m pytest tests/test_api_contribute.py -q` or `.venv/bin/python -m pytest -k contributor -q`.
-- **Deploy:** to a [sprite](https://sprites.dev) — see `deploy/deploy.md` (`deploy/run.sh` loads the API key from `/data/secrets.env`).
+
+### Deploy / the real environment (sprite)
+
+The game is meant to run on **one public sprite** at an HTTPS URL — that is the
+game-night and the integration-test environment, not localhost. See
+`deploy/deploy.md` for first-time setup (`deploy/run.sh` loads the API key from
+`/data/secrets.env`).
+
+- **Iterate loop:** edit locally → `just deploy` → open the sprite display on a laptop/TV → scan with a real phone. Don't bother testing the QR or photo flow locally (below).
+- **Sprite:** name `sum-beach-trivia`, URL `https://sum-beach-trivia-btt6i.sprites.app`. The `SPRITE` var at the top of the `justfile` is the single place that name lives.
+- **Why test on the sprite, not localhost:** the lobby QR encodes whatever origin the **display page was loaded from** (its `window.location.origin`, passed to `GET /api/qr?origin=…`). On localhost that's `localhost:8000`, which a phone can't reach. Phone camera capture also needs HTTPS, which the sprite has and local dev doesn't. So localhost can't exercise the join-by-QR or photo-grading paths end-to-end.
+- **Deploy the FULL tree, never a partial push.** `just deploy` ships all of `app/` and `static/` because `main.py` is versioned together with `models.py`/`db.py`/serializers and the `static/*.html`. Pushing only one changed file onto an older tree causes a schema/API mismatch → 500s. (`init_db()` migrations run on boot, so the on-disk `/data/trivia.db` upgrades in place.)
+- The sprite **auto-sleeps when idle** and wakes on the next request (first request after a sleep is slow). The DB + uploaded photos live on `/data` and survive sleeps.
 - No linter/formatter is configured; don't assume one.
