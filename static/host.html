@@ -41,17 +41,9 @@
 <body>
   <nav class="nav">
     <a href="/" class="nav__brand">Sum Beach Trivia</a>
-    <div class="nav__links">
-      <a href="/contribute.html">Contribute</a>
-      <a href="/play.html">Play</a>
-      <a href="/host.html" class="active">Host</a>
-      <a href="/display.html">Display</a>
-    </div>
   </nav>
 
-  <div class="phase-strip" id="phase-strip" role="status" aria-live="polite">
-    <span class="phase-dot amber" id="phase-dot"></span>
-    <span id="phase-text">Connecting…</span>
+  <div class="phase-strip hidden" id="phase-strip" role="status" aria-live="polite">
     <span id="pause-badge" class="badge badge--red hidden">Paused</span>
     <span style="margin-left: auto; display: flex; gap: 0.5rem; align-items: center;">
       <button class="btn btn--sm btn--secondary" id="btn-pause" style="padding: 0.3em 0.8em;">Pause</button>
@@ -238,6 +230,7 @@
     function showHostMain() {
       document.getElementById('key-panel').classList.add('hidden');
       document.getElementById('host-main').classList.remove('hidden');
+      document.getElementById('phase-strip').classList.remove('hidden');
       initHost();
     }
 
@@ -570,8 +563,6 @@
         ]);
         if (stateRes.ok) {
           const state = await stateRes.json();
-          // update phase strip
-          document.getElementById('phase-text').textContent = state.phase.replace(/_/g,' ');
           document.getElementById('pause-badge').classList.toggle('hidden', !state.paused);
           subsOpen = state.submissions_open;
           renderSubs();
