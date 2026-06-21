@@ -190,7 +190,7 @@
       root.innerHTML = `
         <div class="display-phase">LOBBY — SCAN TO JOIN</div>
         <div class="display-title">Sum Beach<br><span>Trivia</span></div>
-        <img src="/api/qr" alt="Scan to join on your phone" class="lobby-qr">
+        <img src="/api/qr?origin=${encodeURIComponent(location.origin)}" alt="Scan to join on your phone" class="lobby-qr">
         ${teamChips}
       `;
     }
