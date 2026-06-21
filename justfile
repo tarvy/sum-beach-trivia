@@ -17,12 +17,23 @@ install:
     .venv/bin/pip install --quiet -r requirements.txt
     @echo "Installed. Next: cp .env.example .env, add your ANTHROPIC_API_KEY, then run 'just run'."
 
+# fail early with a helpful message (not a raw "Address already in use") if a port is taken
+_require-port port:
+    @if lsof -nP -iTCP:{{port}} -sTCP:LISTEN >/dev/null 2>&1; then \
+        echo "⚠️  Port {{port}} is already in use — likely an old 'just dev'/'just run' you didn't stop:"; \
+        lsof -nP -iTCP:{{port}} -sTCP:LISTEN; \
+        echo ""; \
+        echo "→ stop it:  kill the PID above (kill -9 <PID> if it won't die)"; \
+        echo "→ or use another port:  just dev {{ if port == "8000" { "8001" } else { "8000" } }}"; \
+        exit 1; \
+    fi
+
 # run the app (reads ANTHROPIC_API_KEY + optional GRADING_MODEL from .env/env)
-run port="8000":
+run port="8000": (_require-port port)
     .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port {{port}}
 
 # run with autoreload while developing
-dev port="8000":
+dev port="8000": (_require-port port)
     .venv/bin/uvicorn app.main:app --reload --port {{port}}
 
 # run the test suite (no API key needed — grading is mocked)
