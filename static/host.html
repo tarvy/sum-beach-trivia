@@ -99,6 +99,8 @@
                   <div class="cluster">
                     <button class="btn btn--secondary" id="btn-toggle-subs">Toggle</button>
                   </div>
+                  <p id="subs-count" style="font-size: var(--fs-sm);"><strong>0</strong> questions submitted</p>
+                  <ul id="subs-by-author" class="text-dim" style="font-size: var(--fs-sm); margin: 0; padding-left: 1.2em;"></ul>
                 </div>
 
                 <div class="card stack">
@@ -253,19 +255,34 @@
       });
     }
 
+    // Adds a spinner + disables the button while `fn` runs. Reusable for any button.
+    async function withSpinner(btn, fn) {
+      btn.classList.add('is-loading');
+      try { return await fn(); }
+      finally { btn.classList.remove('is-loading'); }
+    }
+
+    function highlightPhase(phase) {
+      document.querySelectorAll('[data-phase]').forEach(b => {
+        b.classList.toggle('btn--teal', b.dataset.phase === phase);
+        b.classList.toggle('btn--secondary', b.dataset.phase !== phase);
+      });
+    }
+
     async function setPhase(phase) {
+      highlightPhase(phase);                 // optimistic: instant active state, don't wait for poll
       const r = await fetch(`/api/host/phase?${hk()}`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({phase})
       });
-      if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail||'Phase change failed','err'); return; }
+      if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail||'Phase change failed','err'); pollLB(); return; }
       toast(`Phase → ${phase}`, 'ok');
     }
 
     // ── pause / resume ───────────────────────────────────────
-    document.getElementById('btn-pause').addEventListener('click',  () => setPause(true));
-    document.getElementById('btn-resume').addEventListener('click', () => setPause(false));
+    document.getElementById('btn-pause').addEventListener('click',  e => withSpinner(e.currentTarget, () => setPause(true)));
+    document.getElementById('btn-resume').addEventListener('click', e => withSpinner(e.currentTarget, () => setPause(false)));
     async function setPause(paused) {
       const r = await fetch(`/api/host/pause?${hk()}`, {
         method: 'POST',
@@ -279,21 +296,38 @@
     // ── submissions window ───────────────────────────────────
     let subsOpen = true;
     document.getElementById('btn-toggle-subs').addEventListener('click', async () => {
+      subsOpen = !subsOpen; renderSubs();        // optimistic: flip OPEN/CLOSED instantly
       const r = await fetch(`/api/host/submissions?${hk()}`, {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({open: !subsOpen})
+        body: JSON.stringify({open: subsOpen})
       });
-      if (!r.ok) { toast('Toggle failed','err'); return; }
-      subsOpen = !subsOpen;
-      renderSubs();
+      if (!r.ok) { subsOpen = !subsOpen; renderSubs(); toast('Toggle failed','err'); return; }
       toast(subsOpen ? 'Submissions opened' : 'Submissions closed', 'ok');
     });
     function renderSubs() {
       document.getElementById('subs-state').textContent = subsOpen ? 'OPEN' : 'CLOSED';
     }
 
+    async function pollSubs() {
+      try {
+        const r = await fetch(`/api/questions?${hk()}`);
+        if (!r.ok) return;
+        const { questions } = await r.json();
+        const byAuthor = {};
+        for (const q of questions) {
+          const a = q.author_name || 'Anonymous';
+          byAuthor[a] = (byAuthor[a] || 0) + 1;
+        }
+        document.getElementById('subs-count').innerHTML =
+          `<strong>${questions.length}</strong> question${questions.length === 1 ? '' : 's'} submitted`;
+        document.getElementById('subs-by-author').innerHTML =
+          Object.entries(byAuthor).sort((a,b) => b[1]-a[1])
+            .map(([a,n]) => `<li>${esc(a)} — ${n}</li>`).join('');
+      } catch (_) {}
+    }
+
     // ── build rounds ─────────────────────────────────────────
-    document.getElementById('btn-build').addEventListener('click', async () => {
+    document.getElementById('btn-build').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
       const r = await fetch(`/api/host/build-rounds?${hk()}`, {method:'POST'});
       if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail||'Build failed','err'); return; }
       const d = await r.json();
@@ -302,7 +336,7 @@
       el.textContent = `${d.rounds.length} round(s) built.${d.warnings.length ? ' Warnings: '+d.warnings.join('; ') : ''}`;
       toast('Rounds built', 'ok');
       await loadRounds();
-    });
+    }));
 
     // ── rounds ───────────────────────────────────────────────
     let rounds = [];
@@ -334,7 +368,7 @@
       });
     }
 
-    document.getElementById('btn-open-round').addEventListener('click', async () => {
+    document.getElementById('btn-open-round').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
       const rid = document.getElementById('round-select').value;
       if (!rid) { toast('Select a round first', 'err'); return; }
       const r = await fetch(`/api/host/phase?${hk()}`, {
@@ -344,7 +378,7 @@
       });
       if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail||'Failed','err'); return; }
       toast(`Round ${rid} opened`, 'ok');
-    });
+    }));
 
     // ── final round ──────────────────────────────────────────
     document.getElementById('btn-create-final').addEventListener('click', async () => {
@@ -406,11 +440,11 @@
     });
 
     // ── marking ──────────────────────────────────────────────
-    document.getElementById('btn-load-marks').addEventListener('click', async () => {
+    document.getElementById('btn-load-marks').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
       const rid = document.getElementById('marks-round-select').value;
       if (!rid) { toast('Select a round to mark', 'err'); return; }
       await loadMarks(parseInt(rid));
-    });
+    }));
 
     async function loadMarks(roundId) {
       const r = await fetch(`/api/host/marks?round_id=${roundId}&${hk()}`);
@@ -541,11 +575,7 @@
           document.getElementById('pause-badge').classList.toggle('hidden', !state.paused);
           subsOpen = state.submissions_open;
           renderSubs();
-          // highlight current phase button
-          document.querySelectorAll('[data-phase]').forEach(b => {
-            b.classList.toggle('btn--teal', b.dataset.phase === state.phase);
-            b.classList.toggle('btn--secondary', b.dataset.phase !== state.phase);
-          });
+          highlightPhase(state.phase);
           if (state.current_round) {
             addRoundOption(state.current_round.id, state.current_round.title);
           }
@@ -565,7 +595,9 @@
       buildPhaseButtons();
       loadRoundSelects();
       pollLB();
+      pollSubs();
       setInterval(pollLB, 2500);
+      setInterval(pollSubs, 2500);
     }
 
     // Auto-unlock if key stored

@@ -215,7 +215,7 @@
       const name = document.getElementById('team-name').value.trim();
       if (!name) { toast('Enter a team name', 'err'); return; }
       const btn = document.getElementById('btn-join');
-      btn.disabled = true;
+      btn.disabled = true; btn.classList.add('is-loading');
       try {
         const r = await fetch('/api/teams', {
           method: 'POST',
@@ -233,13 +233,15 @@
       } catch (_) {
         toast('Network error', 'err');
       } finally {
-        btn.disabled = false;
+        btn.disabled = false; btn.classList.remove('is-loading');
       }
     });
 
     document.getElementById('btn-recover').addEventListener('click', async () => {
       const code = document.getElementById('recovery-input').value.trim();
       if (!code) { toast('Enter your recovery code', 'err'); return; }
+      const btn = document.getElementById('btn-recover');
+      btn.disabled = true; btn.classList.add('is-loading');
       try {
         const r = await fetch(`/api/teams/recover?recovery_code=${encodeURIComponent(code)}`);
         if (!r.ok) { toast('Code not found', 'err'); return; }
@@ -248,6 +250,8 @@
         afterJoin();
       } catch (_) {
         toast('Network error', 'err');
+      } finally {
+        btn.disabled = false; btn.classList.remove('is-loading');
       }
     });
 
@@ -469,7 +473,7 @@
 
       const btn = document.getElementById('btn-submit-photo');
       const status = document.getElementById('submit-status');
-      btn.disabled = true;
+      btn.disabled = true; btn.classList.add('is-loading');
       status.textContent = 'Uploading…';
       try {
         const r = await fetch('/api/submit', {method: 'POST', body: fd});
@@ -486,7 +490,7 @@
         toast('Network error', 'err');
         status.textContent = '';
       } finally {
-        btn.disabled = false;
+        btn.disabled = false; btn.classList.remove('is-loading');
       }
     });
 
@@ -503,7 +507,7 @@
       if (!state.current_round) { toast('No active final round', 'err'); return; }
 
       const btn = document.getElementById('btn-wager');
-      btn.disabled = true;
+      btn.disabled = true; btn.classList.add('is-loading');
       try {
         const r = await fetch('/api/wager', {
           method: 'POST',
@@ -521,6 +525,8 @@
       } catch (_) {
         toast('Network error', 'err');
         btn.disabled = false;
+      } finally {
+        btn.classList.remove('is-loading');
       }
     });
 
@@ -530,7 +536,7 @@
       const val = parseFloat(document.getElementById('tb-guess').value);
       if (isNaN(val)) { toast('Enter a number', 'err'); return; }
       const btn = document.getElementById('btn-tb');
-      btn.disabled = true;
+      btn.disabled = true; btn.classList.add('is-loading');
       try {
         const r = await fetch(`/api/tiebreak?team_id=${teamId}&value=${val}`, {method: 'POST'});
         if (!r.ok) { toast('Submit failed', 'err'); btn.disabled = false; return; }
@@ -539,6 +545,8 @@
       } catch (_) {
         toast('Network error', 'err');
         btn.disabled = false;
+      } finally {
+        btn.classList.remove('is-loading');
       }
     });
 

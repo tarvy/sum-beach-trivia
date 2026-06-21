@@ -18,6 +18,8 @@
   </nav>
 
   <main>
+    <a href="/" id="back-arrow" class="hidden" aria-label="Exit"
+       style="position:absolute; left:1.5rem; top:5rem; font-size:1.75rem; line-height:1; text-decoration:none;">←</a>
     <div class="container container--narrow" style="padding-top: 2rem; padding-bottom: 4rem;">
 
       <div class="card mb-sm hidden" id="closed-banner" style="border-color: var(--accent);">
@@ -36,6 +38,8 @@
         <span class="node-line node-line--opt"></span>
         <span class="node node--opt" data-i="5">5</span>
       </div>
+
+      <h2 id="optional-heading" class="hidden mb-sm" style="text-align:center;">Optional Question</h2>
 
       <!-- Single question form -->
       <div class="card stack" id="form-card">
@@ -165,7 +169,7 @@
       const acceptable = [alt1, alt2].filter(Boolean);
 
       const btn = document.getElementById('btn-submit-q');
-      btn.disabled = true;
+      btn.disabled = true; btn.classList.add('is-loading');
       try {
         // ensure we have a contributor id (also refreshes the display name)
         contributorId = await resolveContributor(authorName);
@@ -191,7 +195,7 @@
       } catch (_) {
         toast('Network error', 'err');
       } finally {
-        btn.disabled = false;
+        btn.disabled = false; btn.classList.remove('is-loading');
       }
     });
 
@@ -216,6 +220,11 @@
       document.querySelectorAll('#progress .node-line').forEach((l, i) => {
         l.classList.toggle('filled', i + 1 < submitCount);
       });
+      // once past the required minimum, the rest is optional: label it + offer an exit
+      const pastMin = submitCount >= REQUIRED_Q && !editingId;
+      document.getElementById('optional-heading').classList.toggle('hidden', !pastMin);
+      document.getElementById('back-arrow').classList.toggle('hidden', !pastMin);
+
       const btn = document.getElementById('btn-submit-q');
       if (editingId) {
         btn.disabled = false;
