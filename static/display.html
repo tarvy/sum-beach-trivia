@@ -78,6 +78,16 @@
       width: 100%;
       max-width: 700px;
     }
+    .lobby-qr {
+      width: clamp(180px, 26vmin, 320px);
+      height: auto;
+      margin-top: 1.5rem;
+      background: #fff;
+      padding: 0.75rem;
+      border: 1px solid var(--ink);
+      box-shadow: var(--shadow-sm);
+      border-radius: var(--radius);
+    }
     .writing-cue {
       font-family: var(--font-mono);
       font-size: 0.8rem;
@@ -180,6 +190,7 @@
       root.innerHTML = `
         <div class="display-phase">LOBBY — SCAN TO JOIN</div>
         <div class="display-title">Sum Beach<br><span>Trivia</span></div>
+        <img src="/api/qr" alt="Scan to join on your phone" class="lobby-qr">
         ${teamChips}
       `;
     }

@@ -6,12 +6,14 @@ import json
 import os
 import pathlib
 import re
+import socket
 import threading
 import time
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import PlainTextResponse
+import segno
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -21,6 +23,18 @@ from app.serializers import host_question, public_question
 
 UPLOAD_DIR = pathlib.Path(os.environ.get("TRIVIA_UPLOADS", "uploads"))
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+
+def _lan_ip() -> str:
+    # UDP connect picks the egress interface without sending packets; works offline on a LAN.
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"  # ponytail: no LAN → localhost; host can override by opening display via the IP
+    finally:
+        s.close()
 
 
 class MarkIn(BaseModel):
@@ -368,6 +382,15 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         require_host(host_key)
         models.set_submissions_open(db(), body.open)
         return {"submissions_open": body.open}
+
+    @app.get("/api/qr")
+    def qr(request: Request):
+        # Encode the host's LAN address so phones (not just localhost) can reach play.html.
+        url = f"http://{_lan_ip()}:{request.url.port or 8000}/play.html"
+        buf = io.BytesIO()
+        segno.make(url, error="m").save(buf, kind="svg", scale=8, border=2)
+        return Response(buf.getvalue(), media_type="image/svg+xml",
+                        headers={"Cache-Control": "no-store"})
 
     @app.get("/api/state")
     def state():
