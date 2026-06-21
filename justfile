@@ -4,6 +4,9 @@
 
 set dotenv-load := true
 
+# the deploy target (see deploy/deploy.md)
+SPRITE := "sum-beach-trivia"
+
 # list available commands
 default:
     @just --list
@@ -35,3 +38,21 @@ reset:
     rm -f trivia.db trivia.db-wal trivia.db-shm
     rm -rf uploads && mkdir -p uploads
     @echo "Game data wiped. A fresh game is created next time you run: just run"
+
+# push code to the sprite and restart it (run after editing app/ or static/)
+deploy:
+    sprite file push -r -s {{SPRITE}} ./app             /app/app
+    sprite file push -r -s {{SPRITE}} ./static          /app/static
+    sprite file push    -s {{SPRITE}} ./requirements.txt /app/requirements.txt
+    sprite exec -s {{SPRITE}} -- sprite-env services restart web
+    @sprite info -s {{SPRITE}} | grep -i '^URL'
+
+# wipe the sprite's game data for a fresh game (also regenerates the host key)
+deploy-reset:
+    sprite exec -s {{SPRITE}} -- rm -f /data/trivia.db /data/trivia.db-wal /data/trivia.db-shm
+    sprite exec -s {{SPRITE}} -- sprite-env services restart web
+    @echo "Sprite game data wiped. New host key: run 'just sprite-keys'"
+
+# print the sprite game's join code + HOST KEY
+sprite-keys:
+    @sprite exec -s {{SPRITE}} -- python3 -c "import sqlite3; r=sqlite3.connect('/data/trivia.db').execute('select code,host_key from game where id=1').fetchone(); print('join code',r[0],' HOST KEY',r[1])"

@@ -1,6 +1,6 @@
 # Sum Beach Trivia
 
-A lightweight, self-hosted bar-trivia web app for game night with friends. Friends
+A lightweight, self-hosted trivia web app for the annual friends' beach trip. Friends
 contribute questions ahead of time; on game night teams write answers by hand, snap one
 photo of the sheet per round, and a Claude vision model reads + grades them while the host
 confirms. One process, one URL, four screens.
@@ -93,7 +93,7 @@ optional accepted alternates). These persist in the database.
 6. **Tiebreak** (only if needed) — pose a nearest-wins number; closest guess wins.
 7. **Done** — final standings; download a CSV of the results from the host screen.
 
-Pause/resume anytime (for the bar run). The leaderboard is always recomputed from the
+Pause/resume anytime (for a beer run). The leaderboard is always recomputed from the
 recorded marks, so any correction — even after a round "ends" — updates every score.
 
 ## Stack

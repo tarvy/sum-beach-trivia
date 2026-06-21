@@ -38,13 +38,13 @@
     }
     .team-chip {
       background: var(--ground-2);
-      border: 1px solid var(--ground-3);
+      border: 1px solid var(--ink);
+      box-shadow: var(--shadow-sm);
       border-radius: var(--radius);
       padding: 0.6rem 1rem;
       font-family: var(--font-display);
       font-size: 1.2rem;
       font-weight: 700;
-      text-transform: uppercase;
       letter-spacing: -0.01em;
     }
     .display-q-list {
@@ -58,7 +58,7 @@
       gap: 1rem;
       align-items: flex-start;
       padding: 0.8rem 0;
-      border-bottom: 1px solid var(--ground-3);
+      border-bottom: 1px solid var(--ink);
       font-family: var(--font-body);
       font-size: clamp(1rem, 2.5vw, 1.4rem);
       line-height: 1.4;
@@ -68,7 +68,8 @@
       font-family: var(--font-mono);
       font-size: 0.7rem;
       letter-spacing: 0.12em;
-      color: var(--accent);
+      font-weight: 700;
+      color: var(--ink);
       flex-shrink: 0;
       padding-top: 0.3em;
       min-width: 2.5em;
@@ -76,6 +77,24 @@
     .lb-display-wrap {
       width: 100%;
       max-width: 700px;
+    }
+    .lobby-qr {
+      width: clamp(180px, 26vmin, 320px);
+      height: auto;
+      margin-top: 1.5rem;
+      background: #fff;
+      padding: 0.75rem;
+      border: 1px solid var(--ink);
+      box-shadow: var(--shadow-sm);
+      border-radius: var(--radius);
+    }
+    .writing-cue {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
     }
   </style>
 </head>
@@ -138,7 +157,7 @@
           break;
 
         case 'reveal':
-          renderLeaderboard(lb.teams, 'Scores so far');
+          renderReveal(current_round, lb.teams);
           break;
 
         case 'done':
@@ -171,6 +190,7 @@
       root.innerHTML = `
         <div class="display-phase">LOBBY — SCAN TO JOIN</div>
         <div class="display-title">Sum Beach<br><span>Trivia</span></div>
+        <img src="/api/qr?origin=${encodeURIComponent(location.origin)}" alt="Scan to join on your phone" class="lobby-qr">
         ${teamChips}
       `;
     }
@@ -191,8 +211,34 @@
       root.innerHTML = `
         ${pauseTag}
         <div class="display-phase">${round.is_final ? 'FINAL ROUND' : 'ROUND OPEN'}</div>
-        <div class="display-title" style="margin-bottom: 1.5rem;">${esc(round.title || '')}</div>
+        <div class="display-title" style="margin-bottom: 0.5rem;">${esc(round.title || '')}</div>
+        <div class="writing-cue" aria-live="polite">✍️ Writing in progress…</div>
         <ol class="display-q-list" aria-label="Questions">${qItems}</ol>
+      `;
+    }
+
+    // Reveal: who wrote each question in the just-graded round, plus scores.
+    function renderReveal(round, teams) {
+      const root = document.getElementById('display-root');
+      const qItems = ((round && round.questions) || []).map((q, i) =>
+        `<li class="display-q-item">
+          <span class="display-q-num">${String(i+1).padStart(2,'0')}</span>
+          <span>${esc(q.text)}${q.author_name ? ` <span class="badge badge--dim">by ${esc(q.author_name)}</span>` : ''}</span>
+        </li>`
+      ).join('');
+      const rows = (teams || []).map((t, i) =>
+        `<div class="lb-display-row">
+          <span class="lb-display-rank">${i+1}</span>
+          <span class="lb-display-name">${esc(t.name)}</span>
+          <span class="lb-display-score">${t.total}</span>
+        </div>`
+      ).join('');
+      root.innerHTML = `
+        <div class="display-phase">REVEAL</div>
+        ${round ? `<div class="display-title" style="margin-bottom: 1rem;">${esc(round.title || '')}</div>
+        <ol class="display-q-list" aria-label="Questions and authors">${qItems}</ol>` : ''}
+        <div class="display-phase" style="margin-top: 1.5rem;">SCORES SO FAR</div>
+        <div class="lb-display-wrap lb-display">${rows}</div>
       `;
     }
 
