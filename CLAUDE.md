@@ -13,7 +13,7 @@ This repo runs as a **dark factory**: Travis reviews outcomes on the live sprite
 
 ## Overview
 
-Self-hosted bar-trivia web app for a game night with friends. Friends contribute questions ahead of time; on game night teams write answers on paper, snap one photo of the sheet per round, and a Claude vision model transcribes + grades them while the host confirms. **One process, one URL, four screens** (`/contribute`, `/host`, `/play`, `/display`) — FastAPI + SQLite, vanilla HTML/JS with no build step, polling for live updates.
+Self-hosted bar-trivia web app for a game night with friends. Friends contribute questions ahead of time; on game night teams write answers on paper and either a human MC (Lacey mode) marks sheets by hand or a Claude vision model (Gladys mode) transcribes + proposes marks from photos. **One process, one URL, five screens** (`/contribute`, `/host`, `/play`, `/display`, `/bank` — host-gated question-bank manager) — FastAPI + SQLite, vanilla HTML/JS with no build step, polling for live updates. The host screen is a LINEAR GUIDED FLOW: a setup stage (question cutoff → MC pick → start) then one primary next-action per phase; raw phase jumps live under an "Advanced" details fold.
 
 ## Architecture & Patterns
 
@@ -24,7 +24,9 @@ Self-hosted bar-trivia web app for a game night with friends. Friends contribute
 - **Per-thread SQLite connections.** FastAPI runs sync handlers on a thread pool; a SQLite connection must never cross threads. `db()` is a thread-local factory — **always use it in routes.** `app.state.conn` is a test-only back-compat alias (main thread); never use it in production routes. `:memory:` DBs share one connection (tests run sequentially).
 - **Leaderboard is always recomputed, never stored.** `scoring.team_totals()` sums from the `mark` rows on every request, so any correction (even after a round "ends") retroactively fixes all scores. Don't cache or persist totals.
 - **Serializers enforce the answer-privacy boundary.** `serializers.public_question` omits the answer; `host_question` includes it. Choose deliberately per endpoint (see Anti-Patterns).
-- **Round building is idempotent + rebuildable.** `rounds.build_rounds()` detaches/deletes non-final rounds, then regroups unassigned questions by category into ~5-question rounds. Safe to re-run.
+- **Round building is idempotent + rebuildable, with hard rules (v2).** `rounds.build_rounds()` detaches/deletes non-final rounds and rebuilds: each contributor's FIRST `game.questions_per_person` questions are selected (every contributor is guaranteed ≥1 in); rounds are per-category, target 5 questions (>5 splits evenly, "History II"); sparse categories top up from same-category bank/host questions, remainders pool into "Mixed Bag" round(s). `question.source` = 'contributor' (guaranteed) | 'bank' | 'host' (filler only — never form rounds alone).
+- **Question bank.** `scripts/import_bank.py` imports from The Trivia API (CC BY-NC; see docs/question-bank.md) or offline from `data/bank-starter.json` (186 curated questions, committed). Hosts add their own via `POST /api/host/bank-question` (source='host'); `/bank.html` is the management grid.
+- **Teams are the only identity on the player side.** No recovery codes surfaced, no team members — a phone taps an existing team from the list (or creates one) and stores `{team_id, name}` in localStorage, revalidated against `GET /api/teams` on load. Anyone can hop teams; that's by design.
 - **Grading is injectable.** `app.state.grading_client` (if set) is used instead of the real Anthropic call — tests inject a fake so no API key is needed. Real path: `grading.grade_sheet()` uses `client.messages.parse()` with a JSON-schema-typed `SheetGrade`.
 
 ## Stack Best Practices
@@ -47,7 +49,8 @@ Self-hosted bar-trivia web app for a game night with friends. Friends contribute
 
 SQLite (`app/db.py`). Key tables and non-obvious columns:
 
-- **game** — single row (`id=1`): `phase`, `current_round_id`, `paused`, `host_key`, `submissions_open` (host-controlled contribution window), `mc_mode` (`lacey`|`gladys`), tiebreak fields.
+- **game** — single row (`id=1`): `phase`, `current_round_id`, `paused`, `host_key`, `submissions_open` (host-controlled contribution window), `mc_mode` (`lacey`|`gladys`), `questions_per_person` (keep-first-N at round build), tiebreak fields.
+- Curated final-round + tiebreak pick-lists live in `app/final_options.py`, served answer-blind by `GET /api/host/final-options` / `GET /api/host/tiebreak-options` (`?id=N` reveals one).
 - **category** — the 9 `STANDARD_CATEGORIES`, seeded on init.
 - **contributor** — a person who contributes questions: `token` (random, stored in their browser localStorage — this IS their identity), editable `name`, `recovery_code`. Created/updated via `POST /api/contributor`.
 - **question** — `author_name` (display label) + `contributor_id` FK → contributor. `answer` + `acceptable_answers` (JSON list) for normal questions; `answer_items` (JSON list) + `ordered` for multi-item/final questions. `round_id` is NULL until assigned by round-building.

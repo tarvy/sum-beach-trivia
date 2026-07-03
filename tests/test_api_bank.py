@@ -85,6 +85,12 @@ async def test_delete_unknown_id_404(app_client):
 async def test_delete_assigned_to_round_409(app_client):
     app, c = app_client
     hk = _hk(app)
+    # Round builder v2 uses bank/host questions as FILLER only — they never
+    # form rounds alone. Seed 4 contributor questions in the same category so
+    # the host question gets pulled in as the 5th (same-category top-up).
+    for i in range(4):
+        await c.post("/api/questions", json={
+            "author": "me", "category": "History", "text": f"hq{i}", "answer": "a"})
     qid = (await c.post("/api/host/bank-question", params={"host_key": hk},
                         json=BANK_Q)).json()["id"]
     await c.post("/api/host/build-rounds", params={"host_key": hk})
