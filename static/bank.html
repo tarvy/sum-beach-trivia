@@ -72,7 +72,9 @@
 
       <div class="card stack mb-sm">
         <h3>Add a question (as host)</h3>
-        <div class="cluster">
+        <!-- flex-end: every input sits on the same bottom baseline; a label that
+             wraps grows UPWARD instead of shoving its input below the row -->
+        <div class="cluster" style="align-items: flex-end;">
           <div class="field" style="width: 200px;">
             <label for="add-category">Category</label>
             <select id="add-category"></select>
@@ -89,7 +91,7 @@
             <label for="add-acceptable">Also accept <span class="text-dim">(comma-sep, optional)</span></label>
             <input type="text" id="add-acceptable" placeholder="sharks">
           </div>
-          <div style="padding-top: 1.35rem;">
+          <div>
             <button class="btn btn--primary" id="btn-add">Add</button>
           </div>
         </div>
