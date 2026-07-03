@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import re
+import sqlite3
 import threading
 import time
 from typing import Optional
@@ -433,11 +434,15 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         ext = re.sub(r"[^a-zA-Z0-9]", "", raw_ext)[:5].lower() or "bin"
         fname = f"team{team_id}_round{round_id}.{ext}"
         (UPLOAD_DIR / fname).write_bytes(data)
-        db().execute(
-            "INSERT INTO submission (team_id, round_id, photo_path) VALUES (?, ?, ?) "
-            "ON CONFLICT(team_id, round_id) DO UPDATE SET photo_path=excluded.photo_path, "
-            "submitted_at=datetime('now')",
-            (team_id, round_id, fname))
+        try:
+            db().execute(
+                "INSERT INTO submission (team_id, round_id, photo_path) VALUES (?, ?, ?) "
+                "ON CONFLICT(team_id, round_id) DO UPDATE SET photo_path=excluded.photo_path, "
+                "submitted_at=datetime('now')",
+                (team_id, round_id, fname))
+        except sqlite3.IntegrityError:
+            db().rollback()  # stale team id from a previous game's localStorage
+            raise HTTPException(status_code=404, detail="unknown team")
         db().commit()
 
         # Lacey in Charge mode: the photo is kept as the team's handed-in sheet,
@@ -461,21 +466,25 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             return {"ok": True, "graded": False}
 
         by_id = {q["id"]: q for q in questions}
-        for gr in result.grades:
-            q = by_id.get(gr.question_id)
-            if q is None:
-                continue
-            score = q["point_value"] if gr.is_correct else 0
-            db().execute(
-                "INSERT INTO mark (team_id, question_id, transcription, is_correct, score, "
-                "items_correct, confidence, flagged) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
-                "ON CONFLICT(team_id, question_id) DO UPDATE SET transcription=excluded.transcription, "
-                "is_correct=excluded.is_correct, score=excluded.score, items_correct=excluded.items_correct, "
-                "confidence=excluded.confidence, flagged=excluded.flagged "
-                "WHERE manually_corrected = 0",
-                (team_id, gr.question_id, gr.transcription, int(gr.is_correct), score,
-                 gr.items_correct, gr.confidence, int(gr.confidence < 0.5)))
-        db().commit()
+        try:
+            for gr in result.grades:
+                q = by_id.get(gr.question_id)
+                if q is None:
+                    continue
+                score = q["point_value"] if gr.is_correct else 0
+                db().execute(
+                    "INSERT INTO mark (team_id, question_id, transcription, is_correct, score, "
+                    "items_correct, confidence, flagged) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+                    "ON CONFLICT(team_id, question_id) DO UPDATE SET transcription=excluded.transcription, "
+                    "is_correct=excluded.is_correct, score=excluded.score, items_correct=excluded.items_correct, "
+                    "confidence=excluded.confidence, flagged=excluded.flagged "
+                    "WHERE manually_corrected = 0",
+                    (team_id, gr.question_id, gr.transcription, int(gr.is_correct), score,
+                     gr.items_correct, gr.confidence, int(gr.confidence < 0.5)))
+            db().commit()
+        except sqlite3.Error:
+            db().rollback()  # bad AI output must not poison the connection; MC marks by hand
+            return {"ok": True, "graded": False}
         return {"ok": True, "graded": True}
 
     @app.get("/api/host/marks")
@@ -521,13 +530,17 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             bool(existing["is_correct"]) if existing else False)
         score = body.score if body.score is not None else (
             existing["score"] if existing else 0)
-        db().execute(
-            "INSERT INTO mark (team_id, question_id, is_correct, score, items_correct, "
-            "manually_corrected) VALUES (?, ?, ?, ?, ?, 1) "
-            "ON CONFLICT(team_id, question_id) DO UPDATE SET is_correct=?, score=?, "
-            "items_correct=COALESCE(?, items_correct), manually_corrected=1",
-            (body.team_id, body.question_id, int(is_correct), score, body.items_correct,
-             int(is_correct), score, body.items_correct))
+        try:
+            db().execute(
+                "INSERT INTO mark (team_id, question_id, is_correct, score, items_correct, "
+                "manually_corrected) VALUES (?, ?, ?, ?, ?, 1) "
+                "ON CONFLICT(team_id, question_id) DO UPDATE SET is_correct=?, score=?, "
+                "items_correct=COALESCE(?, items_correct), manually_corrected=1",
+                (body.team_id, body.question_id, int(is_correct), score, body.items_correct,
+                 int(is_correct), score, body.items_correct))
+        except sqlite3.IntegrityError:
+            db().rollback()  # unknown team/question id — don't poison the connection
+            raise HTTPException(status_code=404, detail="unknown team or question")
         db().commit()
         return {"ok": True}
 
@@ -575,10 +588,14 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="no such round")
         cap = round_row["wager_cap"] or 0
         amount = max(0, min(body.amount, cap))
-        db().execute(
-            "INSERT INTO wager (team_id, round_id, amount) VALUES (?, ?, ?) "
-            "ON CONFLICT(team_id, round_id) DO UPDATE SET amount=excluded.amount",
-            (body.team_id, body.round_id, amount))
+        try:
+            db().execute(
+                "INSERT INTO wager (team_id, round_id, amount) VALUES (?, ?, ?) "
+                "ON CONFLICT(team_id, round_id) DO UPDATE SET amount=excluded.amount",
+                (body.team_id, body.round_id, amount))
+        except sqlite3.IntegrityError:
+            db().rollback()  # stale team id from a previous game's localStorage
+            raise HTTPException(status_code=404, detail="unknown team")
         db().commit()
         return {"amount": amount}
 
@@ -593,10 +610,14 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
 
     @app.post("/api/tiebreak")
     def guess_tiebreak(team_id: int, value: float):
-        db().execute(
-            "INSERT INTO tiebreak_guess (team_id, value) VALUES (?, ?) "
-            "ON CONFLICT(team_id) DO UPDATE SET value=excluded.value",
-            (team_id, value))
+        try:
+            db().execute(
+                "INSERT INTO tiebreak_guess (team_id, value) VALUES (?, ?) "
+                "ON CONFLICT(team_id) DO UPDATE SET value=excluded.value",
+                (team_id, value))
+        except sqlite3.IntegrityError:
+            db().rollback()  # stale team id from a previous game's localStorage
+            raise HTTPException(status_code=404, detail="unknown team")
         db().commit()
         return {"ok": True}
 
