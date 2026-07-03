@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS game (
     submissions_open INTEGER NOT NULL DEFAULT 1,
     host_key TEXT NOT NULL,
     mc_mode TEXT NOT NULL DEFAULT 'gladys',  -- 'gladys' = AI grades photos, 'lacey' = human MC marks by hand
+    questions_per_person INTEGER NOT NULL DEFAULT 5,  -- keep the FIRST N of each contributor's questions at round-build
     tiebreak_question TEXT,
     tiebreak_value REAL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -58,7 +59,8 @@ CREATE TABLE IF NOT EXISTS question (
     point_value REAL NOT NULL DEFAULT 1,
     round_id INTEGER REFERENCES round(id),
     display_order INTEGER NOT NULL DEFAULT 0,
-    media_url TEXT
+    media_url TEXT,
+    source TEXT NOT NULL DEFAULT 'contributor'  -- 'contributor' | 'bank' | 'host'
 );
 
 CREATE TABLE IF NOT EXISTS contributor (
@@ -153,6 +155,10 @@ def init_db(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE game ADD COLUMN submissions_open INTEGER NOT NULL DEFAULT 1")
     if "mc_mode" not in gcols:
         conn.execute("ALTER TABLE game ADD COLUMN mc_mode TEXT NOT NULL DEFAULT 'gladys'")
+    if "questions_per_person" not in gcols:
+        conn.execute("ALTER TABLE game ADD COLUMN questions_per_person INTEGER NOT NULL DEFAULT 5")
+    if "source" not in cols:
+        conn.execute("ALTER TABLE question ADD COLUMN source TEXT NOT NULL DEFAULT 'contributor'")
     for order, name in enumerate(STANDARD_CATEGORIES):
         conn.execute(
             "INSERT OR IGNORE INTO category (name, display_order) VALUES (?, ?)",
