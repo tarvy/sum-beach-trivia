@@ -99,6 +99,10 @@ class PauseIn(BaseModel):
     paused: bool
 
 
+class McModeIn(BaseModel):
+    mode: str
+
+
 class FinalIn(BaseModel):
     text: str
     items: list[str]
@@ -369,6 +373,17 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         models.set_paused(db(), body.paused)
         return {"ok": True}
 
+    @app.post("/api/host/mc-mode")
+    def set_mc_mode_route(body: McModeIn, host_key: str):
+        # Switchable at ANY phase — if the AI misbehaves mid-game, Lacey takes over
+        # (and vice versa). Only affects how FUTURE submissions are graded.
+        require_host(host_key)
+        try:
+            models.set_mc_mode(db(), body.mode)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return {"mc_mode": body.mode}
+
     @app.post("/api/host/submissions")
     def set_submissions(body: SubmissionsIn, host_key: str):
         require_host(host_key)
@@ -392,9 +407,13 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         cur = _round_public(g["current_round_id"], reveal=g["phase"] == "reveal") \
             if g["current_round_id"] else None
         return {"phase": g["phase"], "paused": bool(g["paused"]),
-                "submissions_open": bool(g["submissions_open"]), "current_round": cur}
+                "submissions_open": bool(g["submissions_open"]),
+                "mc_mode": g["mc_mode"], "current_round": cur}
 
-    SUBMIT_PHASES = {"round_open", "final_open"}
+    # round_closed included on purpose: "pens down" stops writing, but teams still
+    # need a window to photograph + hand in the sheet they already wrote. The
+    # window truly shuts when the host moves to marking.
+    SUBMIT_PHASES = {"round_open", "round_closed", "final_open"}
 
     def _grade(image_bytes, media_type, questions):
         grader = getattr(app.state, "grading_client", None)
@@ -421,6 +440,14 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             (team_id, round_id, fname))
         db().commit()
 
+        # Lacey in Charge mode: the photo is kept as the team's handed-in sheet,
+        # but a human MC does all the marking — no AI call.
+        if g["mc_mode"] == "lacey":
+            return {"ok": True, "graded": False}
+
+        # Gladys mode: AI-grade the sheet. A grading failure must NEVER lose the
+        # submission — the photo is already saved, so the MC can mark it by hand
+        # from the marking grid.
         rows = db().execute(
             "SELECT * FROM question WHERE round_id = ? ORDER BY display_order", (round_id,)
         ).fetchall()
@@ -428,7 +455,10 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         qpayload = [{"id": q["id"], "text": q["text"], "answer": q["answer"],
                      "acceptable": q["acceptable_answers"], "answer_items": q["answer_items"],
                      "ordered": q["ordered"]} for q in questions]
-        result = _grade(data, photo.content_type or "image/png", qpayload)
+        try:
+            result = _grade(data, photo.content_type or "image/png", qpayload)
+        except Exception:
+            return {"ok": True, "graded": False}
 
         by_id = {q["id"]: q for q in questions}
         for gr in result.grades:
@@ -446,7 +476,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                 (team_id, gr.question_id, gr.transcription, int(gr.is_correct), score,
                  gr.items_correct, gr.confidence, int(gr.confidence < 0.5)))
         db().commit()
-        return {"ok": True}
+        return {"ok": True, "graded": True}
 
     @app.get("/api/host/marks")
     def host_marks(host_key: str, round_id: int):
