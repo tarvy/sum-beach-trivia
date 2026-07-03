@@ -104,6 +104,10 @@ class McModeIn(BaseModel):
     mode: str
 
 
+class SettingsIn(BaseModel):
+    questions_per_person: int
+
+
 class FinalIn(BaseModel):
     text: str
     items: list[str]
@@ -385,6 +389,16 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             raise HTTPException(status_code=400, detail=str(e))
         return {"mc_mode": body.mode}
 
+    @app.post("/api/host/settings")
+    def set_settings(body: SettingsIn, host_key: str):
+        # Adjustable during the gathering phase; takes effect at the next round build.
+        require_host(host_key)
+        try:
+            models.set_questions_per_person(db(), body.questions_per_person)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return {"ok": True}
+
     @app.post("/api/host/submissions")
     def set_submissions(body: SubmissionsIn, host_key: str):
         require_host(host_key)
@@ -409,7 +423,9 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             if g["current_round_id"] else None
         return {"phase": g["phase"], "paused": bool(g["paused"]),
                 "submissions_open": bool(g["submissions_open"]),
-                "mc_mode": g["mc_mode"], "current_round": cur}
+                "mc_mode": g["mc_mode"],
+                "questions_per_person": g["questions_per_person"],
+                "current_round": cur}
 
     # round_closed included on purpose: "pens down" stops writing, but teams still
     # need a window to photograph + hand in the sheet they already wrote. The

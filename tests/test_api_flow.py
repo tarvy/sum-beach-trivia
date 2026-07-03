@@ -25,7 +25,9 @@ async def test_build_rounds_and_open(app_client):
     r = await c.post("/api/host/build-rounds", params={"host_key": hk})
     assert r.status_code == 200
     rounds = r.json()["rounds"]
-    assert rounds and rounds[0]["title"] == "History"
+    # Round builder v2: a 3-question category can't fill a 5-slot round and
+    # there are no bank questions to top it up, so it pools into "Mixed Bag".
+    assert rounds and rounds[0]["title"] == "Mixed Bag"
     rid = rounds[0]["id"]
 
     # open the round
@@ -103,8 +105,9 @@ async def test_host_rounds_listing(app_client):
         assert "is_final" in rnd
         assert "wager_cap" in rnd
         assert "question_count" in rnd
-    # The Geography round should be present with 3 questions
-    geo = next((rnd for rnd in data["rounds"] if rnd["title"] == "Geography"), None)
+    # Round builder v2: 3 Geography questions can't fill a 5-slot round and no
+    # bank questions exist, so they land in a "Mixed Bag" round instead.
+    geo = next((rnd for rnd in data["rounds"] if rnd["title"] == "Mixed Bag"), None)
     assert geo is not None
     assert geo["question_count"] == 3
     assert geo["is_final"] is False
