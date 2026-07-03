@@ -9,24 +9,12 @@
   <style>
     .host-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.6fr 1fr;
       gap: var(--spacing-sm);
+      align-items: start;
     }
-    @media (max-width: 640px) { .host-grid { grid-template-columns: 1fr; } }
-    .phase-btn {
-      font-size: 0.65rem;
-      padding: 0.4em 0.8em;
-    }
-    .mark-q-row {
-      display: grid;
-      grid-template-columns: 1fr auto auto auto;
-      gap: 0.5rem;
-      align-items: center;
-      padding: 0.5rem 0;
-      border-bottom: 1px solid var(--border-subtle);
-      font-size: var(--fs-sm);
-    }
-    .mark-q-row:last-child { border-bottom: none; }
+    @media (max-width: 760px) { .host-grid { grid-template-columns: 1fr; } }
+
     .section-title {
       font-family: var(--font-display);
       font-size: var(--fs-h2);
@@ -37,6 +25,65 @@
       border-bottom: 3px solid var(--brand);
       margin-bottom: var(--spacing-sm);
     }
+
+    /* stepper with labels under the nodes */
+    .progress--labeled { align-items: flex-start; overflow-x: auto; padding-bottom: 0.3rem; }
+    .progress--labeled .node-line { margin-top: 1.05rem; min-width: 0.8rem; }
+    .step { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; flex: 0 0 auto; }
+    .step-label {
+      font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim);
+      max-width: 5.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .step .current + .step-label { color: var(--ink); font-weight: 700; }
+
+    /* MC mode option cards */
+    .mc-cards { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-sm); }
+    @media (max-width: 640px) { .mc-cards { grid-template-columns: 1fr; } }
+    .mc-card {
+      text-align: left; display: flex; flex-direction: column; gap: 0.4rem;
+      padding: var(--spacing-sm); background: var(--ground-2);
+      border: 1px solid var(--ink); border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm); cursor: pointer;
+      font-family: var(--font-body); font-size: var(--fs-sm); color: var(--ink);
+    }
+    .mc-card strong { font-family: var(--font-display); font-size: 1.15rem; }
+    .mc-card.selected { background: var(--brand); box-shadow: var(--shadow); transform: translate(-1px, -1px); }
+    .mc-card .badge { align-self: flex-start; }
+
+    /* pick-list rows (final + tiebreak) */
+    .pick-row {
+      display: flex; gap: var(--spacing-sm); align-items: flex-start;
+      padding: 0.7rem 0; border-bottom: 1px solid var(--border-subtle);
+    }
+    .pick-row:last-child { border-bottom: none; }
+    .pick-main { flex: 1; min-width: 0; }
+    .pick-actions { display: flex; flex-direction: column; gap: 0.4rem; flex-shrink: 0; }
+    .pick-answers { margin-top: 0.5rem; font-size: var(--fs-sm); }
+    .pick-answers ol, .pick-answers ul { margin: 0; padding-left: 1.4em; }
+
+    /* marking console */
+    .mk-row {
+      display: flex; gap: var(--spacing-sm); align-items: center;
+      padding: 0.7rem 0; border-bottom: 1px solid var(--border-subtle);
+    }
+    .mk-row:last-child { border-bottom: none; }
+    .mk-info { flex: 1; min-width: 0; }
+    .mk-thumb { width: 72px; height: 48px; }
+    .mk-verdict { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
+    .mk-btn { font-size: 0.78rem; padding: 0.8em 1.6em; }
+    .mk-answer { font-size: var(--fs-body); }
+    .mk-answer ol, .mk-answer ul { margin: 0; padding-left: 1.4em; }
+    @media (max-width: 640px) {
+      .mk-row { flex-direction: column; align-items: flex-start; }
+    }
+
+    .phase-btn { font-size: 0.65rem; padding: 0.4em 0.8em; }
+    .btn--accent { background: var(--accent); }
+    details.card > summary {
+      cursor: pointer; font-family: var(--font-mono); font-size: var(--fs-sm);
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+    }
   </style>
 </head>
 <body>
@@ -45,6 +92,7 @@
   </nav>
 
   <div class="phase-strip hidden" id="phase-strip" role="status" aria-live="polite">
+    <span id="phase-label" class="mono"></span>
     <span id="pause-badge" class="badge badge--red hidden">Paused</span>
     <span style="margin-left: auto; display: flex; gap: 0.5rem; align-items: center;">
       <button class="btn btn--sm btn--secondary" id="btn-pause" style="padding: 0.3em 0.8em;">Pause</button>
@@ -73,140 +121,163 @@
     <!-- ── MAIN HOST CONTROLS ── -->
     <div id="host-main" class="hidden">
 
-      <div class="container" style="padding-top: 1.5rem;">
+      <!-- ═══ SETUP STAGE (phase = draft) ═══ -->
+      <div id="setup-stage" class="hidden">
+        <div class="container container--narrow" style="padding-top: 1.5rem;">
+          <p class="eyebrow mb-sm">Setup</p>
+          <h1 class="mb-sm">Before the game</h1>
+          <div class="stack">
 
-        <p id="next-step" class="text-dim mb-sm" style="font-size: var(--fs-sm); border-left: 3px solid var(--accent); padding-left: 0.6em;"></p>
-
-        <!-- Game controls row -->
-        <div class="host-grid mb-sm">
-
-          <!-- Left: phase + rounds -->
-          <div class="stack--lg">
-            <div>
-              <div class="section-title">Game controls</div>
-              <div class="stack">
-
-                <div class="card stack">
-                  <h3>Who's marking?</h3>
-                  <p class="text-dim" style="font-size: var(--fs-sm);">
-                    Pick your MC. Switch anytime — it only changes how new sheets are handled.
-                  </p>
-                  <div class="cluster">
-                    <button class="btn btn--secondary" id="btn-mode-lacey">Lacey in Charge</button>
-                    <button class="btn btn--secondary" id="btn-mode-gladys">Gladys the AI MILF</button>
-                  </div>
-                  <p id="mc-mode-desc" class="text-dim" style="font-size: var(--fs-sm);"></p>
-                </div>
-
-                <div class="card stack">
-                  <h3>Submissions window</h3>
-                  <p class="text-dim" style="font-size: var(--fs-sm);">
-                    Currently <strong id="subs-state">…</strong>. Contributors can add or edit only while open.
-                  </p>
-                  <div class="cluster">
-                    <button class="btn btn--secondary" id="btn-toggle-subs">Toggle</button>
-                  </div>
-                  <p id="subs-count" style="font-size: var(--fs-sm);"><strong>0</strong> questions submitted</p>
-                  <ul id="subs-by-author" class="text-dim" style="font-size: var(--fs-sm); margin: 0; padding-left: 1.2em;"></ul>
-                </div>
-
-                <div class="card stack">
-                  <h3>Build rounds</h3>
-                  <p class="text-dim" style="font-size: var(--fs-sm);">Assigns submitted questions to rounds.</p>
-                  <div class="cluster">
-                    <button class="btn btn--secondary" id="btn-build">Build rounds</button>
-                  </div>
-                  <div id="build-result" class="text-dim hidden" style="font-size: var(--fs-sm);"></div>
-                </div>
-
-                <div class="card stack">
-                  <h3>Set phase</h3>
-                  <div class="cluster" id="phase-buttons">
-                    <!-- populated by JS -->
-                  </div>
-                </div>
-
-                <div class="card stack">
-                  <h3>Open a round</h3>
-                  <div class="cluster">
-                    <select id="round-select" style="flex: 1;"><option value="">Loading rounds…</option></select>
-                    <button class="btn btn--teal" id="btn-open-round">Open selected round</button>
-                  </div>
-                </div>
-
-                <div class="card stack">
-                  <h3>Create final round</h3>
-                  <div class="field">
-                    <label for="final-text">Question text</label>
-                    <textarea id="final-text" rows="2" placeholder="Name as many beach songs as you can…"></textarea>
-                  </div>
-                  <div class="field">
-                    <label for="final-items">Answer items <span class="text-dim">(one per line)</span></label>
-                    <textarea id="final-items" rows="3" placeholder="In the Summertime&#10;Kokomo&#10;Margaritaville"></textarea>
-                  </div>
-                  <div class="cluster">
-                    <div class="field" style="flex: 1;">
-                      <label for="final-cap">Wager cap</label>
-                      <input type="number" id="final-cap" value="10" min="0">
-                    </div>
-                    <div style="padding-top: 1.5rem;">
-                      <label style="display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: var(--fs-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim);">
-                        <input type="checkbox" id="final-ordered"> Ordered
-                      </label>
-                    </div>
-                  </div>
-                  <div>
-                    <button class="btn btn--primary" id="btn-create-final">Create final round</button>
-                  </div>
-                </div>
-
-                <div class="card stack">
-                  <h3>Tiebreak</h3>
-                  <div class="field">
-                    <label for="tb-question">Tiebreak question</label>
-                    <input type="text" id="tb-question" placeholder="How many grains of sand on Siesta Key?">
-                  </div>
-                  <div class="field">
-                    <label for="tb-value">Correct value</label>
-                    <input type="number" id="tb-value" step="any" placeholder="42000000">
-                  </div>
-                  <button class="btn btn--secondary" id="btn-set-tb">Set tiebreak</button>
-                  <button class="btn btn--secondary btn--sm" id="btn-tb-result">View tiebreak result</button>
-                  <div id="tb-result-wrap" class="hidden panel mt-sm"></div>
-                </div>
-
+            <div class="card stack">
+              <h3>1 · Questions coming in</h3>
+              <p id="subs-count" style="font-size: var(--fs-sm);">
+                <strong>0</strong> questions submitted
+                <span id="subs-open-badge" class="badge badge--teal">open</span>
+              </p>
+              <ul id="subs-by-author" class="text-dim" style="font-size: var(--fs-sm); margin: 0; padding-left: 1.2em;"></ul>
+              <div class="field" style="max-width: 16rem;">
+                <label for="qpp">Questions kept per person (1–5)</label>
+                <input type="number" id="qpp" min="1" max="5" value="5">
               </div>
+              <p class="text-dim" style="font-size: var(--fs-sm);">
+                Each person's first N questions make the game. Extras stay stored, just benched.
+              </p>
+              <div><button id="btn-reopen-subs" class="btn btn--sm btn--secondary hidden">Reopen submissions</button></div>
             </div>
-          </div>
 
-          <!-- Right: leaderboard -->
-          <div class="stack--lg">
-            <div>
-              <div class="section-title">Leaderboard <a href="#" id="csv-link" class="btn btn--sm btn--secondary" style="float: right; margin-top: -0.2rem;">Export CSV</a></div>
-              <div class="card" style="padding: var(--spacing-sm);">
-                <table class="lb-table" id="lb-table">
-                  <thead><tr><th>#</th><th>Team</th><th>Score</th></tr></thead>
-                  <tbody id="lb-body"></tbody>
-                </table>
+            <div class="card stack">
+              <h3>2 · Who's your MC?</h3>
+              <div class="mc-cards">
+                <button class="mc-card" id="mc-card-lacey">
+                  <span class="badge badge--amber">recommended</span>
+                  <strong>Lacey in Charge</strong>
+                  <span>A human MC collects the sheets and marks every answer by hand. Photos are optional keepsakes.</span>
+                </button>
+                <button class="mc-card" id="mc-card-gladys">
+                  <strong>Gladys the AI MILF</strong>
+                  <span>Teams snap a photo, the AI transcribes and proposes marks, the MC just confirms.</span>
+                </button>
               </div>
+              <p class="text-dim" style="font-size: var(--fs-sm);">Switchable any time, even mid-game.</p>
             </div>
+
+            <div class="card stack">
+              <h3>3 · Final round <span id="final-status-setup" class="badge badge--dim">not set</span></h3>
+              <p class="text-dim" style="font-size: var(--fs-sm);">
+                Pick one blind — answers stay hidden so you can still play. You can also do this later, any time before the final.
+              </p>
+              <div id="final-picker-setup"></div>
+            </div>
+
+            <div class="card stack card--accent">
+              <h3 style="color: var(--ink);">4 · Start the game</h3>
+              <p style="font-size: var(--fs-sm);">
+                The official question cutoff. Submissions close for good, rounds get built, and the lobby opens.
+              </p>
+              <div><button class="btn btn--primary btn--lg" id="btn-start">Start the game</button></div>
+              <div id="build-result" class="panel hidden" style="font-size: var(--fs-sm);"></div>
+            </div>
+
           </div>
-
         </div>
-
-        <!-- Marking panel -->
-        <div class="mt-md">
-          <div class="section-title">Mark answers</div>
-          <div class="cluster mb-sm">
-            <select id="marks-round-select" style="flex: 1;"><option value="">Pick a round to mark…</option></select>
-            <button class="btn btn--secondary" id="btn-load-marks">Load submissions</button>
-          </div>
-          <div id="marks-area"></div>
-        </div>
-
       </div>
-    </div>
 
+      <!-- ═══ RUN STAGE (any phase past draft) ═══ -->
+      <div id="run-stage" class="hidden">
+        <div class="container" style="padding-top: 1.5rem;">
+
+          <div id="setup-summary" class="panel hidden mb-sm" style="font-size: var(--fs-sm);"></div>
+
+          <div id="stepper" class="progress progress--labeled" style="margin-bottom: var(--spacing-md);"></div>
+
+          <div class="host-grid">
+
+            <!-- Left: the night, one action at a time -->
+            <div class="stack--lg">
+
+              <div class="card stack" id="action-card">
+                <p id="phase-hint" class="text-dim" style="font-size: var(--fs-sm); border-left: 3px solid var(--accent); padding-left: 0.6em;"></p>
+                <p id="action-status" class="mono" style="font-size: var(--fs-sm);"></p>
+                <div class="cluster">
+                  <button class="btn btn--primary btn--lg" id="primary-action">…</button>
+                  <button class="btn btn--secondary hidden" id="btn-tiebreak-side">Tiebreak</button>
+                </div>
+              </div>
+
+              <div id="done-panel" class="card stack hidden">
+                <h3>Final standings</h3>
+                <div id="done-standings" class="lb-display"></div>
+                <div><button class="btn btn--primary" id="csv-btn">Download scores CSV</button></div>
+              </div>
+
+              <div id="tb-live" class="card stack hidden">
+                <h3>Tiebreak guesses <span class="text-dim" style="text-transform:none; letter-spacing:0;">(closest wins — live)</span></h3>
+                <div id="tb-live-body" class="panel" style="font-size: var(--fs-sm);">Waiting for guesses…</div>
+              </div>
+
+              <div id="marking-wrap" class="hidden">
+                <div class="section-title">Marking — <span id="mk-round-title"></span></div>
+                <div id="mk-console" class="card stack"></div>
+              </div>
+
+              <details class="card" id="final-details">
+                <summary>Final round <span id="final-status-run" class="badge badge--dim">not set</span></summary>
+                <div id="final-picker-run" class="mt-sm"></div>
+              </details>
+
+              <details class="card" id="tb-details">
+                <summary>Tiebreak question <span id="tb-status" class="badge badge--dim">not set</span></summary>
+                <p class="text-dim mt-sm" style="font-size: var(--fs-sm);">
+                  Nearest-wins number. Pick blind — the value stays hidden until you reveal it.
+                </p>
+                <div id="tb-picker"></div>
+              </details>
+
+              <details class="card" id="advanced">
+                <summary>Advanced: jump anywhere</summary>
+                <div class="stack mt-sm">
+                  <p class="text-dim" style="font-size: var(--fs-sm);">
+                    Escape hatch — the raw state machine. The guided button above is the happy path.
+                  </p>
+                  <div class="cluster" id="phase-buttons"></div>
+                  <div class="cluster">
+                    <select id="round-select" style="flex: 1;"><option value="">Select a round…</option></select>
+                    <button class="btn btn--sm btn--secondary" id="btn-open-round">Open selected round</button>
+                  </div>
+                  <div class="cluster">
+                    <span class="label">Submissions: <strong id="subs-state">…</strong></span>
+                    <button class="btn btn--sm btn--secondary" id="btn-toggle-subs">Toggle</button>
+                  </div>
+                </div>
+              </details>
+
+            </div>
+
+            <!-- Right: leaderboard + small MC switch -->
+            <div class="stack--lg">
+              <div>
+                <div class="section-title">Leaderboard <a href="#" id="csv-link" class="btn btn--sm btn--secondary" style="float: right; margin-top: -0.2rem;">Export CSV</a></div>
+                <div class="card" style="padding: var(--spacing-sm);">
+                  <table class="lb-table" id="lb-table">
+                    <thead><tr><th>#</th><th>Team</th><th>Score</th></tr></thead>
+                    <tbody id="lb-body"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="card stack" id="mc-mini">
+                <h3>MC mode</h3>
+                <div class="cluster">
+                  <button class="btn btn--sm btn--secondary" id="mc-mini-lacey">Lacey</button>
+                  <button class="btn btn--sm btn--secondary" id="mc-mini-gladys">Gladys</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
   </main>
 
   <div class="toast-area" id="toasts" role="status" aria-live="polite"></div>
@@ -223,6 +294,13 @@
       el.textContent = msg;
       area.appendChild(el);
       setTimeout(() => el.remove(), 4000);
+    }
+    function $(id) { return document.getElementById(id); }
+    // Adds a spinner + disables the button while `fn` runs. Reusable for any button.
+    async function withSpinner(btn, fn) {
+      btn.classList.add('is-loading');
+      try { return await fn(); }
+      finally { btn.classList.remove('is-loading'); }
     }
 
     // ── host key ─────────────────────────────────────────────
@@ -256,402 +334,836 @@
       initHost();
     }
 
-    // ── phase buttons ────────────────────────────────────────
-    const VALID_PHASES = ['draft','lobby','round_open','round_closed','marking','reveal',
-                          'final_wager','final_open','tiebreak','done'];
+    // ── shared fetch helpers ─────────────────────────────────
+    // Every mutation bumps `epoch` so a poll that was already in flight when
+    // the action fired can't paint stale state over the fresh post-action tick.
+    let epoch = 0;
 
-    function buildPhaseButtons() {
-      const wrap = document.getElementById('phase-buttons');
-      wrap.innerHTML = VALID_PHASES.map(p =>
-        `<button class="btn btn--secondary phase-btn" data-phase="${p}">${p.replace(/_/g,' ')}</button>`
-      ).join('');
-      wrap.querySelectorAll('[data-phase]').forEach(btn => {
-        btn.addEventListener('click', () => setPhase(btn.dataset.phase));
-      });
-    }
-
-    // Adds a spinner + disables the button while `fn` runs. Reusable for any button.
-    async function withSpinner(btn, fn) {
-      btn.classList.add('is-loading');
-      try { return await fn(); }
-      finally { btn.classList.remove('is-loading'); }
-    }
-
-    function highlightPhase(phase) {
-      document.querySelectorAll('[data-phase]').forEach(b => {
-        b.classList.toggle('btn--teal', b.dataset.phase === phase);
-        b.classList.toggle('btn--secondary', b.dataset.phase !== phase);
-      });
-    }
-
-    async function setPhase(phase) {
-      highlightPhase(phase);                 // optimistic: instant active state, don't wait for poll
-      const r = await fetch(`/api/host/phase?${hk()}`, {
+    async function post(path, body) {
+      const r = await fetch(`${path}?${hk()}`, {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({phase})
+        headers: {'Content-Type': 'application/json'},
+        body: body === undefined ? undefined : JSON.stringify(body),
       });
-      if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail||'Phase change failed','err'); pollLB(); return; }
-      toast(`Phase → ${phase}`, 'ok');
+      epoch++;
+      return r;
+    }
+
+    async function setPhase(phase, roundId) {
+      const body = roundId != null ? {phase, round_id: roundId} : {phase};
+      const r = await post('/api/host/phase', body);
+      if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail || 'Phase change failed', 'err'); return false; }
+      toast(`Phase → ${phase.replace(/_/g,' ')}`, 'ok');
+      return true;
+    }
+
+    // ── live game state ──────────────────────────────────────
+    let state = null;       // /api/state
+    let rounds = [];        // /api/host/rounds (server-ordered by display_order)
+    let lb = [];            // leaderboard teams
+    let qTally = {total: 0, byAuthor: {}};   // draft-phase question tally
+    let sheets = null;      // {got, total} while a round is open/closed
+    let tbGuesses = null;   // /api/host/tiebreak-result during tiebreak
+    let tbSet = false;      // a tiebreak question has been set this session
+    let buildNotes = '';    // build-rounds result, echoed in the run stage
+    let busy = false;       // primary action in flight — freeze its label
+
+    function nonFinalRounds() { return rounds.filter(r => !r.is_final); }
+    function finalRound()     { return rounds.find(r => r.is_final) || null; }
+
+    async function tick() {
+      try {
+        const e0 = epoch;
+        const [sr, lr, rr] = await Promise.all([
+          fetch('/api/state'),
+          fetch('/api/leaderboard'),
+          fetch(`/api/host/rounds?${hk()}`),
+        ]);
+        if (e0 !== epoch) return;   // a mutation landed mid-fetch; its own tick will render
+        if (sr.ok) state = await sr.json();
+        if (lr.ok) lb = (await lr.json()).teams;
+        if (rr.ok) rounds = (await rr.json()).rounds;
+        if (!state) return;
+        if (state.phase === 'draft') await pollQuestions();
+        if (state.phase === 'round_open' || state.phase === 'round_closed') await pollSheets();
+        else sheets = null;
+        if (state.phase === 'tiebreak') await pollTbResult();
+        render();
+      } catch (_) {}
+    }
+
+    async function pollQuestions() {
+      const r = await fetch(`/api/questions?${hk()}`);
+      if (!r.ok) return;
+      const { questions } = await r.json();
+      const byAuthor = {};
+      for (const q of questions) {
+        const a = q.author_name || 'Anonymous';
+        byAuthor[a] = (byAuthor[a] || 0) + 1;
+      }
+      qTally = {total: questions.length, byAuthor};
+    }
+
+    async function pollSheets() {
+      if (!state.current_round) { sheets = null; return; }
+      const r = await fetch(`/api/host/marks?round_id=${state.current_round.id}&${hk()}`);
+      if (!r.ok) return;
+      const { teams } = await r.json();
+      sheets = {got: teams.filter(t => t.photo_url).length, total: teams.length};
+    }
+
+    async function pollTbResult() {
+      const r = await fetch(`/api/host/tiebreak-result?${hk()}`);
+      if (r.ok) tbGuesses = await r.json();
+    }
+
+    // ── top-level render ─────────────────────────────────────
+    function render() {
+      const p = state.phase;
+      $('phase-label').textContent = p.replace(/_/g, ' ');
+      $('pause-badge').classList.toggle('hidden', !state.paused);
+      const draft = p === 'draft';
+      $('setup-stage').classList.toggle('hidden', !draft);
+      $('run-stage').classList.toggle('hidden', draft);
+      if (draft) renderSetup(); else renderRun();
+      renderMc();
+      renderLeaderboard();
+      updatePickerChrome();
+    }
+
+    // ── SETUP STAGE ──────────────────────────────────────────
+    function renderSetup() {
+      $('subs-count').innerHTML =
+        `<strong>${qTally.total}</strong> question${qTally.total === 1 ? '' : 's'} submitted ` +
+        (state.submissions_open
+          ? '<span class="badge badge--teal">open</span>'
+          : '<span class="badge badge--red">closed</span>');
+      $('subs-by-author').innerHTML =
+        Object.entries(qTally.byAuthor).sort((a,b) => b[1]-a[1])
+          .map(([a,n]) => `<li>${esc(a)} — ${n}</li>`).join('');
+      $('btn-reopen-subs').classList.toggle('hidden', !!state.submissions_open);
+
+      const qpp = $('qpp');
+      if (state.questions_per_person != null && document.activeElement !== qpp) {
+        qpp.value = state.questions_per_person;
+      }
+      $('btn-start').disabled = qTally.total === 0;
+    }
+
+    $('qpp').addEventListener('change', async () => {
+      const el = $('qpp');
+      let v = parseInt(el.value);
+      if (isNaN(v)) return;
+      v = Math.min(5, Math.max(1, v));
+      el.value = v;
+      const r = await post('/api/host/settings', {questions_per_person: v});
+      if (r.ok) toast(`Keeping each person's first ${v}`, 'ok');
+      else toast('Could not save that setting', 'err');
+    });
+
+    $('btn-reopen-subs').addEventListener('click', async e => withSpinner(e.currentTarget, async () => {
+      const r = await post('/api/host/submissions', {open: true});
+      if (!r.ok) { toast('Toggle failed', 'err'); return; }
+      toast('Submissions reopened', 'ok');
+      await tick();
+    }));
+
+    // The one-way door: close submissions → build rounds → open the lobby.
+    $('btn-start').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
+      if (!confirm('Start the game? This closes question submissions for good.')) return;
+      let r = await post('/api/host/submissions', {open: false});
+      if (!r.ok) { toast('Could not close submissions', 'err'); return; }
+      r = await post('/api/host/build-rounds');
+      if (!r.ok) { const e2 = await r.json().catch(()=>({})); toast(e2.detail || 'Round build failed', 'err'); return; }
+      const d = await r.json();
+      buildNotes = `Built ${d.rounds.length} round${d.rounds.length === 1 ? '' : 's'}: ` +
+        d.rounds.map(x => `${x.title} (${x.question_count})`).join(', ') +
+        (d.warnings.length ? ` — ⚠ ${d.warnings.join(' ')}` : '');
+      const el = $('build-result');
+      el.classList.remove('hidden');
+      el.textContent = buildNotes;
+      if (!await setPhase('lobby')) return;
+      toast('Game started — doors open', 'ok');
+      await tick();
+    }));
+
+    // ── RUN STAGE ────────────────────────────────────────────
+    const HINTS = {
+      lobby:       'Doors open: teams are joining on their phones. When everyone\'s in, open the first round.',
+      round_open:  'Round live: teams write on paper. Call "pens down" when time\'s up.',
+      round_closed:'Pens down: sheets can still be handed in (photo or paper). Start marking when they\'re all in.',
+      marking:     'Marking: work through each question below, then reveal the scores.',
+      reveal:      'Reveal: read the answers out, savor the groans. Then on to the next round.',
+      final_wager: 'Final wagers: teams bet blind before seeing the question.',
+      final_open:  'Final live: teams answer and hand in. Then mark it.',
+      tiebreak:    'Tiebreak: closest guess wins. Watch them come in below.',
+      done:        'Game over — standings are final. Export the CSV for posterity.',
+      paused:      'Paused. Use Resume (top right) or jump somewhere via Advanced.',
+    };
+
+    function computeAction() {
+      const p = state.phase, cur = state.current_round;
+      const nf = nonFinalRounds(), fin = finalRound();
+      const a = {label: '…', fn: null, disabled: false, status: '', tb: false};
+      if (p === 'lobby') {
+        if (nf.length) { a.label = `Open ${nf[0].title}`; a.fn = () => setPhase('round_open', nf[0].id); }
+        else { a.label = 'No rounds built'; a.disabled = true; }
+      } else if (p === 'round_open') {
+        a.label = 'Pens down'; a.fn = () => setPhase('round_closed');
+        if (sheets) a.status = `${sheets.got} of ${sheets.total} sheets in`;
+      } else if (p === 'round_closed') {
+        a.label = 'Start marking'; a.fn = () => setPhase('marking');
+        if (sheets) a.status = `${sheets.got} of ${sheets.total} sheets in`;
+      } else if (p === 'marking') {
+        a.label = 'Reveal scores'; a.fn = () => setPhase('reveal');
+        a.status = markingProgress();
+      } else if (p === 'reveal') {
+        if (cur && cur.is_final) {
+          a.label = 'Finish game'; a.fn = () => setPhase('done'); a.tb = true;
+        } else {
+          const i = nf.findIndex(r => cur && r.id === cur.id);
+          const next = i >= 0 ? nf[i + 1] : nf[0];
+          if (next) { a.label = `Open ${next.title}`; a.fn = () => setPhase('round_open', next.id); }
+          else if (fin) { a.label = 'Final round: wagers open'; a.fn = () => setPhase('final_wager', fin.id); }
+          else { a.label = 'Final round: wagers open'; a.disabled = true; a.status = 'Pick a final round below first'; }
+        }
+      } else if (p === 'final_wager') {
+        if (fin) { a.label = 'Open the final question'; a.fn = () => setPhase('final_open', fin.id); }
+        else { a.label = 'Open the final question'; a.disabled = true; a.status = 'Pick a final round below first'; }
+      } else if (p === 'final_open') {
+        a.label = 'Mark the final'; a.fn = () => setPhase('marking');
+      } else if (p === 'tiebreak') {
+        a.label = 'Finish game'; a.fn = () => setPhase('done');
+      } else if (p === 'done') {
+        return null;
+      } else { // 'paused' or anything unexpected
+        a.label = 'Back to lobby'; a.fn = () => setPhase('lobby');
+      }
+      return a;
+    }
+
+    let currentAction = null;
+
+    function renderRun() {
+      const p = state.phase;
+      renderStepper();
+      $('phase-hint').textContent = HINTS[p] || '';
+
+      const summary = $('setup-summary');
+      summary.classList.toggle('hidden', !buildNotes);
+      summary.textContent = buildNotes;
+
+      currentAction = computeAction();
+      const btn = $('primary-action');
+      if (!busy) {
+        btn.classList.toggle('hidden', currentAction === null);
+        if (currentAction) { btn.textContent = currentAction.label; btn.disabled = currentAction.disabled; }
+      }
+      $('action-status').textContent = currentAction ? currentAction.status : '';
+
+      // tiebreak side button — highlighted when the top two are tied
+      const tbBtn = $('btn-tiebreak-side');
+      const showTb = !!(currentAction && currentAction.tb);
+      tbBtn.classList.toggle('hidden', !showTb);
+      if (showTb) {
+        const tied = lb.length >= 2 && lb[0].total === lb[1].total;
+        tbBtn.textContent = tied ? 'Tiebreak — top two tied!' : 'Tiebreak';
+        tbBtn.classList.toggle('btn--accent', tied);
+        tbBtn.classList.toggle('btn--secondary', !tied);
+      }
+
+      // done panel
+      $('done-panel').classList.toggle('hidden', p !== 'done');
+      if (p === 'done') {
+        $('done-standings').innerHTML = lb.map((t, i) =>
+          `<div class="lb-display-row"><span class="lb-display-rank">${i + 1}</span>` +
+          `<span class="lb-display-name">${esc(t.name)}</span>` +
+          `<span class="lb-display-score">${t.total}</span></div>`).join('') ||
+          '<p class="text-dim">No teams played.</p>';
+      }
+
+      // tiebreak live guesses
+      $('tb-live').classList.toggle('hidden', p !== 'tiebreak');
+      if (p === 'tiebreak' && tbGuesses) {
+        $('tb-live-body').innerHTML =
+          `<p class="label mb-sm">Target: ${tbGuesses.target ?? '—'}</p>` +
+          (tbGuesses.ranked.length ? tbGuesses.ranked.map((e, i) =>
+            `<div class="cluster" style="padding: 0.3rem 0; border-bottom: 1px solid var(--ground-3);">
+              <span class="text-accent mono">#${i + 1}</span>
+              <span style="flex:1">${esc(e.name)}</span>
+              <span class="text-teal mono">${e.guess}</span>
+              <span class="text-dim mono">(±${e.delta})</span>
+            </div>`).join('') : 'Waiting for guesses…');
+      }
+
+      renderMarkingLifecycle();
+      renderRoundSelect();
+      highlightPhase(p);
+      $('subs-state').textContent = state.submissions_open ? 'OPEN' : 'CLOSED';
+    }
+
+    $('primary-action').addEventListener('click', async () => {
+      if (!currentAction || !currentAction.fn || busy) return;
+      const btn = $('primary-action');
+      busy = true;
+      btn.classList.add('is-loading');
+      try { await currentAction.fn(); await tick(); }
+      finally { busy = false; btn.classList.remove('is-loading'); }
+    });
+
+    $('btn-tiebreak-side').addEventListener('click', async e => {
+      if (!tbSet) {
+        $('tb-details').open = true;
+        $('tb-details').scrollIntoView({behavior: 'smooth'});
+        toast('Pick a tiebreak question first', 'info');
+        return;
+      }
+      await withSpinner(e.currentTarget, async () => { await setPhase('tiebreak'); await tick(); });
+    });
+
+    // ── stepper ──────────────────────────────────────────────
+    function renderStepper() {
+      const nf = nonFinalRounds();
+      const steps = [{label: 'Lobby', node: 'L'}]
+        .concat(nf.map((r, i) => ({label: r.title, node: String(i + 1), id: r.id})))
+        .concat([{label: 'Final', node: 'F'}, {label: 'Done', node: '★'}]);
+      const p = state.phase, cur = state.current_round;
+      let ci = 0;
+      if (['round_open', 'round_closed', 'marking', 'reveal'].includes(p)) {
+        if (cur && cur.is_final) ci = steps.length - 2;
+        else {
+          const i = nf.findIndex(r => cur && r.id === cur.id);
+          ci = i >= 0 ? i + 1 : 0;
+        }
+      } else if (['final_wager', 'final_open', 'tiebreak'].includes(p)) ci = steps.length - 2;
+      else if (p === 'done') ci = steps.length - 1;
+
+      $('stepper').innerHTML = steps.map((s, i) => {
+        const cls = i < ci ? 'node done' : i === ci ? 'node current' : 'node';
+        const html = `<div class="step"><div class="${cls}">${i < ci ? '✓' : s.node}</div>` +
+                     `<div class="step-label" title="${esc(s.label)}">${esc(s.label)}</div></div>`;
+        const line = i < steps.length - 1 ? `<div class="node-line ${i < ci ? 'filled' : ''}"></div>` : '';
+        return html + line;
+      }).join('');
     }
 
     // ── pause / resume ───────────────────────────────────────
     document.getElementById('btn-pause').addEventListener('click',  e => withSpinner(e.currentTarget, () => setPause(true)));
     document.getElementById('btn-resume').addEventListener('click', e => withSpinner(e.currentTarget, () => setPause(false)));
     async function setPause(paused) {
-      const r = await fetch(`/api/host/pause?${hk()}`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({paused})
-      });
-      if (!r.ok) { toast('Pause toggle failed','err'); return; }
+      const r = await post('/api/host/pause', {paused});
+      if (!r.ok) { toast('Pause toggle failed', 'err'); return; }
       toast(paused ? 'Game paused' : 'Game resumed', 'ok');
+      await tick();
     }
 
-    // ── submissions window ───────────────────────────────────
-    let subsOpen = true;
-    document.getElementById('btn-toggle-subs').addEventListener('click', async () => {
-      subsOpen = !subsOpen; renderSubs();        // optimistic: flip OPEN/CLOSED instantly
-      const r = await fetch(`/api/host/submissions?${hk()}`, {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({open: subsOpen})
-      });
-      if (!r.ok) { subsOpen = !subsOpen; renderSubs(); toast('Toggle failed','err'); return; }
-      toast(subsOpen ? 'Submissions opened' : 'Submissions closed', 'ok');
-    });
-    function renderSubs() {
-      document.getElementById('subs-state').textContent = subsOpen ? 'OPEN' : 'CLOSED';
+    // ── MC mode ──────────────────────────────────────────────
+    async function setMcMode(mode, silent) {
+      const r = await post('/api/host/mc-mode', {mode}).catch(() => null);
+      if (r && r.ok) {
+        if (!silent) toast(mode === 'lacey' ? 'Lacey is in charge' : 'Gladys has the con', 'ok');
+        await tick();
+      } else if (!silent) toast('Could not switch MC mode', 'err');
+    }
+    function renderMc() {
+      const mode = state.mc_mode;
+      $('mc-card-lacey').classList.toggle('selected', mode === 'lacey');
+      $('mc-card-gladys').classList.toggle('selected', mode === 'gladys');
+      $('mc-mini-lacey').classList.toggle('btn--teal', mode === 'lacey');
+      $('mc-mini-lacey').classList.toggle('btn--secondary', mode !== 'lacey');
+      $('mc-mini-gladys').classList.toggle('btn--teal', mode === 'gladys');
+      $('mc-mini-gladys').classList.toggle('btn--secondary', mode !== 'gladys');
+    }
+    $('mc-card-lacey').addEventListener('click', () => setMcMode('lacey'));
+    $('mc-card-gladys').addEventListener('click', () => setMcMode('gladys'));
+    $('mc-mini-lacey').addEventListener('click', () => setMcMode('lacey'));
+    $('mc-mini-gladys').addEventListener('click', () => setMcMode('gladys'));
+
+    // ── final-round picker (rendered into setup + run) ───────
+    let finalOpts = null;
+    const fullFinal = {};
+
+    async function fullFinalOption(id) {
+      if (!fullFinal[id]) {
+        const r = await fetch(`/api/host/final-options?id=${id}&${hk()}`);
+        if (!r.ok) return null;
+        fullFinal[id] = await r.json();
+      }
+      return fullFinal[id];
     }
 
-    async function pollSubs() {
-      try {
-        const r = await fetch(`/api/questions?${hk()}`);
-        if (!r.ok) return;
-        const { questions } = await r.json();
-        const byAuthor = {};
-        for (const q of questions) {
-          const a = q.author_name || 'Anonymous';
-          byAuthor[a] = (byAuthor[a] || 0) + 1;
-        }
-        document.getElementById('subs-count').innerHTML =
-          `<strong>${questions.length}</strong> question${questions.length === 1 ? '' : 's'} submitted`;
-        document.getElementById('subs-by-author').innerHTML =
-          Object.entries(byAuthor).sort((a,b) => b[1]-a[1])
-            .map(([a,n]) => `<li>${esc(a)} — ${n}</li>`).join('');
-      } catch (_) {}
-    }
-
-    // ── build rounds ─────────────────────────────────────────
-    document.getElementById('btn-build').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
-      const r = await fetch(`/api/host/build-rounds?${hk()}`, {method:'POST'});
-      if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail||'Build failed','err'); return; }
-      const d = await r.json();
-      const el = document.getElementById('build-result');
-      el.classList.remove('hidden');
-      el.textContent = `${d.rounds.length} round(s) built.${d.warnings.length ? ' Warnings: '+d.warnings.join('; ') : ''}`;
-      toast('Rounds built', 'ok');
-      await loadRounds();
-    }));
-
-    // ── rounds ───────────────────────────────────────────────
-    let rounds = [];
-    async function loadRounds() {
-      const r = await fetch(`/api/host/rounds?${hk()}`);
-      if (!r.ok) return;
-      const d = await r.json();
-      rounds = d.rounds;
-      // Clear stale options (keep only the placeholder if present)
-      [document.getElementById('round-select'), document.getElementById('marks-round-select')].forEach(sel => {
-        while (sel.options.length > 0) sel.remove(0);
-      });
-      // Re-add placeholder options
-      document.getElementById('round-select').add(new Option('Select a round…', ''));
-      document.getElementById('marks-round-select').add(new Option('Pick a round to mark…', ''));
-      d.rounds.forEach(r => addRoundOption(r.id, r.title));
-    }
-
-    async function loadRoundSelects() {
-      await loadRounds();
-    }
-
-    function addRoundOption(id, title) {
-      [document.getElementById('round-select'), document.getElementById('marks-round-select')].forEach(sel => {
-        if (![...sel.options].find(o => o.value == id)) {
-          const opt = new Option(`${title} (id=${id})`, id);
-          sel.appendChild(opt);
-        }
-      });
-    }
-
-    document.getElementById('btn-open-round').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
-      const rid = document.getElementById('round-select').value;
-      if (!rid) { toast('Select a round first', 'err'); return; }
-      const r = await fetch(`/api/host/phase?${hk()}`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({phase: 'round_open', round_id: parseInt(rid)})
-      });
-      if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail||'Failed','err'); return; }
-      toast(`Round ${rid} opened`, 'ok');
-    }));
-
-    // ── final round ──────────────────────────────────────────
-    document.getElementById('btn-create-final').addEventListener('click', async () => {
-      const text    = document.getElementById('final-text').value.trim();
-      const itemsRaw = document.getElementById('final-items').value;
-      const items   = itemsRaw.split('\n').map(s=>s.trim()).filter(Boolean);
-      const cap     = parseInt(document.getElementById('final-cap').value) || 10;
-      const ordered = document.getElementById('final-ordered').checked;
-      if (!text)           { toast('Enter the question text', 'err'); return; }
-      if (!items.length)   { toast('Enter at least one answer item', 'err'); return; }
-
-      const r = await fetch(`/api/host/final?${hk()}`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({text, items, ordered, wager_cap: cap})
-      });
-      if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail||'Failed','err'); return; }
-      const d = await r.json();
-      addRoundOption(d.round_id, 'Final Round');
-      toast(`Final round created (id=${d.round_id})`, 'ok');
-    });
-
-    // ── tiebreak ─────────────────────────────────────────────
-    document.getElementById('btn-set-tb').addEventListener('click', async () => {
-      const question = document.getElementById('tb-question').value.trim();
-      const value    = parseFloat(document.getElementById('tb-value').value);
-      if (!question)  { toast('Enter tiebreak question', 'err'); return; }
-      if (isNaN(value)){ toast('Enter numeric answer', 'err'); return; }
-      const r = await fetch(`/api/host/tiebreak?${hk()}`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({question, value})
-      });
-      if (!r.ok) { toast('Tiebreak failed','err'); return; }
-      toast('Tiebreak set', 'ok');
-    });
-
-    document.getElementById('btn-tb-result').addEventListener('click', async () => {
-      const r = await fetch(`/api/host/tiebreak-result?${hk()}`);
-      if (!r.ok) { toast('No tiebreak data','err'); return; }
-      const d = await r.json();
-      const wrap = document.getElementById('tb-result-wrap');
-      wrap.classList.remove('hidden');
-      wrap.innerHTML = `<p class="label mb-sm">Target: ${d.target}</p>` +
-        d.ranked.map((e,i) =>
-          `<div class="cluster" style="padding: 0.3rem 0; border-bottom: 1px solid var(--ground-3);">
-            <span class="text-accent mono">#${i+1}</span>
-            <span style="flex:1">${esc(e.name)}</span>
-            <span class="text-teal mono">${e.guess}</span>
-            <span class="text-dim mono">(±${e.delta})</span>
-          </div>`
-        ).join('');
-    });
-
-    // ── CSV download ─────────────────────────────────────────
-    document.getElementById('csv-link').addEventListener('click', e => {
-      e.preventDefault();
-      window.open(`/api/host/export.csv?${hk()}`, '_blank');
-    });
-
-    // ── marking ──────────────────────────────────────────────
-    document.getElementById('btn-load-marks').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
-      const rid = document.getElementById('marks-round-select').value;
-      if (!rid) { toast('Select a round to mark', 'err'); return; }
-      await loadMarks(parseInt(rid));
-    }));
-
-    async function loadMarks(roundId) {
-      const r = await fetch(`/api/host/marks?round_id=${roundId}&${hk()}`);
-      if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail||'Failed to load marks','err'); return; }
-      const d = await r.json();
-      renderMarks(d.teams, roundId);
-    }
-
-    function renderMarks(teams, roundId) {
-      const area = document.getElementById('marks-area');
-      if (!teams.length) { area.innerHTML = '<p class="text-dim">No teams yet.</p>'; return; }
-
-      area.innerHTML = teams.map(team => {
-        const photoHtml = team.photo_url
-          ? `<a href="${esc(team.photo_url)}" target="_blank"><img src="${esc(team.photo_url)}" class="photo-thumb" alt="Answer sheet for ${esc(team.name)}"></a>`
-          : `<div class="panel" style="width:120px;height:80px;display:flex;align-items:center;justify-content:center;"><span class="text-dim label">No photo</span></div>`;
-
-        const marksHtml = team.marks.map(m => `
-          <div class="mark-q-row" data-team="${team.team_id}" data-qid="${m.question_id}">
-            <div>
-              <span class="q-num" style="display:inline">Q${m.question_id}</span>
-              ${m.author_name ? `<span class="badge badge--dim">by ${esc(m.author_name)}</span>` : ''}
-              <span class="mark-transcript">${esc(m.transcription) || '(not graded)'}</span>
-              ${m.flagged ? '<span class="badge badge--red">flagged</span>' : ''}
+    function renderFinalPicker(containerId) {
+      const root = $(containerId);
+      root.innerHTML =
+        finalOpts.map(o => `
+          <div class="pick-row" data-id="${o.id}">
+            <div class="pick-main">
+              <p>${esc(o.text)}</p>
+              <p class="cluster mt-sm">
+                <span class="badge badge--dim">${o.item_count} answers</span>
+                <span class="badge badge--dim">${o.ordered ? 'in order' : 'any order'}</span>
+                <span class="badge badge--dim">wager cap ${o.wager_cap}</span>
+              </p>
+              <div class="pick-answers panel hidden"></div>
+            </div>
+            <div class="pick-actions">
+              <button class="btn btn--sm btn--primary pick-final" data-id="${o.id}">Pick</button>
+              <button class="btn btn--sm btn--secondary reveal-final" data-id="${o.id}">Reveal answers</button>
+            </div>
+          </div>`).join('') + `
+        <details class="mt-sm">
+          <summary class="label" style="cursor:pointer;">Write your own instead</summary>
+          <div class="stack mt-sm">
+            <div class="field">
+              <label>Question text</label>
+              <textarea class="cf-text" rows="2" placeholder="Name as many beach songs as you can…"></textarea>
+            </div>
+            <div class="field">
+              <label>Answer items <span class="text-dim">(one per line)</span></label>
+              <textarea class="cf-items" rows="3" placeholder="In the Summertime&#10;Kokomo&#10;Margaritaville"></textarea>
             </div>
             <div class="cluster">
-              <button class="btn btn--sm ${m.is_correct ? 'btn--teal' : 'btn--secondary'} mark-correct-btn"
-                data-team="${team.team_id}" data-qid="${m.question_id}" data-correct="${m.is_correct ? 1 : 0}">
-                ${m.is_correct ? '✓ Correct' : '✗ Wrong'}
-              </button>
-            </div>
-            <div>
-              <input type="number" class="mark-score-input" data-team="${team.team_id}" data-qid="${m.question_id}"
-                value="${m.score || 0}" step="0.5" min="0"
-                style="width: 70px; padding: 0.3em 0.5em; font-size: var(--fs-sm);"
-                aria-label="Score for Q${m.question_id}">
-            </div>
-            <div>
-              <button class="btn btn--sm btn--secondary mark-save-btn"
-                data-team="${team.team_id}" data-qid="${m.question_id}">Save</button>
-            </div>
-          </div>
-        `).join('');
-
-        const addAltHtml = `
-          <div class="cluster mt-sm">
-            <input type="number" class="alt-qid-input" placeholder="Q id" style="width: 80px; padding: 0.4em; font-size: var(--fs-sm);">
-            <input type="text" class="alt-text-input" placeholder="Add alternate answer" style="flex: 1; padding: 0.4em; font-size: var(--fs-sm);">
-            <button class="btn btn--sm btn--secondary add-alt-btn" data-team="${team.team_id}">Add alt</button>
-          </div>`;
-
-        return `
-          <div class="mark-panel mb-sm">
-            <div class="mark-panel__header">
-              <div>
-                <p class="eyebrow">${esc(team.name)}</p>
+              <div class="field" style="flex: 1;">
+                <label>Wager cap</label>
+                <input type="number" class="cf-cap" value="10" min="0">
               </div>
-              ${photoHtml}
+              <label class="label" style="display: flex; align-items: center; gap: 0.4rem;">
+                <input type="checkbox" class="cf-ordered"> Ordered
+              </label>
             </div>
-            <div class="mark-panel__body">
-              ${marksHtml}
-              ${addAltHtml}
+            <div><button class="btn btn--secondary create-final">Create final round</button></div>
+          </div>
+        </details>`;
+      root.addEventListener('click', onFinalPickerClick);
+    }
+
+    async function onFinalPickerClick(e) {
+      const reveal = e.target.closest('.reveal-final');
+      const pick   = e.target.closest('.pick-final');
+      const create = e.target.closest('.create-final');
+      if (reveal) {
+        const row = reveal.closest('.pick-row');
+        const box = row.querySelector('.pick-answers');
+        if (!box.classList.contains('hidden')) {
+          box.classList.add('hidden'); reveal.textContent = 'Reveal answers'; return;
+        }
+        await withSpinner(reveal, async () => {
+          const o = await fullFinalOption(parseInt(reveal.dataset.id));
+          if (!o) { toast('Could not load answers', 'err'); return; }
+          box.innerHTML = (o.ordered ? '<ol>' : '<ul>') +
+            o.items.map(i => `<li>${esc(i)}</li>`).join('') +
+            (o.ordered ? '</ol>' : '</ul>');
+          box.classList.remove('hidden');
+          reveal.textContent = 'Hide answers';
+        });
+      } else if (pick) {
+        if (finalRound()) { toast('A final round is already set', 'err'); return; }
+        await withSpinner(pick, async () => {
+          const o = await fullFinalOption(parseInt(pick.dataset.id));
+          if (!o) { toast('Could not load that option', 'err'); return; }
+          const r = await post('/api/host/final',
+            {text: o.text, items: o.items, ordered: o.ordered, wager_cap: o.wager_cap});
+          if (!r.ok) { const e2 = await r.json().catch(()=>({})); toast(e2.detail || 'Failed to set final', 'err'); return; }
+          toast('Final round set', 'ok');
+          await tick();
+        });
+      } else if (create) {
+        if (finalRound()) { toast('A final round is already set', 'err'); return; }
+        const scope = create.closest('details');
+        const text = scope.querySelector('.cf-text').value.trim();
+        const items = scope.querySelector('.cf-items').value.split('\n').map(s => s.trim()).filter(Boolean);
+        const cap = parseInt(scope.querySelector('.cf-cap').value) || 10;
+        const ordered = scope.querySelector('.cf-ordered').checked;
+        if (!text) { toast('Enter the question text', 'err'); return; }
+        if (!items.length) { toast('Enter at least one answer item', 'err'); return; }
+        await withSpinner(create, async () => {
+          const r = await post('/api/host/final', {text, items, ordered, wager_cap: cap});
+          if (!r.ok) { const e2 = await r.json().catch(()=>({})); toast(e2.detail || 'Failed', 'err'); return; }
+          toast('Final round created', 'ok');
+          await tick();
+        });
+      }
+    }
+
+    // ── tiebreak picker ──────────────────────────────────────
+    let tbOpts = null;
+    const fullTb = {};
+
+    async function fullTbOption(id) {
+      if (!fullTb[id]) {
+        const r = await fetch(`/api/host/tiebreak-options?id=${id}&${hk()}`);
+        if (!r.ok) return null;
+        fullTb[id] = await r.json();
+      }
+      return fullTb[id];
+    }
+
+    function renderTbPicker() {
+      const root = $('tb-picker');
+      root.innerHTML =
+        tbOpts.map(o => `
+          <div class="pick-row" data-id="${o.id}">
+            <div class="pick-main">
+              <p>${esc(o.question)}</p>
+              <div class="pick-answers panel hidden"></div>
             </div>
+            <div class="pick-actions">
+              <button class="btn btn--sm btn--primary pick-tb" data-id="${o.id}">Pick</button>
+              <button class="btn btn--sm btn--secondary reveal-tb" data-id="${o.id}">Reveal answer</button>
+            </div>
+          </div>`).join('') + `
+        <details class="mt-sm">
+          <summary class="label" style="cursor:pointer;">Write your own instead</summary>
+          <div class="stack mt-sm">
+            <div class="field">
+              <label>Tiebreak question</label>
+              <input type="text" class="ctb-question" placeholder="How many grains of sand on Siesta Key?">
+            </div>
+            <div class="field">
+              <label>Correct value</label>
+              <input type="number" class="ctb-value" step="any" placeholder="42000000">
+            </div>
+            <div><button class="btn btn--secondary create-tb">Set tiebreak</button></div>
+          </div>
+        </details>`;
+      root.addEventListener('click', onTbPickerClick);
+    }
+
+    async function setTiebreak(question, value) {
+      const r = await post('/api/host/tiebreak', {question, value});
+      if (!r.ok) { toast('Tiebreak failed', 'err'); return false; }
+      tbSet = true;
+      $('tb-status').textContent = 'set';
+      $('tb-status').className = 'badge badge--teal';
+      toast('Tiebreak set', 'ok');
+      return true;
+    }
+
+    async function onTbPickerClick(e) {
+      const reveal = e.target.closest('.reveal-tb');
+      const pick   = e.target.closest('.pick-tb');
+      const create = e.target.closest('.create-tb');
+      if (reveal) {
+        const row = reveal.closest('.pick-row');
+        const box = row.querySelector('.pick-answers');
+        if (!box.classList.contains('hidden')) {
+          box.classList.add('hidden'); reveal.textContent = 'Reveal answer'; return;
+        }
+        await withSpinner(reveal, async () => {
+          const o = await fullTbOption(parseInt(reveal.dataset.id));
+          if (!o) { toast('Could not load the answer', 'err'); return; }
+          box.textContent = `Answer: ${o.value}`;
+          box.classList.remove('hidden');
+          reveal.textContent = 'Hide answer';
+        });
+      } else if (pick) {
+        await withSpinner(pick, async () => {
+          const o = await fullTbOption(parseInt(pick.dataset.id));
+          if (!o) { toast('Could not load that option', 'err'); return; }
+          await setTiebreak(o.question, o.value);
+        });
+      } else if (create) {
+        const scope = create.closest('details');
+        const question = scope.querySelector('.ctb-question').value.trim();
+        const value = parseFloat(scope.querySelector('.ctb-value').value);
+        if (!question) { toast('Enter tiebreak question', 'err'); return; }
+        if (isNaN(value)) { toast('Enter numeric answer', 'err'); return; }
+        await withSpinner(create, () => setTiebreak(question, value));
+      }
+    }
+
+    // status badges + pick-button gating, refreshed every tick
+    function updatePickerChrome() {
+      const has = !!finalRound();
+      for (const id of ['final-status-setup', 'final-status-run']) {
+        const el = $(id);
+        el.textContent = has ? 'ready' : 'not set';
+        el.className = `badge ${has ? 'badge--teal' : 'badge--dim'}`;
+      }
+      document.querySelectorAll('.pick-final, .create-final').forEach(b => { b.disabled = has; });
+    }
+
+    // ── Lacey marking console — one question at a time ───────
+    let mk = null;   // {roundId, qids, byQ, teams, idx}
+
+    function renderMarkingLifecycle() {
+      const p = state.phase, cur = state.current_round;
+      const show = (p === 'marking' || p === 'reveal') && !!cur;
+      $('marking-wrap').classList.toggle('hidden', !show);
+      if (!show) { if (mk) { mk = null; $('mk-console').innerHTML = ''; } return; }
+      $('mk-round-title').textContent = cur.title + (p === 'reveal' ? ' (fix-ups)' : '');
+      if (!mk || mk.roundId !== cur.id) buildConsole(cur);
+    }
+
+    async function buildConsole(cur) {
+      const rid = cur.id;
+      mk = {roundId: rid, loading: true};
+      $('mk-console').innerHTML = '<p class="text-dim">Loading sheets…</p>';
+      const [qr, mr] = await Promise.all([
+        fetch(`/api/questions?${hk()}`),
+        fetch(`/api/host/marks?round_id=${rid}&${hk()}`),
+      ]);
+      if (!mk || mk.roundId !== rid) return;   // phase moved on mid-fetch
+      if (!qr.ok || !mr.ok) {
+        $('mk-console').innerHTML = '<p class="text-danger">Could not load marking data.</p>';
+        return;
+      }
+      const byQ = {};
+      (await qr.json()).questions.forEach(q => { byQ[q.id] = q; });
+      const teams = (await mr.json()).teams.map(t => ({
+        team_id: t.team_id, name: t.name, photo_url: t.photo_url,
+        marks: Object.fromEntries(t.marks.map(m => [m.question_id, m])),
+      }));
+      if (!mk || mk.roundId !== rid) return;
+      mk = {roundId: rid, qids: cur.questions.map(q => q.id), byQ, teams, idx: 0};
+      renderConsole();
+    }
+
+    function markingProgress() {
+      if (!mk || mk.loading || !mk.qids) return '';
+      const total = mk.qids.length * mk.teams.length;
+      if (!total) return '';
+      let done = 0;
+      for (const t of mk.teams) for (const qid of mk.qids) if (t.marks[qid]?.marked) done++;
+      return done === total ? 'All marked ✓' : `${done} of ${total} marks entered`;
+    }
+
+    function verdictBtns(t, qid) {
+      const m = t.marks[qid];
+      const right = m.marked && m.is_correct;
+      const wrong = m.marked && !m.is_correct;
+      return `
+        <button class="btn mk-btn ${right ? 'btn--teal' : 'btn--secondary'}" data-team="${t.team_id}" data-v="1">Right</button>
+        <button class="btn mk-btn ${wrong ? 'btn--danger' : 'btn--secondary'}" data-team="${t.team_id}" data-v="0">Wrong</button>`;
+    }
+
+    function renderConsole() {
+      const el = $('mk-console');
+      if (!mk || mk.loading) return;
+      if (!mk.qids.length) { el.innerHTML = '<p class="text-dim">This round has no questions.</p>'; return; }
+      if (!mk.teams.length) { el.innerHTML = '<p class="text-dim">No teams yet — nothing to mark.</p>'; return; }
+      const qid = mk.qids[mk.idx];
+      const q = mk.byQ[qid];
+      if (!q) { el.innerHTML = '<p class="text-danger">Question data missing — reload.</p>'; return; }
+      const multi = !!q.answer_items;
+
+      const answerHtml = multi
+        ? (q.ordered ? '<ol>' : '<ul>') + q.answer_items.map(i => `<li>${esc(i)}</li>`).join('') + (q.ordered ? '</ol>' : '</ul>')
+        : `<strong>${esc(q.answer)}</strong>` +
+          (q.acceptable_answers && q.acceptable_answers.length
+            ? ` <span class="text-dim">(also: ${q.acceptable_answers.map(esc).join(', ')})</span>` : '');
+
+      const rows = mk.teams.map(t => {
+        const m = t.marks[qid];
+        const verdict = multi
+          ? `<input type="number" class="mk-items" data-team="${t.team_id}" min="0" max="${q.item_count}"
+               value="${m.items_correct ?? ''}" placeholder="0" style="width: 5.5rem;"
+               aria-label="Items correct for ${esc(t.name)}">
+             <span class="label">of ${q.item_count} correct</span>`
+          : verdictBtns(t, qid);
+        return `
+          <div class="mk-row" data-team="${t.team_id}">
+            <div class="mk-info">
+              <strong>${esc(t.name)}</strong>
+              ${m.flagged ? ' <span class="badge badge--red">low confidence</span>' : ''}
+              <div class="mark-transcript">${m.transcription ? esc(m.transcription)
+                : (t.photo_url ? '(photo in — no transcription)' : '(paper sheet — no photo)')}</div>
+            </div>
+            ${t.photo_url ? `<a href="${esc(t.photo_url)}" target="_blank">
+              <img src="${esc(t.photo_url)}" class="photo-thumb mk-thumb" alt="Sheet from ${esc(t.name)}"></a>` : ''}
+            <div class="mk-verdict">${verdict}</div>
           </div>`;
       }).join('');
 
-      // Wire up correct toggle buttons
-      area.querySelectorAll('.mark-correct-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const isCorrect = btn.dataset.correct === '1' ? 0 : 1;
-          btn.dataset.correct = isCorrect;
-          btn.className = `btn btn--sm ${isCorrect ? 'btn--teal' : 'btn--secondary'} mark-correct-btn`;
-          btn.textContent = isCorrect ? '✓ Correct' : '✗ Wrong';
-        });
-      });
+      el.innerHTML = `
+        <div class="cluster" style="justify-content: space-between;">
+          <button class="btn btn--sm btn--secondary" id="mk-prev" ${mk.idx === 0 ? 'disabled' : ''}>← Prev</button>
+          <span class="mono" style="font-size: var(--fs-sm);">Q ${mk.idx + 1} of ${mk.qids.length}</span>
+          <span id="mk-qmarked" class="badge badge--dim"></span>
+          <button class="btn btn--sm btn--secondary" id="mk-next" ${mk.idx === mk.qids.length - 1 ? 'disabled' : ''}>Next →</button>
+        </div>
+        <div>
+          <p class="eyebrow">${q.point_value || 1} pt${(q.point_value || 1) === 1 ? '' : 's'}${q.author_name ? ' · by ' + esc(q.author_name) : ''}</p>
+          <h2 class="mt-sm">${esc(q.text)}</h2>
+          <div class="panel mk-answer mt-sm">${answerHtml}</div>
+        </div>
+        <div id="mk-teams">${rows}</div>
+        <div><button class="btn btn--sm btn--secondary" id="mk-reload">Reload sheet data</button></div>`;
+      paintQuestionChip();
+    }
 
-      // Wire up save buttons
-      area.querySelectorAll('.mark-save-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const teamId = parseInt(btn.dataset.team);
-          const qid    = parseInt(btn.dataset.qid);
-          const row = btn.closest('.mark-q-row');
-          const correctBtn = row.querySelector('.mark-correct-btn');
-          const scoreInput = row.querySelector('.mark-score-input');
-          const isCorrect  = correctBtn.dataset.correct === '1';
-          const score      = parseFloat(scoreInput.value) || 0;
+    function paintQuestionChip() {
+      const chip = $('mk-qmarked');
+      if (!chip || !mk || mk.loading) return;
+      const qid = mk.qids[mk.idx];
+      const done = mk.teams.filter(t => t.marks[qid]?.marked).length;
+      const all = done === mk.teams.length && mk.teams.length > 0;
+      chip.textContent = all ? 'all marked ✓' : `${done}/${mk.teams.length} marked`;
+      chip.className = `badge ${all ? 'badge--teal' : 'badge--dim'}`;
+      $('action-status').textContent = state.phase === 'marking' ? markingProgress() : $('action-status').textContent;
+    }
 
-          const r = await fetch(`/api/host/mark?${hk()}`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({team_id: teamId, question_id: qid, is_correct: isCorrect, score})
-          });
-          if (!r.ok) { toast('Save failed', 'err'); return; }
-          toast(`Saved Q${qid} for ${teamId}`, 'ok');
-        });
-      });
+    function paintRow(teamId) {
+      const qid = mk.qids[mk.idx];
+      const t = mk.teams.find(x => x.team_id === teamId);
+      const row = document.querySelector(`#mk-teams .mk-row[data-team="${teamId}"]`);
+      if (!t || !row) return;
+      const verdict = row.querySelector('.mk-verdict');
+      if (verdict.querySelector('.mk-items')) {
+        verdict.querySelector('.mk-items').value = t.marks[qid].items_correct ?? '';
+      } else {
+        verdict.innerHTML = verdictBtns(t, qid);
+      }
+      paintQuestionChip();
+    }
 
-      // Wire up add alternate
-      area.querySelectorAll('.add-alt-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const wrap = btn.closest('.mark-panel__body');
-          const qid  = parseInt(wrap.querySelector('.alt-qid-input').value);
-          const alt  = wrap.querySelector('.alt-text-input').value.trim();
-          if (!qid || !alt) { toast('Enter question id and alternate answer', 'err'); return; }
-          const r = await fetch(`/api/host/add-alternate?${hk()}`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({question_id: qid, alternate: alt})
-          });
-          if (!r.ok) { toast('Add alternate failed', 'err'); return; }
-          toast('Alternate added', 'ok');
-          wrap.querySelector('.alt-text-input').value = '';
+    // Optimistic marking: flip the UI instantly, revert + toast if the POST fails.
+    function sendMark(teamId, body, prev) {
+      post('/api/host/mark', body)
+        .then(r => { if (!r.ok) throw new Error(); })
+        .catch(() => {
+          const t = mk && mk.teams.find(x => x.team_id === teamId);
+          if (t && mk.qids[mk.idx] === body.question_id) {
+            Object.assign(t.marks[body.question_id], prev);
+            paintRow(teamId);
+          }
+          toast('Save failed — tap it again', 'err');
         });
+    }
+
+    $('mk-console').addEventListener('click', e => {
+      if (e.target.closest('#mk-prev')) { mk.idx--; renderConsole(); return; }
+      if (e.target.closest('#mk-next')) { mk.idx++; renderConsole(); return; }
+      if (e.target.closest('#mk-reload')) {
+        if (state.current_round) { mk = null; buildConsole(state.current_round); }
+        return;
+      }
+      const btn = e.target.closest('.mk-btn');
+      if (!btn || !mk || mk.loading) return;
+      const teamId = parseInt(btn.dataset.team);
+      const correct = btn.dataset.v === '1';
+      const qid = mk.qids[mk.idx];
+      const q = mk.byQ[qid];
+      const t = mk.teams.find(x => x.team_id === teamId);
+      const m = t.marks[qid];
+      const prev = {marked: m.marked, is_correct: m.is_correct, score: m.score};
+      m.marked = true;
+      m.is_correct = correct;
+      m.score = correct ? (q.point_value || 1) : 0;
+      paintRow(teamId);
+      sendMark(teamId, {team_id: teamId, question_id: qid, is_correct: correct, score: m.score}, prev);
+    });
+
+    $('mk-console').addEventListener('change', e => {
+      const input = e.target.closest('.mk-items');
+      if (!input || !mk || mk.loading) return;
+      const teamId = parseInt(input.dataset.team);
+      const qid = mk.qids[mk.idx];
+      const q = mk.byQ[qid];
+      let v = parseInt(input.value);
+      if (isNaN(v)) return;
+      v = Math.min(q.item_count || 0, Math.max(0, v));
+      input.value = v;
+      const t = mk.teams.find(x => x.team_id === teamId);
+      const m = t.marks[qid];
+      const prev = {marked: m.marked, is_correct: m.is_correct, score: m.score, items_correct: m.items_correct};
+      m.marked = true;
+      m.items_correct = v;
+      m.is_correct = v > 0;
+      paintQuestionChip();
+      sendMark(teamId, {team_id: teamId, question_id: qid, is_correct: v > 0, score: 0, items_correct: v}, prev);
+    });
+
+    // ── advanced escape hatch ────────────────────────────────
+    const VALID_PHASES = ['draft','lobby','round_open','round_closed','marking','reveal',
+                          'final_wager','final_open','tiebreak','done'];
+
+    function buildPhaseButtons() {
+      const wrap = $('phase-buttons');
+      wrap.innerHTML = VALID_PHASES.map(p =>
+        `<button class="btn btn--secondary phase-btn" data-phase="${p}">${p.replace(/_/g,' ')}</button>`
+      ).join('');
+      wrap.querySelectorAll('[data-phase]').forEach(btn => {
+        btn.addEventListener('click', async () => { await setPhase(btn.dataset.phase); await tick(); });
       });
     }
+
+    function highlightPhase(phase) {
+      document.querySelectorAll('#phase-buttons [data-phase]').forEach(b => {
+        b.classList.toggle('btn--teal', b.dataset.phase === phase);
+        b.classList.toggle('btn--secondary', b.dataset.phase !== phase);
+      });
+    }
+
+    function renderRoundSelect() {
+      const sel = $('round-select');
+      const sig = rounds.map(r => `${r.id}:${r.title}`).join('|');
+      if (sel.dataset.sig === sig || document.activeElement === sel) return;
+      sel.dataset.sig = sig;
+      sel.innerHTML = '<option value="">Select a round…</option>' +
+        rounds.map(r => `<option value="${r.id}">${esc(r.title)} (${r.question_count} q)</option>`).join('');
+    }
+
+    $('btn-open-round').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
+      const rid = $('round-select').value;
+      if (!rid) { toast('Select a round first', 'err'); return; }
+      if (await setPhase('round_open', parseInt(rid))) await tick();
+    }));
+
+    $('btn-toggle-subs').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
+      const open = !state.submissions_open;
+      const r = await post('/api/host/submissions', {open});
+      if (!r.ok) { toast('Toggle failed', 'err'); return; }
+      toast(open ? 'Submissions opened' : 'Submissions closed', 'ok');
+      await tick();
+    }));
+
+    // ── CSV download ─────────────────────────────────────────
+    $('csv-link').addEventListener('click', e => {
+      e.preventDefault();
+      window.open(`/api/host/export.csv?${hk()}`, '_blank');
+    });
+    $('csv-btn').addEventListener('click', () => {
+      window.open(`/api/host/export.csv?${hk()}`, '_blank');
+    });
 
     // ── leaderboard ──────────────────────────────────────────
-    async function pollLB() {
-      try {
-        const [stateRes, lbRes] = await Promise.all([
-          fetch('/api/state'),
-          fetch('/api/leaderboard')
-        ]);
-        if (stateRes.ok) {
-          const state = await stateRes.json();
-          document.getElementById('pause-badge').classList.toggle('hidden', !state.paused);
-          subsOpen = state.submissions_open;
-          renderSubs();
-          highlightPhase(state.phase);
-          renderMcMode(state.mc_mode);
-          renderNextStep(state.phase);
-          if (state.current_round) {
-            addRoundOption(state.current_round.id, state.current_round.title);
-          }
-        }
-        if (lbRes.ok) {
-          const lb = await lbRes.json();
-          const tbody = document.getElementById('lb-body');
-          tbody.innerHTML = lb.teams.map((t,i) =>
-            `<tr><td class="lb-rank">${i+1}</td><td>${esc(t.name)}</td><td class="text-teal">${t.total}</td></tr>`
-          ).join('');
-        }
-      } catch (_) {}
-    }
-
-    // ── MC mode (who marks the sheets) ───────────────────────
-    const MC_DESC = {
-      lacey:  'Lacey in Charge — a human MC collects the sheets and enters every mark by hand in the marking grid. Photos are optional keepsakes.',
-      gladys: 'Gladys the AI MILF — teams snap a photo, the AI transcribes and proposes marks, the MC just confirms or overrides.',
-    };
-    function renderMcMode(mode) {
-      document.getElementById('btn-mode-lacey').classList.toggle('btn--teal', mode === 'lacey');
-      document.getElementById('btn-mode-gladys').classList.toggle('btn--teal', mode === 'gladys');
-      document.getElementById('mc-mode-desc').textContent = MC_DESC[mode] || '';
-    }
-    async function setMcMode(mode) {
-      const r = await fetch(`/api/host/mc-mode?${hk()}`, {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({mode})
-      }).catch(() => null);
-      if (r && r.ok) { renderMcMode(mode); toast(mode === 'lacey' ? 'Lacey is in charge' : 'Gladys has the con', 'ok'); }
-      else toast('Could not switch MC mode', 'err');
-    }
-    document.getElementById('btn-mode-lacey').addEventListener('click', () => setMcMode('lacey'));
-    document.getElementById('btn-mode-gladys').addEventListener('click', () => setMcMode('gladys'));
-
-    // ── next-step hint: continuity through the night ─────────
-    const NEXT_STEP = {
-      draft:       'Setup: collect questions, build rounds, pick your MC — then set phase to lobby to kick off.',
-      lobby:       'Doors open: teams are joining on their phones. When everyone\'s in, open the first round.',
-      round_open:  'Round live: teams write on paper and submit a photo. Call "pens down" (round closed) when time\'s up.',
-      round_closed:'Pens down: teams can still hand in their sheet photo. Move to marking when all sheets are in.',
-      marking:     'Marking: review each team\'s sheet in the grid, fix anything, then reveal.',
-      reveal:      'Reveal: read the answers out. Next: open another round, or final wager if rounds are done.',
-      final_wager: 'Final wagers: teams bet before seeing the question. Then open the final round.',
-      final_open:  'Final live: teams answer and submit. Then mark, and reveal.',
-      tiebreak:    'Tiebreak: pose the nearest-wins number, collect guesses, check the result below.',
-      done:        'Game over — standings are final. Export the CSV for posterity.',
-    };
-    function renderNextStep(phase) {
-      const el = document.getElementById('next-step');
-      if (el) el.textContent = NEXT_STEP[phase] || '';
+    function renderLeaderboard() {
+      $('lb-body').innerHTML = lb.map((t, i) =>
+        `<tr><td class="lb-rank">${i + 1}</td><td>${esc(t.name)}</td><td class="text-teal">${t.total}</td></tr>`
+      ).join('');
     }
 
     // ── init ─────────────────────────────────────────────────
+    async function loadPickers() {
+      const [fr, tr] = await Promise.all([
+        fetch(`/api/host/final-options?${hk()}`),
+        fetch(`/api/host/tiebreak-options?${hk()}`),
+      ]);
+      if (fr.ok) {
+        finalOpts = (await fr.json()).options;
+        renderFinalPicker('final-picker-setup');
+        renderFinalPicker('final-picker-run');
+      }
+      if (tr.ok) {
+        tbOpts = (await tr.json()).options;
+        renderTbPicker();
+      }
+      updatePickerChrome();
+    }
+
     function initHost() {
       buildPhaseButtons();
-      loadRoundSelects();
-      pollLB();
-      pollSubs();
-      setInterval(pollLB, 2500);
-      setInterval(pollSubs, 2500);
+      loadPickers();
+      tick().then(() => {
+        // Index on Lacey: she'll almost certainly run the game. Default the MC
+        // mode to her once, before the game starts; the host can still pick Gladys.
+        if (state && state.phase === 'draft' && !localStorage.getItem('sbt_mc_defaulted')) {
+          localStorage.setItem('sbt_mc_defaulted', '1');
+          if (state.mc_mode !== 'lacey') setMcMode('lacey', true);
+        }
+      });
+      setInterval(tick, 2000);
     }
 
     // Auto-unlock only if the stored key still checks out server-side
