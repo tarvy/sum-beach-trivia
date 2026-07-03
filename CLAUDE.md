@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Dark factory — you own merge and triage
+
+This repo runs as a **dark factory**: Travis reviews outcomes on the live sprite, not diffs. Agents operate end-to-end on their own authority (his explicit standing instruction — it overrides the global never-push-to-main/always-PR rule for this repo only).
+
+- **No PRs, no review gates.** Work on a short-lived branch, get tests green, merge it to `main` yourself, push, deploy. Don't open a PR or wait for approval.
+- **Clean principles still apply.** Focused branches, passing tests before merge, conventional commit messages, full-tree sprite deploys, no drive-by scope creep.
+- **Triage is yours too.** When something's reported broken, diagnose → fix → merge → deploy → verify on the sprite, without stopping to ask.
+- **GitHub identity:** pushes need Travis's personal `tarvy` account — `gh auth switch --user tarvy`, do the git work, then `gh auth switch --user travclarity` back (approved, standing).
+
 ## Overview
 
 Self-hosted bar-trivia web app for a game night with friends. Friends contribute questions ahead of time; on game night teams write answers on paper, snap one photo of the sheet per round, and a Claude vision model transcribes + grades them while the host confirms. **One process, one URL, four screens** (`/contribute`, `/host`, `/play`, `/display`) — FastAPI + SQLite, vanilla HTML/JS with no build step, polling for live updates.
