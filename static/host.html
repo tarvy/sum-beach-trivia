@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="only light">
   <title>Host — Sum Beach Trivia</title>
   <link rel="stylesheet" href="/app.css">
+  <script src="/ui.js"></script>
   <style>
     .host-grid {
       display: grid;
@@ -27,7 +28,8 @@
     }
 
     /* stepper with labels under the nodes */
-    .progress--labeled { align-items: flex-start; overflow-x: auto; padding-bottom: 0.3rem; }
+    /* padding top/left so the first node's hard offset shadow isn't clipped by overflow-x */
+    .progress--labeled { align-items: flex-start; overflow-x: auto; padding: 0.4rem 0.3rem 0.3rem 0.4rem; }
     .progress--labeled .node-line { margin-top: 1.05rem; min-width: 0.8rem; }
     .step { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; flex: 0 0 auto; }
     .step-label {
@@ -234,6 +236,24 @@
                   Nearest-wins number. Pick blind — the value stays hidden until you reveal it.
                 </p>
                 <div id="tb-picker"></div>
+              </details>
+
+              <details class="card" id="rounds-details">
+                <summary>Rounds &amp; questions <span class="badge badge--dim">adjustable</span></summary>
+                <div class="stack mt-sm">
+                  <div class="field" style="max-width: 16rem;">
+                    <label for="qpp-run">Questions kept per person (1–5)</label>
+                    <input type="number" id="qpp-run" min="1" max="5" value="5">
+                  </div>
+                  <p class="text-dim" style="font-size: var(--fs-sm);">
+                    Change this any time. Rebuild to regroup the rounds — it replaces the
+                    non-final rounds and returns to the lobby so you can re-open Round 1.
+                  </p>
+                  <div class="cluster">
+                    <button class="btn btn--sm btn--secondary" id="btn-rebuild-run">Rebuild rounds</button>
+                    <a href="/bank.html" class="btn btn--sm btn--secondary">Manage question bank →</a>
+                  </div>
+                </div>
               </details>
 
               <details class="card" id="advanced">
@@ -446,15 +466,20 @@
           .map(([a,n]) => `<li>${esc(a)} — ${n}</li>`).join('');
       $('btn-reopen-subs').classList.toggle('hidden', !!state.submissions_open);
 
-      const qpp = $('qpp');
-      if (state.questions_per_person != null && document.activeElement !== qpp) {
-        qpp.value = state.questions_per_person;
-      }
+      syncQpp();
       $('btn-start').disabled = qTally.total === 0;
     }
 
-    $('qpp').addEventListener('change', async () => {
-      const el = $('qpp');
+    // keep both qpp inputs (setup + run stages) in step with the server
+    function syncQpp() {
+      if (state.questions_per_person == null) return;
+      for (const id of ['qpp', 'qpp-run']) {
+        const el = $(id);
+        if (el && document.activeElement !== el) el.value = state.questions_per_person;
+      }
+    }
+
+    async function saveQpp(el) {
       let v = parseInt(el.value);
       if (isNaN(v)) return;
       v = Math.min(5, Math.max(1, v));
@@ -462,7 +487,23 @@
       const r = await post('/api/host/settings', {questions_per_person: v});
       if (r.ok) toast(`Keeping each person's first ${v}`, 'ok');
       else toast('Could not save that setting', 'err');
-    });
+    }
+    $('qpp').addEventListener('change', e => saveQpp(e.currentTarget));
+    $('qpp-run').addEventListener('change', e => saveQpp(e.currentTarget));
+
+    // mid-game rebuild: regroup non-final rounds, then drop to lobby so the
+    // host re-opens Round 1 cleanly (avoids a dangling current-round pointer)
+    $('btn-rebuild-run').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
+      if (!await sbtConfirm(
+            'Rebuild the rounds from the current questions and settings? This replaces the non-final rounds and returns to the lobby.',
+            {title: 'Rebuild rounds?', okText: 'Rebuild', danger: true})) return;
+      let r = await post('/api/host/build-rounds');
+      if (!r.ok) { const e2 = await r.json().catch(()=>({})); toast(e2.detail || 'Rebuild failed', 'err'); return; }
+      const res = await r.json();
+      if (state.phase !== 'lobby' && state.phase !== 'draft') await post('/api/host/phase', {phase: 'lobby'});
+      toast(`Rebuilt ${res.rounds ? res.rounds.length : ''} rounds`.trim(), 'ok');
+      await tick();
+    }));
 
     $('btn-reopen-subs').addEventListener('click', async e => withSpinner(e.currentTarget, async () => {
       const r = await post('/api/host/submissions', {open: true});
@@ -473,7 +514,7 @@
 
     // The one-way door: close submissions → build rounds → open the lobby.
     $('btn-start').addEventListener('click', e => withSpinner(e.currentTarget, async () => {
-      if (!confirm('Start the game? This closes question submissions for good.')) return;
+      if (!await sbtConfirm('This closes question submissions and builds the rounds. You can still tweak rounds and the final after starting.', {title: 'Start the game?', okText: 'Start the game'})) return;
       let r = await post('/api/host/submissions', {open: false});
       if (!r.ok) { toast('Could not close submissions', 'err'); return; }
       r = await post('/api/host/build-rounds');
@@ -915,6 +956,12 @@
     document.addEventListener('click', async (e) => {
       const btn = e.target.closest('.change-final');
       if (!btn) return;
+      // warn only when the final is already in play (past the wager stage)
+      const live = ['final_wager', 'final_open'].includes(state.phase);
+      const msg = live
+        ? 'This final is in play — clearing it drops any wagers and marks for it. Continue?'
+        : 'Clear the current final so you can write or pick a different one?';
+      if (!await sbtConfirm(msg, {title: 'Change the final?', okText: 'Clear it', danger: live})) return;
       await withSpinner(btn, async () => {
         const r = await fetch(`/api/host/final?${hk()}`, {method: 'DELETE'});
         if (!r.ok) {
