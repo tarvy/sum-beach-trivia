@@ -23,5 +23,7 @@ def host_question(row: sqlite3.Row) -> dict:
         "answer": row["answer"],
         "acceptable_answers": json.loads(row["acceptable_answers"]),
         "answer_items": json.loads(row["answer_items"]) if row["answer_items"] else None,
+        "source": row["source"],
+        "round_id": row["round_id"],
     })
     return d
