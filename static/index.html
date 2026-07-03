@@ -65,10 +65,11 @@
         const r = await fetch('/api/state');
         if (!r.ok) return;
         const d = await r.json();
-        const wrap = document.getElementById('game-code-wrap');
-        // Show join code only in lobby
-        if (d.phase === 'lobby' || d.phase === 'draft') {
-          // code not exposed via state; show reminder to check host terminal
+        // Play + Display only make sense once the game is live (out of draft):
+        // no lobby/QR and no teams exist during setup. Hide both surfaces in draft.
+        if (d.phase === 'draft') {
+          document.querySelectorAll('a[href="/play.html"], a[href="/display.html"]')
+            .forEach(el => el.classList.add('hidden'));
         }
       } catch (_) {}
     }
