@@ -118,3 +118,42 @@ async def test_csv_export(app_client):
     assert r.status_code == 200
     assert "team" in r.text.lower()
     assert "Aces" in r.text
+
+
+@pytest.mark.anyio
+async def test_final_can_be_changed_until_in_play(app_client):
+    """Nothing is set in stone until wagers/marks exist: delete + re-create works."""
+    app, c = app_client
+    hk = _hk(app)
+    # nothing to delete yet
+    assert (await c.delete("/api/host/final", params={"host_key": hk})).status_code == 404
+    assert (await c.delete("/api/host/final", params={"host_key": "nope"})).status_code == 403
+
+    r1 = await c.post("/api/host/final", params={"host_key": hk}, json={
+        "text": "First idea", "items": ["A", "B", "C"], "ordered": False})
+    rid1 = r1.json()["round_id"]
+    d = await c.delete("/api/host/final", params={"host_key": hk})
+    assert d.status_code == 200
+    # round and its question are gone
+    assert app.state.conn.execute("SELECT 1 FROM round WHERE id=?", (rid1,)).fetchone() is None
+    assert app.state.conn.execute(
+        "SELECT 1 FROM question WHERE round_id=?", (rid1,)).fetchone() is None
+
+    # re-create freely
+    r2 = await c.post("/api/host/final", params={"host_key": hk}, json={
+        "text": "Better idea", "items": ["X", "Y", "Z", "W"], "ordered": True})
+    assert r2.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_final_locked_once_wagers_exist(app_client):
+    app, c = app_client
+    hk = _hk(app)
+    t = (await c.post("/api/teams", json={"name": "Locks"})).json()
+    rid = (await c.post("/api/host/final", params={"host_key": hk}, json={
+        "text": "Q", "items": ["A", "B"], "ordered": False})).json()["round_id"]
+    await c.post("/api/host/phase", params={"host_key": hk},
+                 json={"phase": "final_wager", "round_id": rid})
+    await c.post("/api/wager", json={"team_id": t["team_id"], "round_id": rid, "amount": 5})
+    d = await c.delete("/api/host/final", params={"host_key": hk})
+    assert d.status_code == 409  # in play — no swapping now
