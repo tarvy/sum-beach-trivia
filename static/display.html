@@ -502,11 +502,10 @@
     // Reveal: who wrote each question in the just-graded round, plus scores.
     // The MC reads the answers aloud — they never appear on screen.
     function renderReveal(round, lbTeams) {
+      // scores and ranks only — the questions/answers had their moment in the read-back
       root.innerHTML = `
-        <div class="display-phase">REVEAL</div>
-        ${round ? `<div class="display-title display-title--md">${esc(round.title || '')}</div>
-        <ol class="display-q-list" aria-label="Questions and authors">${qItems(round.questions, true)}</ol>` : ''}
-        <div class="display-phase" style="margin-top: 1.5rem;">SCORES SO FAR</div>
+        <div class="display-phase">SCORES SO FAR</div>
+        ${round ? `<div class="round-label">after ${esc(round.title || '')}</div>` : ''}
         ${lbRows(lbTeams, true)}
       `;
     }
