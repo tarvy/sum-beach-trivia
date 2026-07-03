@@ -332,11 +332,12 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         return {"ok": True}
 
     VALID_PHASES = {
-        "draft", "lobby", "round_open", "round_closed", "marking", "reveal",
-        "final_wager", "final_open", "tiebreak", "done", "paused",
+        "draft", "lobby", "round_open", "round_closed", "marking", "answers",
+        "reveal", "final_wager", "final_open", "tiebreak", "done", "paused",
     }
 
-    def _round_public(round_id: int, reveal: bool = False, upto: int | None = None) -> dict | None:
+    def _round_public(round_id: int, reveal: bool = False, upto: int | None = None,
+                      with_answers: bool = False) -> dict | None:
         r = db().execute("SELECT * FROM round WHERE id = ?", (round_id,)).fetchone()
         if r is None:
             return None
@@ -354,6 +355,12 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             pq = public_question(q)
             # Author is a spoiler during play — only attach it at reveal.
             if reveal:
+                pq["author_name"] = q["author_name"]
+            # Answers go public ONLY during the read-back ritual (phase=answers,
+            # sheets are in, marks are done) — never while anyone can still write.
+            if with_answers:
+                pq["answer"] = q["answer"]
+                pq["answer_items"] = json.loads(q["answer_items"]) if q["answer_items"] else None
                 pq["author_name"] = q["author_name"]
             out.append(pq)
         # Round position among the non-final rounds (the display's "Round 2 of 4"
@@ -402,8 +409,8 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         models.set_phase(db(), body.phase)
         if body.round_id is not None:
             models.set_current_round(db(), body.round_id)
-        if body.phase in ("round_open", "final_open"):
-            # a round going live starts at question 1 with a fresh timer
+        if body.phase in ("round_open", "final_open", "answers"):
+            # a round going live (or its answer read-back) starts at item 1
             db().execute("UPDATE game SET current_question_idx = 0, "
                          "question_opened_at = datetime('now') WHERE id = 1")
             db().commit()
@@ -413,7 +420,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     def question_nav(body: QuestionNavIn, host_key: str):
         # Lacey drives: advance (or loosely step back) the live question.
         g = require_host(host_key)
-        if g["phase"] != "round_open" or not g["current_round_id"]:
+        if g["phase"] not in ("round_open", "answers") or not g["current_round_id"]:
             raise HTTPException(status_code=409, detail="no live round")
         if body.action not in ("next", "prev"):
             raise HTTPException(status_code=400, detail="action must be next or prev")
@@ -477,9 +484,12 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     @app.get("/api/state")
     def state():
         g = models.get_game(db())
-        # While a normal round is live, only expose questions up to the cursor.
-        upto = g["current_question_idx"] if g["phase"] in ("round_open", "round_closed") else None
-        cur = _round_public(g["current_round_id"], reveal=g["phase"] == "reveal", upto=upto) \
+        # While a round is live (or its answers are being read back), only
+        # expose questions up to the cursor.
+        upto = g["current_question_idx"] \
+            if g["phase"] in ("round_open", "round_closed", "answers") else None
+        cur = _round_public(g["current_round_id"], reveal=g["phase"] == "reveal", upto=upto,
+                            with_answers=g["phase"] == "answers") \
             if g["current_round_id"] else None
         elapsed = None
         if g["question_opened_at"]:

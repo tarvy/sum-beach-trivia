@@ -567,7 +567,8 @@
       lobby:       'Doors open: teams are joining on their phones. When everyone\'s in, open the first round.',
       round_open:  'Round live: teams write on paper. Call "pens down" when time\'s up.',
       round_closed:'Pens down: sheets can still be handed in (photo or paper). Start marking when they\'re all in.',
-      marking:     'Marking: work through each question below, then reveal the scores.',
+      marking:     'Marking: work through each question below. Scores stay hidden until after the answer read-back.',
+      answers:     'Answer read-back: click through each question, give the answer aloud, then release the scores.',
       reveal:      'Reveal: read the answers out, savor the groans. Then on to the next round.',
       final_wager: 'Final wagers: teams bet blind before seeing the question.',
       final_open:  'Final live: teams answer and hand in. Then mark it.',
@@ -599,8 +600,20 @@
         a.label = 'Start marking'; a.fn = () => setPhase('marking');
         if (sheets) a.status = `${sheets.got} of ${sheets.total} sheets in`;
       } else if (p === 'marking') {
-        a.label = 'Reveal scores'; a.fn = () => setPhase('reveal');
+        a.label = 'Read the answers'; a.fn = () => setPhase('answers');
         a.status = markingProgress();
+      } else if (p === 'answers') {
+        // Lacey reads each question + answer back, then the scores go public
+        const total = cur ? (cur.question_count || 0) : 0;
+        const idx = state.question_idx || 0;
+        const liveQ = cur && cur.questions.length ? cur.questions[cur.questions.length - 1] : null;
+        if (idx < total - 1) {
+          a.label = `Next answer (${idx + 2} of ${total}) →`;
+          a.fn = () => nudgeQuestion('next');
+        } else {
+          a.label = 'Release the scores'; a.fn = () => setPhase('reveal');
+        }
+        a.status = liveQ ? `A${idx + 1}/${total}: ${liveQ.text}` : '';
       } else if (p === 'reveal') {
         if (cur && cur.is_final) {
           a.label = 'Finish game'; a.fn = () => setPhase('done'); a.tb = true;
@@ -648,7 +661,8 @@
 
       // loose step-back while a round is live
       const prevBtn = $('btn-prev-q');
-      prevBtn.classList.toggle('hidden', !(p === 'round_open' && (state.question_idx || 0) > 0));
+      prevBtn.classList.toggle('hidden',
+        !((p === 'round_open' || p === 'answers') && (state.question_idx || 0) > 0));
 
       // tiebreak side button — highlighted when the top two are tied
       const tbBtn = $('btn-tiebreak-side');
@@ -718,7 +732,7 @@
         .concat([{label: 'Final', node: 'F'}, {label: 'Done', node: '★'}]);
       const p = state.phase, cur = state.current_round;
       let ci = 0;
-      if (['round_open', 'round_closed', 'marking', 'reveal'].includes(p)) {
+      if (['round_open', 'round_closed', 'marking', 'answers', 'reveal'].includes(p)) {
         if (cur && cur.is_final) ci = steps.length - 2;
         else {
           const i = nf.findIndex(r => cur && r.id === cur.id);
@@ -1025,10 +1039,10 @@
 
     function renderMarkingLifecycle() {
       const p = state.phase, cur = state.current_round;
-      const show = (p === 'marking' || p === 'reveal') && !!cur;
+      const show = (p === 'marking' || p === 'answers' || p === 'reveal') && !!cur;
       $('marking-wrap').classList.toggle('hidden', !show);
       if (!show) { if (mk) { mk = null; $('mk-console').innerHTML = ''; } return; }
-      $('mk-round-title').textContent = cur.title + (p === 'reveal' ? ' (fix-ups)' : '');
+      $('mk-round-title').textContent = cur.title + (p !== 'marking' ? ' (fix-ups)' : '');
       if (!mk || mk.roundId !== cur.id) buildConsole(cur);
     }
 
@@ -1212,7 +1226,7 @@
     });
 
     // ── advanced escape hatch ────────────────────────────────
-    const VALID_PHASES = ['draft','lobby','round_open','round_closed','marking','reveal',
+    const VALID_PHASES = ['draft','lobby','round_open','round_closed','marking','answers','reveal',
                           'final_wager','final_open','tiebreak','done'];
 
     function buildPhaseButtons() {

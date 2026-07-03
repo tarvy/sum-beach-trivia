@@ -274,9 +274,11 @@
       else if (phase === 'round_open'||phase==='final_open') dot.classList.add('live');
       else if (phase === 'lobby'||phase==='draft')            dot.classList.add('amber');
 
-      // own rank
-      const myEntry = lb.teams.find(t => t.team_id === teamId);
+      // own rank — hidden while scores are frozen (marking → answer read-back)
+      const scoresFrozen = phase === 'marking' || phase === 'answers';
+      const myEntry = scoresFrozen ? null : lb.teams.find(t => t.team_id === teamId);
       const rankPanel = document.getElementById('rank-panel');
+      if (scoresFrozen) rankPanel.classList.add('hidden');
       if (myEntry && teamId) {
         const myRank = lb.teams.indexOf(myEntry) + 1;
         document.getElementById('own-rank').textContent  = `#${myRank}`;
@@ -316,9 +318,12 @@
           break;
 
         case 'marking':
+        case 'answers':
           showPanel('results');
-          document.getElementById('results-eyebrow').textContent = 'Marking in progress';
-          document.getElementById('results-heading').textContent = 'Answers are being marked';
+          document.getElementById('results-eyebrow').textContent =
+            phase === 'marking' ? 'Marking in progress' : 'Answer read-back';
+          document.getElementById('results-heading').textContent =
+            phase === 'marking' ? 'Answers are being marked' : 'Listen up — answers being read out';
           break;
 
         case 'reveal':
