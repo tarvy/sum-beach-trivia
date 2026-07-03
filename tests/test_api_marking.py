@@ -61,11 +61,13 @@ async def test_submit_grades_and_scores(app_client):
 
 
 @pytest.mark.anyio
-async def test_submit_rejected_when_round_closed(app_client):
+async def test_submit_rejected_once_marking_starts(app_client):
+    # round_closed ("pens down") still accepts sheet hand-ins; the window
+    # truly shuts when the host moves to marking.
     app, c = app_client
     hk = _hk(app)
     rid, team_id = await _setup_open_round(app, c, hk)
-    await c.post("/api/host/phase", params={"host_key": hk}, json={"phase": "round_closed"})
+    await c.post("/api/host/phase", params={"host_key": hk}, json={"phase": "marking"})
     r = await c.post("/api/submit",
                      data={"team_id": str(team_id), "round_id": str(rid)},
                      files={"photo": ("s.png", b"x", "image/png")})

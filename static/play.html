@@ -72,8 +72,8 @@
         <ol class="q-list" id="round-questions" aria-label="Round questions"></ol>
 
         <div class="card card--accent mt-md" id="submit-panel">
-          <h2 class="mb-sm">Snap your answer sheet</h2>
-          <p class="text-dim" style="font-size: var(--fs-sm);">Write all your answers on paper, then photograph the sheet and submit it below.</p>
+          <h2 class="mb-sm" id="submit-heading">Snap your answer sheet</h2>
+          <p class="text-dim" style="font-size: var(--fs-sm);" id="submit-copy">Write all your answers on paper, then photograph the sheet and submit it below.</p>
           <div class="field mt-sm">
             <label for="photo-input">Answer sheet photo</label>
             <input type="file" id="photo-input" accept="image/*" capture="environment">
@@ -338,6 +338,7 @@
     let lastPhase = null;
     let lastRoundId = null;
     let wagerLocked = false;
+    let mcMode = 'gladys';
     let tbSubmitted = false;
 
     async function poll() {
@@ -355,6 +356,7 @@
 
     function applyState(state, lb) {
       const {phase, paused, current_round} = state;
+      mcMode = state.mc_mode || 'gladys';
 
       // phase strip
       const dot  = document.getElementById('phase-dot');
@@ -398,6 +400,7 @@
 
         case 'round_open':
         case 'final_open':
+        case 'round_closed':   // pens down — writing is over, but the sheet can still be handed in
           showPanel('round');
           renderRound(current_round, phase);
           break;
@@ -417,7 +420,6 @@
           showPanel('tiebreak');
           break;
 
-        case 'round_closed':
         case 'marking':
           showPanel('results');
           document.getElementById('results-eyebrow').textContent = 'Marking in progress';
@@ -439,8 +441,23 @@
     // ── RENDER ROUND ─────────────────────────────────────────
     function renderRound(round, phase) {
       if (!round) return;
-      document.getElementById('round-eyebrow').textContent = round.is_final ? 'Final round' : 'Round open';
+      const closed = phase === 'round_closed';
+      document.getElementById('round-eyebrow').textContent =
+        closed ? 'Pens down!' : (round.is_final ? 'Final round' : 'Round open');
       document.getElementById('round-title').textContent   = round.title || 'Current Round';
+      // submit copy: urgency after pens-down; Lacey mode = photo is just a keepsake
+      const heading = document.getElementById('submit-heading');
+      const copy    = document.getElementById('submit-copy');
+      if (mcMode === 'lacey') {
+        heading.textContent = 'Hand your sheet to the MC';
+        copy.textContent = 'The MC marks the paper sheets. Snapping a photo here is optional — a backup copy of your answers.';
+      } else if (closed) {
+        heading.textContent = 'Pens down — get your photo in!';
+        copy.textContent = 'Writing time is up. Photograph your sheet and submit it before marking starts.';
+      } else {
+        heading.textContent = 'Snap your answer sheet';
+        copy.textContent = 'Write all your answers on paper, then photograph the sheet and submit it below.';
+      }
       const ql = document.getElementById('round-questions');
       ql.innerHTML = (round.questions || []).map((q, i) =>
         `<li class="q-item">

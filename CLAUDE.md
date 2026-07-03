@@ -19,7 +19,8 @@ Self-hosted bar-trivia web app for a game night with friends. Friends contribute
 
 - **One FastAPI app, four static screens.** `app/main.py::create_app()` mounts a JSON API and serves the `static/*.html` screens. Each role opens its own screen; there is no SPA, router, or bundler. Live updates are plain `fetch` polling of `/api/state` and friends.
 - **Single-game model.** The `game` table is constrained to exactly one row (`CHECK (id = 1)`). `create_app()` auto-creates it on first boot with a random join `code` + `host_key` and prints the host key to the log.
-- **Phase state machine is the source of truth.** `game.phase` drives every screen: `draft → lobby → round_open → round_closed → marking → reveal → final_wager → final_open → tiebreak → done`, with `paused` orthogonal. Endpoints gate on phase (e.g. `SUBMIT_PHASES = {round_open, final_open}` guards photo submission). Add new phases to `VALID_PHASES` in `main.py`.
+- **Phase state machine is the source of truth.** `game.phase` drives every screen: `draft → lobby → round_open → round_closed → marking → reveal → final_wager → final_open → tiebreak → done`, with `paused` orthogonal. Endpoints gate on phase (e.g. `SUBMIT_PHASES = {round_open, round_closed, final_open}` guards photo submission — `round_closed` is "pens down", teams can still hand in their sheet until `marking`). Add new phases to `VALID_PHASES` in `main.py`.
+- **Two MC modes** (`game.mc_mode`, host-switchable any time via `POST /api/host/mc-mode`, exposed in `/api/state`): **`gladys`** (default, "Gladys the AI MILF") — photo submissions are AI-graded into `mark` rows; **`lacey`** ("Lacey in Charge") — photos are stored but never AI-graded, a human MC enters every mark via `POST /api/host/mark` (which works with or without a submission). In gladys mode a grading exception still returns `{ok: true, graded: false}` — the submission is never lost; the MC marks it by hand.
 - **Per-thread SQLite connections.** FastAPI runs sync handlers on a thread pool; a SQLite connection must never cross threads. `db()` is a thread-local factory — **always use it in routes.** `app.state.conn` is a test-only back-compat alias (main thread); never use it in production routes. `:memory:` DBs share one connection (tests run sequentially).
 - **Leaderboard is always recomputed, never stored.** `scoring.team_totals()` sums from the `mark` rows on every request, so any correction (even after a round "ends") retroactively fixes all scores. Don't cache or persist totals.
 - **Serializers enforce the answer-privacy boundary.** `serializers.public_question` omits the answer; `host_question` includes it. Choose deliberately per endpoint (see Anti-Patterns).
@@ -46,7 +47,7 @@ Self-hosted bar-trivia web app for a game night with friends. Friends contribute
 
 SQLite (`app/db.py`). Key tables and non-obvious columns:
 
-- **game** — single row (`id=1`): `phase`, `current_round_id`, `paused`, `host_key`, `submissions_open` (host-controlled contribution window), tiebreak fields.
+- **game** — single row (`id=1`): `phase`, `current_round_id`, `paused`, `host_key`, `submissions_open` (host-controlled contribution window), `mc_mode` (`lacey`|`gladys`), tiebreak fields.
 - **category** — the 9 `STANDARD_CATEGORIES`, seeded on init.
 - **contributor** — a person who contributes questions: `token` (random, stored in their browser localStorage — this IS their identity), editable `name`, `recovery_code`. Created/updated via `POST /api/contributor`.
 - **question** — `author_name` (display label) + `contributor_id` FK → contributor. `answer` + `acceptable_answers` (JSON list) for normal questions; `answer_items` (JSON list) + `ordered` for multi-item/final questions. `round_id` is NULL until assigned by round-building.

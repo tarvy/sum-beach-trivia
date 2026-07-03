@@ -150,6 +150,16 @@ def set_paused(conn, paused: bool) -> None:
     conn.commit()
 
 
+MC_MODES = {"lacey", "gladys"}  # 'lacey' = human MC marks by hand, 'gladys' = AI grades photos
+
+
+def set_mc_mode(conn, mode: str) -> None:
+    if mode not in MC_MODES:
+        raise ValueError(f"mc_mode must be one of {sorted(MC_MODES)}")
+    conn.execute("UPDATE game SET mc_mode = ? WHERE id = 1", (mode,))
+    conn.commit()
+
+
 def join_team(conn, name: str) -> dict:
     name = name.strip()
     if not name:

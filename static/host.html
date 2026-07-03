@@ -75,6 +75,8 @@
 
       <div class="container" style="padding-top: 1.5rem;">
 
+        <p id="next-step" class="text-dim mb-sm" style="font-size: var(--fs-sm); border-left: 3px solid var(--accent); padding-left: 0.6em;"></p>
+
         <!-- Game controls row -->
         <div class="host-grid mb-sm">
 
@@ -83,6 +85,18 @@
             <div>
               <div class="section-title">Game controls</div>
               <div class="stack">
+
+                <div class="card stack">
+                  <h3>Who's marking?</h3>
+                  <p class="text-dim" style="font-size: var(--fs-sm);">
+                    Pick your MC. Switch anytime — it only changes how new sheets are handled.
+                  </p>
+                  <div class="cluster">
+                    <button class="btn btn--secondary" id="btn-mode-lacey">Lacey in Charge</button>
+                    <button class="btn btn--secondary" id="btn-mode-gladys">Gladys the AI MILF</button>
+                  </div>
+                  <p id="mc-mode-desc" class="text-dim" style="font-size: var(--fs-sm);"></p>
+                </div>
 
                 <div class="card stack">
                   <h3>Submissions window</h3>
@@ -575,6 +589,8 @@
           subsOpen = state.submissions_open;
           renderSubs();
           highlightPhase(state.phase);
+          renderMcMode(state.mc_mode);
+          renderNextStep(state.phase);
           if (state.current_round) {
             addRoundOption(state.current_round.id, state.current_round.title);
           }
@@ -587,6 +603,45 @@
           ).join('');
         }
       } catch (_) {}
+    }
+
+    // ── MC mode (who marks the sheets) ───────────────────────
+    const MC_DESC = {
+      lacey:  'Lacey in Charge — a human MC collects the sheets and enters every mark by hand in the marking grid. Photos are optional keepsakes.',
+      gladys: 'Gladys the AI MILF — teams snap a photo, the AI transcribes and proposes marks, the MC just confirms or overrides.',
+    };
+    function renderMcMode(mode) {
+      document.getElementById('btn-mode-lacey').classList.toggle('btn--teal', mode === 'lacey');
+      document.getElementById('btn-mode-gladys').classList.toggle('btn--teal', mode === 'gladys');
+      document.getElementById('mc-mode-desc').textContent = MC_DESC[mode] || '';
+    }
+    async function setMcMode(mode) {
+      const r = await fetch(`/api/host/mc-mode?${hk()}`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({mode})
+      }).catch(() => null);
+      if (r && r.ok) { renderMcMode(mode); toast(mode === 'lacey' ? 'Lacey is in charge' : 'Gladys has the con', 'ok'); }
+      else toast('Could not switch MC mode', 'err');
+    }
+    document.getElementById('btn-mode-lacey').addEventListener('click', () => setMcMode('lacey'));
+    document.getElementById('btn-mode-gladys').addEventListener('click', () => setMcMode('gladys'));
+
+    // ── next-step hint: continuity through the night ─────────
+    const NEXT_STEP = {
+      draft:       'Setup: collect questions, build rounds, pick your MC — then set phase to lobby to kick off.',
+      lobby:       'Doors open: teams are joining on their phones. When everyone\'s in, open the first round.',
+      round_open:  'Round live: teams write on paper and submit a photo. Call "pens down" (round closed) when time\'s up.',
+      round_closed:'Pens down: teams can still hand in their sheet photo. Move to marking when all sheets are in.',
+      marking:     'Marking: review each team\'s sheet in the grid, fix anything, then reveal.',
+      reveal:      'Reveal: read the answers out. Next: open another round, or final wager if rounds are done.',
+      final_wager: 'Final wagers: teams bet before seeing the question. Then open the final round.',
+      final_open:  'Final live: teams answer and submit. Then mark, and reveal.',
+      tiebreak:    'Tiebreak: pose the nearest-wins number, collect guesses, check the result below.',
+      done:        'Game over — standings are final. Export the CSV for posterity.',
+    };
+    function renderNextStep(phase) {
+      const el = document.getElementById('next-step');
+      if (el) el.textContent = NEXT_STEP[phase] || '';
     }
 
     // ── init ─────────────────────────────────────────────────

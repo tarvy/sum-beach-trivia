@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS game (
     paused INTEGER NOT NULL DEFAULT 0,
     submissions_open INTEGER NOT NULL DEFAULT 1,
     host_key TEXT NOT NULL,
+    mc_mode TEXT NOT NULL DEFAULT 'gladys',  -- 'gladys' = AI grades photos, 'lacey' = human MC marks by hand
     tiebreak_question TEXT,
     tiebreak_value REAL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -150,6 +151,8 @@ def init_db(conn: sqlite3.Connection) -> None:
     gcols = {r["name"] for r in conn.execute("PRAGMA table_info(game)")}
     if "submissions_open" not in gcols:
         conn.execute("ALTER TABLE game ADD COLUMN submissions_open INTEGER NOT NULL DEFAULT 1")
+    if "mc_mode" not in gcols:
+        conn.execute("ALTER TABLE game ADD COLUMN mc_mode TEXT NOT NULL DEFAULT 'gladys'")
     for order, name in enumerate(STANDARD_CATEGORIES):
         conn.execute(
             "INSERT OR IGNORE INTO category (name, display_order) VALUES (?, ?)",
