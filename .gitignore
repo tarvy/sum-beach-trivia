@@ -15,6 +15,7 @@ venv/
 # os
 .DS_Store
 
-# build-process scratch (superpowers SDD, worktrees)
+# build-process scratch (superpowers SDD, worktrees) — but skills are tracked
 .superpowers/
-.claude/
+.claude/*
+!.claude/skills/
