@@ -66,6 +66,27 @@ async def test_pause_reflected_in_state(app_client):
 
 
 @pytest.mark.anyio
+async def test_tiebreak_question_public_value_never(app_client):
+    """The tiebreak QUESTION appears in /api/state only during the tiebreak
+    phase; the tiebreak VALUE (the answer) must never reach the public payload."""
+    app, c = app_client
+    hk = _hk(app)
+    await c.post("/api/host/tiebreak", params={"host_key": hk},
+                 json={"question": "How many gumballs in the jar?", "value": 1237.0})
+
+    # Before the tiebreak phase: question hidden (it's a spoiler until then).
+    s = (await c.get("/api/state")).json()
+    assert s["tiebreak_question"] is None
+
+    await c.post("/api/host/phase", params={"host_key": hk}, json={"phase": "tiebreak"})
+    r = await c.get("/api/state")
+    s = r.json()
+    assert s["tiebreak_question"] == "How many gumballs in the jar?"
+    assert "tiebreak_value" not in s
+    assert "1237" not in r.text  # the answer value must not leak anywhere in the payload
+
+
+@pytest.mark.anyio
 async def test_host_rounds_listing(app_client):
     """GET /api/host/rounds returns rounds with required keys; 403 without valid key."""
     app, c = app_client
