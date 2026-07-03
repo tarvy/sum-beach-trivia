@@ -22,33 +22,22 @@
   <main>
     <div class="container container--narrow" style="padding-top: 1.5rem; padding-bottom: 4rem;">
 
-      <!-- ── JOIN / REJOIN ── -->
+      <!-- ── JOIN ── -->
       <div id="join-panel" class="hidden">
         <p class="eyebrow mb-sm">Join the game</p>
-        <h1 class="mb-sm">Pick a team name</h1>
+        <h1 class="mb-sm">Tap your team</h1>
 
-        <div class="card stack--lg">
-          <div class="stack">
-            <div class="field">
-              <label for="team-name">Team name</label>
-              <input type="text" id="team-name" placeholder="Sandy Bottoms" maxlength="60" autocomplete="off">
-            </div>
-            <div>
-              <button class="btn btn--primary" id="btn-join">Join the game</button>
-            </div>
+        <div class="stack" id="team-list" aria-label="Existing teams"></div>
+
+        <div class="card stack mt-md">
+          <p class="label">Or start a new team</p>
+          <div class="field">
+            <label for="team-name">Team name</label>
+            <input type="text" id="team-name" placeholder="Sandy Bottoms" maxlength="60" autocomplete="off">
           </div>
-
-          <hr class="sep" style="margin: 0;">
-
-          <div class="stack">
-            <p class="label">Already joined? Recover your session</p>
-            <div class="field">
-              <label for="recovery-input">Recovery code</label>
-              <input type="text" id="recovery-input" placeholder="Your 8-character code" maxlength="20" autocomplete="off">
-            </div>
-            <div>
-              <button class="btn btn--secondary" id="btn-recover">Rejoin</button>
-            </div>
+          <p id="dup-hint" class="text-dim hidden" style="font-size: var(--fs-sm);">That team already exists — tap it above to join.</p>
+          <div>
+            <button class="btn btn--primary" id="btn-create">Start team</button>
           </div>
         </div>
       </div>
@@ -58,10 +47,7 @@
         <p class="eyebrow mb-sm">You're in</p>
         <h1 id="lobby-team-name" class="text-accent">—</h1>
         <p class="text-dim mt-sm">Waiting for the host to start the game…</p>
-        <div class="panel mt-md">
-          <p class="label mb-sm">Recovery code — save this to rejoin if you close the tab</p>
-          <p class="mono text-teal" id="lobby-recovery" style="font-size: 1.3rem; letter-spacing: 0.12em;">—</p>
-        </div>
+        <p class="mt-md"><a href="#" id="switch-team" class="text-dim" style="font-size: var(--fs-sm);">Switch team</a></p>
       </div>
 
       <!-- ── ROUND OPEN / FINAL OPEN ── -->
@@ -123,30 +109,6 @@
         </div>
       </div>
 
-      <!-- ── ROSTER (editable any time once joined) ── -->
-      <div id="roster-panel" class="mt-lg hidden">
-        <hr class="sep">
-        <p class="label mb-sm">Your team roster</p>
-        <div class="card stack">
-          <ul class="stack" id="roster-list" style="list-style: none; padding: 0; margin: 0;"></ul>
-
-          <div class="field">
-            <label for="author-pick">Add from question authors</label>
-            <select id="author-pick">
-              <option value="">Select an author…</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="manual-name">Or add anyone by name</label>
-            <input type="text" id="manual-name" placeholder="Teammate name" maxlength="60" autocomplete="off">
-          </div>
-          <div>
-            <button class="btn btn--secondary" id="btn-add-manual">Add teammate</button>
-          </div>
-        </div>
-      </div>
-
       <!-- ── OWN RANK ── -->
       <div id="rank-panel" class="mt-lg hidden">
         <hr class="sep">
@@ -189,13 +151,18 @@
     // ── local storage ────────────────────────────────────────
     let teamId   = parseInt(localStorage.getItem('trivia_team_id'))   || null;
     let teamName = localStorage.getItem('trivia_team_name')           || '';
-    let recovery = localStorage.getItem('trivia_recovery_code')       || '';
 
-    function saveTeam(id, name, code) {
-      teamId = id; teamName = name; recovery = code;
-      localStorage.setItem('trivia_team_id',       id);
-      localStorage.setItem('trivia_team_name',      name);
-      localStorage.setItem('trivia_recovery_code',  code);
+    function saveTeam(id, name) {
+      teamId = id; teamName = name;
+      localStorage.setItem('trivia_team_id',   id);
+      localStorage.setItem('trivia_team_name', name);
+    }
+
+    function clearTeam() {
+      teamId = null; teamName = '';
+      localStorage.removeItem('trivia_team_id');
+      localStorage.removeItem('trivia_team_name');
+      localStorage.removeItem('trivia_recovery_code');  // legacy key
     }
 
     // ── panel visibility ─────────────────────────────────────
@@ -206,25 +173,52 @@
     }
 
     // ── JOIN ─────────────────────────────────────────────────
-    document.getElementById('btn-join').addEventListener('click', async () => {
+    // No codes, no passwords: tap an existing team and you're on it.
+    async function refreshTeams() {
+      try {
+        const r = await fetch('/api/teams');
+        if (r.ok) renderTeamList((await r.json()).teams);
+      } catch (_) {}
+    }
+
+    function renderTeamList(teams) {
+      const list = document.getElementById('team-list');
+      list.innerHTML = teams.length ? teams.map(t =>
+        `<button class="btn btn--secondary" data-id="${t.id}" data-name="${esc(t.name)}"
+                 style="width: 100%; padding: 1rem; font-size: 1rem;">${esc(t.name)}</button>`
+      ).join('') : '<p class="text-dim">No teams yet — start one below.</p>';
+      list.querySelectorAll('[data-id]').forEach(b =>
+        b.addEventListener('click', () => {
+          saveTeam(parseInt(b.dataset.id), b.dataset.name);
+          enterGame();
+        }));
+    }
+
+    document.getElementById('btn-create').addEventListener('click', async () => {
       const name = document.getElementById('team-name').value.trim();
       if (!name) { toast('Enter a team name', 'err'); return; }
-      const btn = document.getElementById('btn-join');
+      const btn = document.getElementById('btn-create');
       btn.disabled = true; btn.classList.add('is-loading');
+      document.getElementById('dup-hint').classList.add('hidden');
       try {
         const r = await fetch('/api/teams', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({name})
         });
+        if (r.status === 409) {
+          document.getElementById('dup-hint').classList.remove('hidden');
+          refreshTeams();
+          return;
+        }
         if (!r.ok) {
           const e = await r.json().catch(() => ({}));
-          toast(e.detail || 'Could not join', 'err');
+          toast(e.detail || 'Could not create team', 'err');
           return;
         }
         const d = await r.json();
-        saveTeam(d.id, d.name, d.recovery_code);
-        afterJoin();
+        saveTeam(d.team_id, d.name);
+        enterGame();
       } catch (_) {
         toast('Network error', 'err');
       } finally {
@@ -232,107 +226,20 @@
       }
     });
 
-    document.getElementById('btn-recover').addEventListener('click', async () => {
-      const code = document.getElementById('recovery-input').value.trim();
-      if (!code) { toast('Enter your recovery code', 'err'); return; }
-      const btn = document.getElementById('btn-recover');
-      btn.disabled = true; btn.classList.add('is-loading');
-      try {
-        const r = await fetch(`/api/teams/recover?recovery_code=${encodeURIComponent(code)}`);
-        if (!r.ok) { toast('Code not found', 'err'); return; }
-        const d = await r.json();
-        saveTeam(d.team_id, d.name, code);
-        afterJoin();
-      } catch (_) {
-        toast('Network error', 'err');
-      } finally {
-        btn.disabled = false; btn.classList.remove('is-loading');
-      }
-    });
-
-    function afterJoin() {
+    // Navigate to the team view immediately — don't wait for the next poll.
+    function enterGame() {
       document.getElementById('lobby-team-name').textContent = teamName;
-      document.getElementById('lobby-recovery').textContent  = recovery;
-      toast(`Joined as ${teamName}`, 'ok');
-      initRoster();
-      startPolling();
+      toast(`You're on ${teamName}`, 'ok');
+      showPanel('lobby');
+      poll();
     }
 
-    // ── ROSTER ───────────────────────────────────────────────
-    async function loadAuthors() {
-      try {
-        const r = await fetch('/api/authors');
-        if (!r.ok) return;
-        const sel = document.getElementById('author-pick');
-        sel.length = 1;  // keep placeholder
-        (await r.json()).authors.forEach(a => {
-          const o = document.createElement('option');
-          o.value = a.contributor_id;
-          o.textContent = a.name;
-          o.dataset.name = a.name;
-          sel.appendChild(o);
-        });
-      } catch (_) {}
-    }
-
-    async function loadRoster() {
-      if (!teamId) return;
-      try {
-        const r = await fetch(`/api/teams/${teamId}/members`);
-        if (!r.ok) return;
-        const members = (await r.json()).members;
-        const list = document.getElementById('roster-list');
-        list.innerHTML = members.length ? members.map(m =>
-          `<li class="cluster" style="justify-content: space-between; align-items: center;">
-            <span>${esc(m.name)}</span>
-            <button class="btn btn--secondary" data-remove="${m.id}">Remove</button>
-          </li>`
-        ).join('') : '<li class="text-dim">No teammates yet.</li>';
-        list.querySelectorAll('[data-remove]').forEach(b =>
-          b.addEventListener('click', () => removeMember(parseInt(b.dataset.remove))));
-      } catch (_) {}
-    }
-
-    async function addMember(name, contributorId) {
-      const body = {name};
-      if (contributorId) body.contributor_id = contributorId;
-      try {
-        const r = await fetch(`/api/teams/${teamId}/members`, {
-          method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(body)
-        });
-        if (!r.ok) { toast('Could not add teammate', 'err'); return; }
-        toast(`Added ${name}`, 'ok');
-        loadRoster();
-      } catch (_) { toast('Network error', 'err'); }
-    }
-
-    async function removeMember(id) {
-      try {
-        await fetch(`/api/teams/${teamId}/members/${id}`, {method: 'DELETE'});
-        loadRoster();
-      } catch (_) { toast('Network error', 'err'); }
-    }
-
-    document.getElementById('author-pick').addEventListener('change', (e) => {
-      const opt = e.target.selectedOptions[0];
-      if (!opt || !opt.value) return;
-      addMember(opt.dataset.name, parseInt(opt.value));
-      e.target.value = '';
+    document.getElementById('switch-team').addEventListener('click', (e) => {
+      e.preventDefault();
+      clearTeam();
+      showPanel('join');
+      refreshTeams();
     });
-
-    document.getElementById('btn-add-manual').addEventListener('click', () => {
-      const input = document.getElementById('manual-name');
-      const name = input.value.trim();
-      if (!name) { toast('Enter a name', 'err'); return; }
-      addMember(name, null);
-      input.value = '';
-    });
-
-    function initRoster() {
-      loadAuthors();
-      loadRoster();
-    }
 
     // ── STATE POLL ───────────────────────────────────────────
     let lastPhase = null;
@@ -386,9 +293,6 @@
         tbSubmitted = false;
         lastRoundId = current_round.id;
       }
-
-      // roster is editable at any point once you have a team
-      document.getElementById('roster-panel').classList.toggle('hidden', !teamId);
 
       if (!teamId) { showPanel('join'); return; }
 
@@ -563,20 +467,33 @@
     });
 
     // ── BOOT ─────────────────────────────────────────────────
-    function startPolling() {
+    // Rehydrate from localStorage, but validate the stored team still exists
+    // (a game reset wipes teams — a stale id would leave a stuck half-joined state).
+    (async function boot() {
+      if (teamId) {
+        try {
+          const r = await fetch('/api/teams');
+          if (r.ok) {
+            const mine = (await r.json()).teams.find(t => t.id === teamId);
+            if (mine) {
+              teamName = mine.name;  // pick up host-side renames
+              localStorage.setItem('trivia_team_name', teamName);
+            } else {
+              clearTeam();
+            }
+          }
+        } catch (_) {}  // offline right now: keep the stored team, polling recovers
+      }
+      if (teamId) {
+        document.getElementById('lobby-team-name').textContent = teamName;
+        showPanel('lobby');
+      } else {
+        showPanel('join');
+        refreshTeams();
+      }
       poll();
-      setInterval(poll, 2500);
-    }
-
-    // If already have a team, skip join screen and start polling
-    if (teamId) {
-      document.getElementById('lobby-team-name').textContent = teamName;
-      document.getElementById('lobby-recovery').textContent  = recovery;
-      initRoster();
-      startPolling();
-    } else {
-      showPanel('join');
-    }
+      setInterval(() => { poll(); if (!teamId) refreshTeams(); }, 2500);
+    })();
   </script>
 </body>
 </html>

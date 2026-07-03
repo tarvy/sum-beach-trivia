@@ -44,10 +44,3 @@ def test_other_connections_can_write_after_failed_join(file_db):
     models.set_phase(other, "lobby")
     assert other.execute("SELECT phase FROM game").fetchone()["phase"] == "lobby"
     other.close()
-
-
-def test_stale_team_member_add_leaves_no_open_transaction(file_db):
-    path, conn = file_db
-    with pytest.raises(ValueError):
-        models.add_team_member(conn, team_id=9999, name="Ghost")  # FK violation
-    assert not conn.in_transaction

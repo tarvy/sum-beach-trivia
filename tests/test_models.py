@@ -28,13 +28,7 @@ def test_create_and_get_game(db):
 
 def test_join_team_unique_case_insensitive(db):
     t = models.join_team(db, "Beach Bums")
-    assert t["team_id"] > 0 and t["recovery_code"]
+    assert t["team_id"] > 0
+    assert "recovery_code" not in t  # dead concept: joining is open, no codes
     with pytest.raises(ValueError):
         models.join_team(db, "beach bums")
-
-
-def test_team_by_recovery(db):
-    t = models.join_team(db, "Sandy")
-    row = models.team_by_recovery(db, t["recovery_code"])
-    assert row["id"] == t["team_id"]
-    assert models.team_by_recovery(db, "nope") is None

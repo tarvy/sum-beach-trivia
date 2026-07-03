@@ -164,11 +164,12 @@ def join_team(conn, name: str) -> dict:
     name = name.strip()
     if not name:
         raise ValueError("Team name required")
-    recovery = gen_recovery()
     try:
         cur = conn.execute(
+            # recovery_code is NOT NULL in the schema but unused — teams are
+            # joined by tapping the public team list, no code needed.
             "INSERT INTO team (name, name_lower, recovery_code) VALUES (?, ?, ?)",
-            (name, name.lower(), recovery),
+            (name, name.lower(), gen_recovery()),
         )
     except sqlite3.IntegrityError:
         # Roll back or the implicit transaction opened by the failed INSERT
@@ -177,41 +178,4 @@ def join_team(conn, name: str) -> dict:
         conn.rollback()
         raise ValueError("Team name already taken")
     conn.commit()
-    return {"team_id": cur.lastrowid, "name": name, "recovery_code": recovery}
-
-
-def add_team_member(conn, team_id: int, name: str, contributor_id: int | None = None) -> int:
-    name = (name or "").strip()
-    if not name:
-        raise ValueError("Member name required")
-    try:
-        cur = conn.execute(
-            "INSERT INTO team_member (team_id, name, contributor_id) VALUES (?, ?, ?)",
-            (team_id, name, contributor_id),
-        )
-    except sqlite3.IntegrityError:
-        conn.rollback()  # stale team/contributor id (e.g. after a game reset)
-        raise ValueError("Unknown team")
-    conn.commit()
-    return cur.lastrowid
-
-
-def remove_team_member(conn, team_id: int, member_id: int) -> None:
-    conn.execute(
-        "DELETE FROM team_member WHERE id = ? AND team_id = ?", (member_id, team_id)
-    )
-    conn.commit()
-
-
-def list_team_members(conn, team_id: int) -> list[dict]:
-    rows = conn.execute(
-        "SELECT id, name, contributor_id FROM team_member WHERE team_id = ? ORDER BY id",
-        (team_id,),
-    ).fetchall()
-    return [{"id": r["id"], "name": r["name"], "contributor_id": r["contributor_id"]} for r in rows]
-
-
-def team_by_recovery(conn, recovery_code: str) -> sqlite3.Row | None:
-    return conn.execute(
-        "SELECT * FROM team WHERE recovery_code = ?", (recovery_code,)
-    ).fetchone()
+    return {"team_id": cur.lastrowid, "name": name}
