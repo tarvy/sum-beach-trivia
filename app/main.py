@@ -138,6 +138,10 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     db_path = db_path or os.environ.get("TRIVIA_DB", "trivia.db")
     app = FastAPI(title="Sum Beach Trivia")
     app.state.db_path = db_path
+    # Changes on every deploy/restart. The display (an unattended TV tab that
+    # otherwise never reloads its HTML) watches this and reloads itself when
+    # it changes, so it can't keep rendering a stale page after a deploy.
+    app.state.boot = int(time.time())
 
     # FastAPI runs each sync route handler on a thread-pool thread. A single SQLite
     # connection MUST NOT be shared across threads — concurrent use corrupts memory
@@ -485,6 +489,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         # Tiebreak QUESTION text is public once the tiebreak starts (the display
         # shows it); the tiebreak VALUE is the answer and stays host-only.
         return {"phase": g["phase"], "paused": bool(g["paused"]),
+                "boot": app.state.boot,
                 "submissions_open": bool(g["submissions_open"]),
                 "mc_mode": g["mc_mode"],
                 "questions_per_person": g["questions_per_person"],
