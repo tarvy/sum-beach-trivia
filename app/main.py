@@ -17,7 +17,7 @@ from fastapi.responses import PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from app import models, rounds as rounds_mod, scoring
+from app import final_options, models, rounds as rounds_mod, scoring
 from app.db import connect, init_db
 from app.serializers import host_question, public_question
 
@@ -498,6 +498,10 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                 marks.append({
                     "question_id": qid,
                     "author_name": authors.get(qid),
+                    # "marked": a mark row exists. Lets the MC console tell
+                    # "not marked yet" apart from "marked wrong" (both default
+                    # is_correct=false in this payload).
+                    "marked": m is not None,
                     "transcription": m["transcription"] if m else "",
                     "is_correct": bool(m["is_correct"]) if m else False,
                     "score": m["score"] if m else 0,
@@ -548,6 +552,33 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                      (json.dumps(acc), body.question_id))
         db().commit()
         return {"ok": True}
+
+    # Curated pick-lists (app/final_options.py). The list payloads hide the
+    # answers (items/values) so the person setting up can pick blind and still
+    # play; ?id=N returns the full option for the actual POST.
+    @app.get("/api/host/final-options")
+    def get_final_options(host_key: str, id: Optional[int] = None):
+        require_host(host_key)
+        opts = final_options.FINAL_OPTIONS
+        if id is None:
+            return {"options": [
+                {"id": i, "text": o["text"], "ordered": o["ordered"],
+                 "item_count": len(o["items"]), "wager_cap": o["wager_cap"]}
+                for i, o in enumerate(opts)]}
+        if not 0 <= id < len(opts):
+            raise HTTPException(status_code=404, detail="no such option")
+        return {"id": id, **opts[id]}
+
+    @app.get("/api/host/tiebreak-options")
+    def get_tiebreak_options(host_key: str, id: Optional[int] = None):
+        require_host(host_key)
+        opts = final_options.TIEBREAK_OPTIONS
+        if id is None:
+            return {"options": [{"id": i, "question": o["question"]}
+                                for i, o in enumerate(opts)]}
+        if not 0 <= id < len(opts):
+            raise HTTPException(status_code=404, detail="no such option")
+        return {"id": id, **opts[id]}
 
     @app.post("/api/host/final")
     def create_final(body: FinalIn, host_key: str):
