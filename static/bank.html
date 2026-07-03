@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="only light">
+  <title>Question Bank — Sum Beach Trivia</title>
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    /* laptop-first: one wide table, plain and scannable */
+    .bank-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: var(--fs-sm);
+      background: var(--ground-2);
+      border: 1px solid var(--ink);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .bank-table th {
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: var(--fs-label);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      background: var(--ground-3);
+      padding: 0.55em 0.7em;
+      border-bottom: 1px solid var(--ink);
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .bank-table td {
+      padding: 0.5em 0.7em;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: top;
+    }
+    .bank-table tr:last-child td { border-bottom: none; }
+    .bank-wrap { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav__brand">Sum Beach Trivia</a>
+    <div class="nav__links"><a href="/host.html">Host</a></div>
+  </nav>
+
+  <main style="padding-bottom: 4rem;">
+
+    <!-- ── HOST KEY ENTRY ── -->
+    <div id="key-panel" class="container container--narrow" style="padding-top: 2rem;">
+      <p class="eyebrow mb-sm">Host access</p>
+      <h1 class="mb-sm">Enter your host key</h1>
+      <p class="text-dim" style="font-size: var(--fs-sm);">The host key was printed to the server console when the app started.</p>
+      <div class="card stack mt-md">
+        <div class="field">
+          <label for="host-key-input">Host key</label>
+          <input type="text" id="host-key-input" placeholder="8-character key from server logs" maxlength="40" autocomplete="off">
+        </div>
+        <div>
+          <button class="btn btn--primary" id="btn-set-key">Unlock question bank</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BANK ── -->
+    <div id="bank-main" class="container hidden" style="padding-top: 1.5rem; max-width: 1200px;">
+      <h1 class="mb-sm">Question Bank</h1>
+
+      <div class="card stack mb-sm">
+        <h3>Add a question (as host)</h3>
+        <div class="cluster">
+          <div class="field" style="width: 200px;">
+            <label for="add-category">Category</label>
+            <select id="add-category"></select>
+          </div>
+          <div class="field" style="flex: 2; min-width: 240px;">
+            <label for="add-text">Question</label>
+            <input type="text" id="add-text" placeholder="What's the only fish that can blink?">
+          </div>
+          <div class="field" style="flex: 1; min-width: 140px;">
+            <label for="add-answer">Answer</label>
+            <input type="text" id="add-answer" placeholder="Shark">
+          </div>
+          <div class="field" style="flex: 1; min-width: 140px;">
+            <label for="add-acceptable">Also accept <span class="text-dim">(comma-sep, optional)</span></label>
+            <input type="text" id="add-acceptable" placeholder="sharks">
+          </div>
+          <div style="padding-top: 1.35rem;">
+            <button class="btn btn--primary" id="btn-add">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cluster mb-sm">
+        <select id="filter-category" style="width: auto;"><option value="">All categories</option></select>
+        <select id="filter-source" style="width: auto;">
+          <option value="">All sources</option>
+          <option value="contributor">contributor</option>
+          <option value="bank">bank</option>
+          <option value="host">host</option>
+        </select>
+        <span id="count-line" class="label" style="margin-left: auto;"></span>
+      </div>
+
+      <div class="bank-wrap">
+        <table class="bank-table">
+          <thead><tr id="head-row">
+            <th data-col="id">ID</th>
+            <th data-col="source">Source</th>
+            <th data-col="author_name">Author</th>
+            <th data-col="category">Category</th>
+            <th data-col="text">Question</th>
+            <th data-col="answer">Answer</th>
+            <th data-col="round_id">Round</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="bank-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="toast-area" id="toasts" role="status" aria-live="polite"></div>
+
+  <script>
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function toast(msg, type='info') {
+      const area = document.getElementById('toasts');
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      area.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+
+    // ── host key gate (same pattern as host.html) ────────────
+    let hostKey = localStorage.getItem('host_key') || '';
+    function hk() { return `host_key=${encodeURIComponent(hostKey)}`; }
+
+    // true = valid key, false = rejected, null = couldn't reach the server
+    async function verifyHostKey(val) {
+      try {
+        const r = await fetch('/api/host/rounds?host_key=' + encodeURIComponent(val));
+        return r.ok;
+      } catch (_) { return null; }
+    }
+
+    document.getElementById('btn-set-key').addEventListener('click', async () => {
+      const val = document.getElementById('host-key-input').value.trim();
+      if (!val) { toast('Enter the host key', 'err'); return; }
+      const ok = await verifyHostKey(val);
+      if (ok === null) { toast('Could not reach the server — try again', 'err'); return; }
+      if (!ok)         { toast('Invalid host key', 'err'); return; }
+      hostKey = val;
+      localStorage.setItem('host_key', hostKey);
+      showBank();
+    });
+
+    // ── data + rendering ─────────────────────────────────────
+    let questions = [];
+    let sortCol = 'id', sortDir = 1;
+
+    async function loadQuestions() {
+      const r = await fetch(`/api/questions?${hk()}`);
+      if (!r.ok) { toast('Failed to load questions', 'err'); return; }
+      questions = (await r.json()).questions;
+      render();
+    }
+
+    async function loadCategories() {
+      const r = await fetch('/api/categories');
+      if (!r.ok) return;
+      const { categories } = await r.json();
+      for (const sel of [document.getElementById('filter-category'), document.getElementById('add-category')]) {
+        categories.forEach(c => sel.add(new Option(c, c)));
+      }
+    }
+
+    function render() {
+      const cat = document.getElementById('filter-category').value;
+      const src = document.getElementById('filter-source').value;
+      const shown = questions
+        .filter(q => (!cat || q.category === cat) && (!src || q.source === src))
+        .sort((a, b) => {
+          const av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
+          return (typeof av === 'number' && typeof bv === 'number'
+            ? av - bv : String(av).localeCompare(String(bv))) * sortDir;
+        });
+      document.getElementById('count-line').textContent =
+        `${questions.length} questions — ${shown.length} shown`;
+      document.getElementById('bank-body').innerHTML = shown.map(q => `
+        <tr>
+          <td class="mono">${q.id}</td>
+          <td><span class="badge badge--dim">${esc(q.source)}</span></td>
+          <td>${esc(q.author_name)}</td>
+          <td>${esc(q.category)}</td>
+          <td>${esc(q.text)}</td>
+          <td>${esc(q.answer)}</td>
+          <td>${q.round_id != null ? `<span class="badge badge--teal">round ${q.round_id}</span>` : '<span class="text-dim">—</span>'}</td>
+          <td>${q.round_id == null
+            ? `<button class="btn btn--sm btn--danger del-btn" data-id="${q.id}">Delete</button>`
+            : ''}</td>
+        </tr>`).join('');
+
+      document.querySelectorAll('.del-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const r = await fetch(`/api/host/questions/${btn.dataset.id}?${hk()}`, {method: 'DELETE'});
+          if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail || 'Delete failed', 'err'); return; }
+          toast(`Question ${btn.dataset.id} deleted`, 'ok');
+          loadQuestions();
+        });
+      });
+    }
+
+    document.getElementById('filter-category').addEventListener('change', render);
+    document.getElementById('filter-source').addEventListener('change', render);
+    document.getElementById('head-row').addEventListener('click', e => {
+      const col = e.target.dataset.col;
+      if (!col) return;
+      sortDir = col === sortCol ? -sortDir : 1;
+      sortCol = col;
+      render();
+    });
+
+    // ── add question ─────────────────────────────────────────
+    document.getElementById('btn-add').addEventListener('click', async () => {
+      const category   = document.getElementById('add-category').value;
+      const text       = document.getElementById('add-text').value.trim();
+      const answer     = document.getElementById('add-answer').value.trim();
+      const acceptable = document.getElementById('add-acceptable').value
+        .split(',').map(s => s.trim()).filter(Boolean);
+      if (!text)   { toast('Enter the question text', 'err'); return; }
+      if (!answer) { toast('Enter the answer', 'err'); return; }
+      const r = await fetch(`/api/host/bank-question?${hk()}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({category, text, answer, acceptable})
+      });
+      if (!r.ok) { const e = await r.json().catch(()=>({})); toast(e.detail || 'Add failed', 'err'); return; }
+      document.getElementById('add-text').value = '';
+      document.getElementById('add-answer').value = '';
+      document.getElementById('add-acceptable').value = '';
+      toast('Question added', 'ok');
+      loadQuestions();
+    });
+
+    // ── init ─────────────────────────────────────────────────
+    function showBank() {
+      document.getElementById('key-panel').classList.add('hidden');
+      document.getElementById('bank-main').classList.remove('hidden');
+      loadCategories();
+      loadQuestions();
+    }
+
+    // Auto-unlock only if the stored key still checks out server-side
+    // (a stale key from a previous game must NOT open the bank UI)
+    if (hostKey) {
+      document.getElementById('host-key-input').value = hostKey;
+      verifyHostKey(hostKey).then(ok => {
+        if (ok) { showBank(); return; }
+        if (ok === false) {
+          localStorage.removeItem('host_key');
+          hostKey = '';
+          document.getElementById('host-key-input').value = '';
+          toast('Your saved host key is from a previous game — enter the new one', 'err');
+        }
+        // null (server unreachable): stay on the key panel; retry via the button
+      });
+    }
+  </script>
+</body>
+</html>

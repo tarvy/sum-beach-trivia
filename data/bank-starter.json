@@ -1,0 +1,4011 @@
+[
+ {
+  "category": "history",
+  "id": "622a1c367cc59eab6f950339",
+  "correctAnswer": "Konrad Adenauer",
+  "incorrectAnswers": [
+   "Thomas Wergel",
+   "Alfred Muller",
+   "Karl Barwitz"
+  ],
+  "question": {
+   "text": "Who was the first chancellor of West Germany after WWII?"
+  },
+  "tags": [
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "63a039a6c7d86251f9b65c98",
+  "correctAnswer": "Harold II",
+  "incorrectAnswers": [
+   "William the Conqueror",
+   "Alfred the Great",
+   "Edward the Confessor"
+  ],
+  "question": {
+   "text": "What was the name of the last Anglo-Saxon king of England?"
+  },
+  "tags": [
+   "history",
+   "britain",
+   "uk",
+   "monarchs",
+   "kings",
+   "saxons"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c377cc59eab6f95043b",
+  "correctAnswer": "5000",
+  "incorrectAnswers": [
+   "1000",
+   "10000",
+   "20000"
+  ],
+  "question": {
+   "text": "Roughly How Many Men Were There In A Roman Legion?"
+  },
+  "tags": [
+   "numbers",
+   "romans",
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c367cc59eab6f950392",
+  "correctAnswer": "Sir Walter Raleigh",
+  "incorrectAnswers": [
+   "Sir Francis Drake",
+   "James Cook",
+   "Ernest Shackleton"
+  ],
+  "question": {
+   "text": "Who Brought Back Tobacco And Potatoes From The Americas?"
+  },
+  "tags": [
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "65056f367a97013de78b53f8",
+  "correctAnswer": "Turkey",
+  "incorrectAnswers": [
+   "Poland",
+   "Greece",
+   "Portugal"
+  ],
+  "question": {
+   "text": "Atatürk was a statesman of which country?"
+  },
+  "tags": [
+   "history",
+   "politics"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c3c7cc59eab6f95199d",
+  "correctAnswer": "Tutankhamen's Tomb",
+  "incorrectAnswers": [
+   "The Fountain of Youth",
+   "The Turin Shroud",
+   "Mount Everest"
+  ],
+  "question": {
+   "text": "What did Sir Howard Carter discover in 1922?"
+  },
+  "tags": [
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c367cc59eab6f9503f5",
+  "correctAnswer": "Hawaii",
+  "incorrectAnswers": [
+   "Alaska",
+   "Puerto Rico",
+   "New Mexico"
+  ],
+  "question": {
+   "text": "What Became America's 50th State On August 21st 1959?"
+  },
+  "tags": [
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c3d7cc59eab6f951c79",
+  "correctAnswer": "California",
+  "incorrectAnswers": [
+   "Florida",
+   "Texas",
+   "Ohio"
+  ],
+  "question": {
+   "text": "1955 saw the first ever Disneyland open in which U.S. state?"
+  },
+  "tags": [
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "65056f3a7a97013de78b53fd",
+  "correctAnswer": "American Civil War",
+  "incorrectAnswers": [
+   "World War I",
+   "The Cold War",
+   "French invasion of Russia"
+  ],
+  "question": {
+   "text": "What event began on April 12, 1861?"
+  },
+  "tags": [
+   "history",
+   "events",
+   "1800's"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "6477baa2550bc819ad646b07",
+  "correctAnswer": "Gorbachev",
+  "incorrectAnswers": [
+   "Yeltsin",
+   "Stalin",
+   "Khrushchev"
+  ],
+  "question": {
+   "text": "Who became General Secretary of the Soviet Communist Party in March 1985, and would go on to make significant changes to the country?"
+  },
+  "tags": [
+   "politics",
+   "history",
+   "leaders",
+   "soviet_union",
+   "russia",
+   "1980's",
+   "cold_war"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "645cb19b7d263fd5097043e4",
+  "correctAnswer": "El Cid",
+  "incorrectAnswers": [
+   "King Arthur",
+   "Charlemagne",
+   "Genghis Khan"
+  ],
+  "question": {
+   "text": "Who captured Valencia in 1094 and ruled it until his death on July 10, 1099?"
+  },
+  "tags": [
+   "people",
+   "europe",
+   "spain",
+   "history",
+   "wars"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "647f9de83a4302a71927164a",
+  "correctAnswer": "The Hudson",
+  "incorrectAnswers": [
+   "The Thames",
+   "The Amazon",
+   "The Mississippi"
+  ],
+  "question": {
+   "text": "Onto which river did an Airbus A320  make an emergency landing in January 2009, with all 155 people onboard surviving?"
+  },
+  "tags": [
+   "aviation",
+   "rivers",
+   "history",
+   "00's"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c3c7cc59eab6f9517e4",
+  "correctAnswer": "Malta",
+  "incorrectAnswers": [
+   "Cyprus",
+   "Greece",
+   "Spain"
+  ],
+  "question": {
+   "text": "Which country was awarded The George Cross, the highest civilian award for bravery bestowed by the British government, in 1942?"
+  },
+  "tags": [
+   "history",
+   "world_war_2",
+   "uk",
+   "1940's"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c3c7cc59eab6f951a0c",
+  "correctAnswer": "Henry Kissinger",
+  "incorrectAnswers": [
+   "John Quincy Adams",
+   "Condoleezza Rice",
+   "Robert Gates"
+  ],
+  "question": {
+   "text": "Which U.S. Secretary of State won the Nobel Peace Prize in 1973?"
+  },
+  "tags": [
+   "usa",
+   "politics",
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c367cc59eab6f95033f",
+  "correctAnswer": "Harold Wilson",
+  "incorrectAnswers": [
+   "Clement Atlee",
+   "Anthony Eden",
+   "Margaret Thatcher"
+  ],
+  "question": {
+   "text": "Who Was The British Prime Minister Between 1964 & 1969?"
+  },
+  "tags": [
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "647638d1f05ea6d6f587a154",
+  "correctAnswer": "Germany",
+  "incorrectAnswers": [
+   "France",
+   "Spain",
+   "Italy"
+  ],
+  "question": {
+   "text": "During World War 2, which country was home to the White Rose, a group of student rebels fighting against fascism?"
+  },
+  "tags": [
+   "history",
+   "world_war_2",
+   "politics"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c3c7cc59eab6f951aec",
+  "correctAnswer": "1965",
+  "incorrectAnswers": [
+   "1969",
+   "1973",
+   "1961"
+  ],
+  "question": {
+   "text": "In Which Year Did A Soviet Cosmonaut Make The First Spacewalk?"
+  },
+  "tags": [
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c3c7cc59eab6f951ab5",
+  "correctAnswer": "Boston Tea Party",
+  "incorrectAnswers": [
+   "Philadelphia Tea Mutiny",
+   "New York Tea Rebellion",
+   "Virginia Tea Decision"
+  ],
+  "question": {
+   "text": "Leading to the American War of Independence, what was the incident in which tea was dumped into a harbor?"
+  },
+  "tags": [
+   "wars",
+   "events",
+   "usa"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c3c7cc59eab6f951925",
+  "correctAnswer": "The California Gold Rush",
+  "incorrectAnswers": [
+   "The American Civil War",
+   "The Cuban Revolution",
+   "The Louisiana Purchase"
+  ],
+  "question": {
+   "text": "What started in 1849 when gold was discovered at Sutter's Mill?"
+  },
+  "tags": [
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "history",
+  "id": "622a1c3c7cc59eab6f951b3c",
+  "correctAnswer": "1945",
+  "incorrectAnswers": [
+   "1938",
+   "1940",
+   "1943"
+  ],
+  "question": {
+   "text": "In what year of WW II did Russia declare war on Japan?"
+  },
+  "tags": [
+   "world_war_2",
+   "russia",
+   "japan",
+   "wars",
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "6233845762eaad73716a8c01",
+  "correctAnswer": "Aegean Airlines",
+  "incorrectAnswers": [
+   "Olympus Air",
+   "Hermes",
+   "Hellenic Airways"
+  ],
+  "question": {
+   "text": "What Is The National Airline Of Greece?"
+  },
+  "tags": [
+   "business",
+   "europe",
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "64f6d9bd660c3a8d960101f5",
+  "correctAnswer": "The Victoria Falls",
+  "incorrectAnswers": [
+   "The Iguazu Falls",
+   "The Niagara Falls",
+   "The Angel Falls"
+  ],
+  "question": {
+   "text": "Which waterfall is on the Zambezi River, on the border between Zambia and Zimbabwe?"
+  },
+  "tags": [
+   "waterfalls",
+   "geography",
+   "natural_wonders",
+   "rivers",
+   "africa",
+   "zimbabwe"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "623387770161109f922aac27",
+  "correctAnswer": "Canada ",
+  "incorrectAnswers": [
+   "Russia",
+   "Australia",
+   "Japan"
+  ],
+  "question": {
+   "text": "Which Country Has The Longest Coastline?"
+  },
+  "tags": [
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "622a1c357cc59eab6f94ff97",
+  "correctAnswer": "San Francisco",
+  "incorrectAnswers": [
+   "New York City",
+   "Washington, D.C.",
+   "Los Angeles"
+  ],
+  "question": {
+   "text": "What city is associated with Alcatraz?"
+  },
+  "tags": [
+   "islands",
+   "crime",
+   "usa",
+   "places",
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "62602d104b176d54800e3c7c",
+  "correctAnswer": "Germany",
+  "incorrectAnswers": [
+   "Croatia",
+   "Albania",
+   "Switzerland"
+  ],
+  "question": {
+   "text": "In which country is the city of Berlin?"
+  },
+  "tags": [
+   "cities",
+   "europe",
+   "general_knowledge",
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "63b058824799123c67712f49",
+  "correctAnswer": "Lena River",
+  "incorrectAnswers": [
+   "Ob River",
+   "Yenisei River",
+   "Volga River"
+  ],
+  "question": {
+   "text": "What is the name of the longest river in Russia?"
+  },
+  "tags": [
+   "russia",
+   "rivers",
+   "bodies_of_water",
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "63b0586b4799123c67712f23",
+  "correctAnswer": "Ganges",
+  "incorrectAnswers": [
+   "Godavari",
+   "Krishna",
+   "Yamuna"
+  ],
+  "question": {
+   "text": "Which is the longest river in India? (not including length in other countries)"
+  },
+  "tags": [
+   "india",
+   "rivers",
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "645c9f6b42ea81e2554c5f26",
+  "correctAnswer": "Kenya",
+  "incorrectAnswers": [
+   "Cameroon",
+   "Mali",
+   "Senegal"
+  ],
+  "question": {
+   "text": "Which African country's national anthem is called 'Wimbo Wa Taifa' in Swahili, meaning 'anthem of the nation'?"
+  },
+  "tags": [
+   "africa",
+   "songs"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "64730798cf09068746f6377b",
+  "correctAnswer": "The Eiffel Tower",
+  "incorrectAnswers": [
+   "The Statue of Liberty",
+   "Big Ben",
+   "The Colosseum"
+  ],
+  "question": {
+   "text": "Which iconic landmark was originally built for the 1889 World's Fair?"
+  },
+  "tags": [
+   "culture",
+   "architecture",
+   "society_and_culture",
+   "history",
+   "tourism",
+   "tourist_attractions"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "645bc75b4638d58091b1b9ea",
+  "correctAnswer": "Stuttgart",
+  "incorrectAnswers": [
+   "Hamburg",
+   "Munich",
+   "Berlin"
+  ],
+  "question": {
+   "text": "What German city was named for a stud farm that was formerly on the site?"
+  },
+  "tags": [
+   "cities",
+   "history",
+   "germany",
+   "language"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "623b5824fd6c701a9211839e",
+  "correctAnswer": "Greece",
+  "incorrectAnswers": [
+   "Jordan",
+   "Turkey",
+   "Belgium"
+  ],
+  "question": {
+   "text": "In which country would you find the UNESCO World Heritage site of Delphi?"
+  },
+  "tags": [
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "622a1c357cc59eab6f94fe28",
+  "correctAnswer": "Florida",
+  "incorrectAnswers": [
+   "Kansas",
+   "Texas",
+   "California"
+  ],
+  "question": {
+   "text": "Which American state's name is Spanish for \"flowered\" or \"flowery land\"?"
+  },
+  "tags": [
+   "us_states",
+   "language",
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "6237414ecb85f7ce9e949d58",
+  "correctAnswer": "Bamako",
+  "incorrectAnswers": [
+   "Lomé",
+   "Managua",
+   "Zagreb"
+  ],
+  "question": {
+   "text": "What is the capital city of Mali?"
+  },
+  "tags": [
+   "capital_cities",
+   "africa",
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "623735fdcfe13103f55eb58e",
+  "correctAnswer": "Uganda",
+  "incorrectAnswers": [
+   "Portugal",
+   "Uruguay",
+   "Uzbekistan"
+  ],
+  "question": {
+   "text": "Which region of the world uses '.ug' at the end of its web addresses?"
+  },
+  "tags": [
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "622a1c357cc59eab6f94fe56",
+  "correctAnswer": "Edinburgh ",
+  "incorrectAnswers": [
+   "London",
+   "Bath",
+   "Norwich"
+  ],
+  "question": {
+   "text": "In which British city is the Royal Mile?"
+  },
+  "tags": [
+   "uk",
+   "cities",
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "622a1c357cc59eab6f94fd58",
+  "correctAnswer": "Russia",
+  "incorrectAnswers": [
+   "China",
+   "The USA",
+   "Australia"
+  ],
+  "question": {
+   "text": "Which country has the largest amount of timezones on its mainland?"
+  },
+  "tags": [
+   "general_knowledge",
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "geography",
+  "id": "623740a7cb85f7ce9e949d14",
+  "correctAnswer": "Georgetown",
+  "incorrectAnswers": [
+   "Pristina",
+   "Nouakchott",
+   "Port Vila"
+  ],
+  "question": {
+   "text": "What is the capital city of Guyana?"
+  },
+  "tags": [
+   "geography"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "647f9df73a4302a71927169a",
+  "correctAnswer": "Lye",
+  "incorrectAnswers": [
+   "Rye",
+   "Bye",
+   "Dye"
+  ],
+  "question": {
+   "text": "What is the name of the strong alkaline solution frequently used in soap making and drain cleaning?"
+  },
+  "tags": [
+   "chemistry",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "650570307a97013de78b5551",
+  "correctAnswer": "Inner ear",
+  "incorrectAnswers": [
+   "Nose",
+   "Knee",
+   "Brain"
+  ],
+  "question": {
+   "text": "In which part of the human body is the cochlea located?"
+  },
+  "tags": [
+   "science",
+   "anatomy",
+   "human body"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "645fcc91541c4d4fc8cf30ad",
+  "correctAnswer": "species",
+  "incorrectAnswers": [
+   "family",
+   "order",
+   "class"
+  ],
+  "question": {
+   "text": "What is the major subdivision of a genus or subgenus?"
+  },
+  "tags": [
+   "biology",
+   "animals",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "622a1c3e7cc59eab6f952295",
+  "correctAnswer": "0",
+  "incorrectAnswers": [
+   "3",
+   "1",
+   "6"
+  ],
+  "question": {
+   "text": "How many moons does Mercury have?"
+  },
+  "tags": [
+   "science",
+   "astronomy",
+   "the_solar_system",
+   "numbers"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "622a1c3a7cc59eab6f9510d8",
+  "correctAnswer": "Tree",
+  "incorrectAnswers": [
+   "Shark",
+   "Snake",
+   "Flower"
+  ],
+  "question": {
+   "text": "A Jacaranda is a type of what?"
+  },
+  "tags": [
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "622a1c3a7cc59eab6f9510d7",
+  "correctAnswer": "Salmon",
+  "incorrectAnswers": [
+   "Tuna",
+   "Trout",
+   "Cod"
+  ],
+  "question": {
+   "text": "Atlantic __________ are able to leap 15 feet high."
+  },
+  "tags": [
+   "animals",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "622a1c3a7cc59eab6f951013",
+  "correctAnswer": "Borneo & Sumatra",
+  "incorrectAnswers": [
+   "Bali & Lombok",
+   "Sulawesi & Java",
+   "New Guinea & Komodo"
+  ],
+  "question": {
+   "text": "Which 2 Islands Are The Natural Habitat Of The Orang-Utan?"
+  },
+  "tags": [
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "6243333dcfaae40c129613cc",
+  "correctAnswer": "A Hen",
+  "incorrectAnswers": [
+   "A Sow",
+   "A Nanny",
+   "A Lioness"
+  ],
+  "question": {
+   "text": "What would you call a female bird?"
+  },
+  "tags": [
+   "animals",
+   "biology",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "64af1025deeef534fb54ad10",
+  "correctAnswer": "Trout",
+  "incorrectAnswers": [
+   "Salmon",
+   "Bass",
+   "Tuna"
+  ],
+  "question": {
+   "text": "Named for its steely blue colour, which fish has a steelhead variety?"
+  },
+  "tags": [
+   "fish",
+   "nature",
+   "science",
+   "animals"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "622a1c377cc59eab6f9504b1",
+  "correctAnswer": "plankton",
+  "incorrectAnswers": [
+   "interactions among organisms and the water cycle",
+   "the Islam",
+   "society"
+  ],
+  "question": {
+   "text": "What is Planktology the study of?"
+  },
+  "tags": [
+   "words",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "622a1c3a7cc59eab6f950fdc",
+  "correctAnswer": "Colour Blindness",
+  "incorrectAnswers": [
+   "Short Sightedness",
+   "Far Sightedness",
+   "Cataracts"
+  ],
+  "question": {
+   "text": "Which sight problem occurs in men far more than in women?"
+  },
+  "tags": [
+   "biology",
+   "medicine",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "622a1c3a7cc59eab6f950fe9",
+  "correctAnswer": "Orionids",
+  "incorrectAnswers": [
+   "Lyrids",
+   "Perseids",
+   "Andromedids"
+  ],
+  "question": {
+   "text": "Which meteor shower occurs on the 21st October?"
+  },
+  "tags": [
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "648888d65dba6c873ef650ad",
+  "correctAnswer": "-cyte",
+  "incorrectAnswers": [
+   "-toma",
+   "-plasty",
+   "-ectomy"
+  ],
+  "question": {
+   "text": "What suffix is added to a word to denote a cell?"
+  },
+  "tags": [
+   "biology",
+   "medicine",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "648891c14cd3f064f443dc54",
+  "correctAnswer": "Spark plugs",
+  "incorrectAnswers": [
+   "Valves",
+   "Pistons",
+   "Gaskets"
+  ],
+  "question": {
+   "text": "In a gas engine, what device ignites the fuel-air mixture?"
+  },
+  "tags": [
+   "engineering",
+   "cars",
+   "motoring",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "622a1c377cc59eab6f950465",
+  "correctAnswer": "Wood",
+  "incorrectAnswers": [
+   "Fossils",
+   "Handwriting",
+   "Mountains"
+  ],
+  "question": {
+   "text": "What is Xylology the study of?"
+  },
+  "tags": [
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "622a1c3e7cc59eab6f9522a9",
+  "correctAnswer": "360",
+  "incorrectAnswers": [
+   "1",
+   "100",
+   "3.14"
+  ],
+  "question": {
+   "text": "How many degrees are there in a circle?"
+  },
+  "tags": [
+   "shapes",
+   "science",
+   "mathematics",
+   "numbers",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "622a1c377cc59eab6f950503",
+  "correctAnswer": "butterflies and moths",
+  "incorrectAnswers": [
+   "animal diseases",
+   "the effect of light on chemicals",
+   "the historical study of languages"
+  ],
+  "question": {
+   "text": "What is Lepidopterology the study of?"
+  },
+  "tags": [
+   "words",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "63d95307168979b94b2e4f7e",
+  "correctAnswer": "Big Bang Theory",
+  "incorrectAnswers": [
+   "General Relativity",
+   "String Theory",
+   "Quantum Theory"
+  ],
+  "question": {
+   "text": "What is the name of the scientific theory that states that the universe began with a singularity?"
+  },
+  "tags": [
+   "science",
+   "physics",
+   "astrophysics",
+   "space"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "647f9ded3a4302a71927167f",
+  "correctAnswer": "CFCs",
+  "incorrectAnswers": [
+   "HFCs",
+   "NFCs",
+   "OFCs"
+  ],
+  "question": {
+   "text": "Which chemical compounds, responsible for breaking down the ozone layer, were the subject of a 1987 treaty?"
+  },
+  "tags": [
+   "chemistry",
+   "environment",
+   "science",
+   "treaties",
+   "1980's"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "648889175dba6c873ef650de",
+  "correctAnswer": "Endangered species",
+  "incorrectAnswers": [
+   "Exotic species",
+   "Invasive species",
+   "Declining species"
+  ],
+  "question": {
+   "text": "What is the term for animals that are at risk of becoming extinct?"
+  },
+  "tags": [
+   "biology",
+   "animals",
+   "nature",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "science",
+  "id": "6476390cf05ea6d6f587a180",
+  "correctAnswer": "Mother of Pearl",
+  "incorrectAnswers": [
+   "Faux Satin",
+   "Fool's Gold",
+   "Diamond"
+  ],
+  "question": {
+   "text": "What is the lustrous material which lines the inside of an abalone shell?"
+  },
+  "tags": [
+   "marine_life",
+   "science",
+   "biology",
+   "materials"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c347cc59eab6f94f89d",
+  "correctAnswer": "Cricket",
+  "incorrectAnswers": [
+   "Volleyball",
+   "Badminton",
+   "Ice Hockey"
+  ],
+  "question": {
+   "text": "With which sport is Shane Warne associated?"
+  },
+  "tags": [
+   "people",
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "646339a001d576cfac3aa3a1",
+  "correctAnswer": "The Green Bay Packers",
+  "incorrectAnswers": [
+   "The Dallas Cowboys",
+   "The Pittsburgh Steelers",
+   "The New England Patriots"
+  ],
+  "question": {
+   "text": "Which NFL team, known for its fans' distinctive cheese wedge hats, is also nicknamed \"Cheeseheads\"?"
+  },
+  "tags": [
+   "football",
+   "american_football",
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "62399f011437c7031fbe41d3",
+  "correctAnswer": "Argentina",
+  "incorrectAnswers": [
+   "Brazil",
+   "England",
+   "West Germany"
+  ],
+  "question": {
+   "text": "Which country won the 1978 FIFA World Cup, hosted in Argentina?"
+  },
+  "tags": [
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c367cc59eab6f950060",
+  "correctAnswer": "Baseball",
+  "incorrectAnswers": [
+   "Basketball",
+   "Football",
+   "Ice Hockey"
+  ],
+  "question": {
+   "text": "Which sport is played by the Minnesota Twins?"
+  },
+  "tags": [
+   "usa",
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "645bc4634638d58091b1b9d6",
+  "correctAnswer": "Pugilist",
+  "incorrectAnswers": [
+   "Boxerite",
+   "Fightman",
+   "Brawler"
+  ],
+  "question": {
+   "text": "What word, derived from Latin, refers to a boxer or prizefighter?"
+  },
+  "tags": [
+   "boxing",
+   "words",
+   "sport",
+   "latin",
+   "translations"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "6477bad7550bc819ad646b41",
+  "correctAnswer": "Hooking",
+  "incorrectAnswers": [
+   "Swiping",
+   "Checking",
+   "Slashing"
+  ],
+  "question": {
+   "text": "In hockey, what is the penalty called that involves impeding the progress of an opponent with the stick?"
+  },
+  "tags": [
+   "hockey",
+   "sport",
+   "nhl"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c347cc59eab6f94f8a8",
+  "correctAnswer": "Golf",
+  "incorrectAnswers": [
+   "Table tennis",
+   "Swimming",
+   "Rowing"
+  ],
+  "question": {
+   "text": "With which sport is Tiger Woods associated?"
+  },
+  "tags": [
+   "people",
+   "general_knowledge",
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c367cc59eab6f95009d",
+  "correctAnswer": "Cricket",
+  "incorrectAnswers": [
+   "Rugby",
+   "Tennis",
+   "Bowling"
+  ],
+  "question": {
+   "text": "The Duckworth Lewis Method Is Used To Keep The Score In Which Sport?"
+  },
+  "tags": [
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c367cc59eab6f950092",
+  "correctAnswer": "Black",
+  "incorrectAnswers": [
+   "White",
+   "Red",
+   "Brown"
+  ],
+  "question": {
+   "text": "What Colour Is The 8 Ball In A Game Of Pool?"
+  },
+  "tags": [
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c347cc59eab6f94f8b1",
+  "correctAnswer": "Tennis",
+  "incorrectAnswers": [
+   "Volleyball",
+   "Cycling",
+   "Badminton"
+  ],
+  "question": {
+   "text": "With which sport is Billie Jean King associated?"
+  },
+  "tags": [
+   "people",
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "6384b43883dddfb71ee5e366",
+  "correctAnswer": "Golf",
+  "incorrectAnswers": [
+   "Cycling",
+   "American Football",
+   "Soccer"
+  ],
+  "question": {
+   "text": "Which sport is played at The Masters?"
+  },
+  "tags": [
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c347cc59eab6f94f858",
+  "correctAnswer": "Football",
+  "incorrectAnswers": [
+   "Table tennis",
+   "Ice Hockey",
+   "Surfing"
+  ],
+  "question": {
+   "text": "With which sport is Alex Ferguson associated?"
+  },
+  "tags": [
+   "people",
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c367cc59eab6f95005a",
+  "correctAnswer": "Butterfly",
+  "incorrectAnswers": [
+   "Dragonfly",
+   "Mayfly",
+   "Horsefly"
+  ],
+  "question": {
+   "text": "Which Swimming Stroke Was Introduced Into Competition In 1952"
+  },
+  "tags": [
+   "sport",
+   "swimming"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c3c7cc59eab6f951999",
+  "correctAnswer": "The 5 Continents",
+  "incorrectAnswers": [
+   "The 5 founding countries of the modern Olympics",
+   "The 5 city states of ancient Greece",
+   "The 5 events of the ancient Olympics"
+  ],
+  "question": {
+   "text": "What do the five rings on the Olympic flag represent?"
+  },
+  "tags": [],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "63b058654799123c67712f1b",
+  "correctAnswer": "Golf",
+  "incorrectAnswers": [
+   "Cricket",
+   "Rugby",
+   "Tennis"
+  ],
+  "question": {
+   "text": "What sport is Scotland widely considered to be the home of?"
+  },
+  "tags": [
+   "uk",
+   "sport",
+   "society_and_culture",
+   "scotland"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c347cc59eab6f94f88b",
+  "correctAnswer": "Tennis",
+  "incorrectAnswers": [
+   "Badminton",
+   "Cycling",
+   "Basketball"
+  ],
+  "question": {
+   "text": "With which sport is Steffi Graf associated?"
+  },
+  "tags": [
+   "people",
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "sport_and_leisure",
+  "id": "622a1c347cc59eab6f94f8ab",
+  "correctAnswer": "Basketball",
+  "incorrectAnswers": [
+   "Gymnastics",
+   "Rowing",
+   "Volleyball"
+  ],
+  "question": {
+   "text": "With which sport is Michael Jordan associated?"
+  },
+  "tags": [
+   "people",
+   "general_knowledge",
+   "sport"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "6462620fab138b829b81e9b4",
+  "correctAnswer": "Michael Palin",
+  "incorrectAnswers": [
+   "John Cleese",
+   "Terry Gilliam",
+   "Eric Idle"
+  ],
+  "question": {
+   "text": "Which member of the Monty Python comedy team has travelled extensively, making programmes such as 'Pole to Pole' and 'Around the World in 80 Days'?"
+  },
+  "tags": [
+   "travel",
+   "comedy",
+   "tv",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "63dd25e5742e43ed64f1f043",
+  "correctAnswer": "Will Truman",
+  "incorrectAnswers": [
+   "Jack McFarland",
+   "Will Buckland",
+   "Mark Wilson"
+  ],
+  "question": {
+   "text": "What is the name of the character played by Eric McCormack on the show 'Will & Grace'?"
+  },
+  "tags": [
+   "film_and_tv",
+   "tv",
+   "sitcoms"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "63952068e55fa75b149597b8",
+  "correctAnswer": "Severance",
+  "incorrectAnswers": [
+   "Slow Horses",
+   "Shantaram",
+   "The Queens Gambit"
+  ],
+  "question": {
+   "text": "Adam Scott and Britt Lower star in which 2022 TV dark comedy?"
+  },
+  "tags": [
+   "tv",
+   "film_and_tv",
+   "2022",
+   "acting"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "622a1c347cc59eab6f94f8ff",
+  "correctAnswer": "Joe Pesci",
+  "incorrectAnswers": [
+   "Robert Shaw",
+   "Bruce Willis",
+   "Errol Flynn"
+  ],
+  "question": {
+   "text": "Which actor played the role of Tommy DeVito in GoodFellas?"
+  },
+  "tags": [
+   "acting",
+   "film",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "6256992e9da29df7b05f72b7",
+  "correctAnswer": "Mickey Rourke",
+  "incorrectAnswers": [
+   "Idris Elba",
+   "Clark Gregg",
+   "Vin Diesel"
+  ],
+  "question": {
+   "text": "Which actor plays the role of Ivan Vanko in the Marvel Cinematic Universe?"
+  },
+  "tags": [
+   "mcu",
+   "film",
+   "acting",
+   "marvel",
+   "comics",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "625fd6b9dc0dd3b72da64d06",
+  "correctAnswer": "1986",
+  "incorrectAnswers": [
+   "1971",
+   "1976",
+   "1981"
+  ],
+  "question": {
+   "text": "Aliens was released in which year?"
+  },
+  "tags": [
+   "film",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "622a1c367cc59eab6f95020f",
+  "correctAnswer": "Ridley Scott",
+  "incorrectAnswers": [
+   "Steven Spielberg",
+   "Woody Allen",
+   "Martin Scorsese"
+  ],
+  "question": {
+   "text": "Which director directed Gladiator?"
+  },
+  "tags": [
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "625fd729dc0dd3b72da64d27",
+  "correctAnswer": "1982",
+  "incorrectAnswers": [
+   "1977",
+   "1987",
+   "1992"
+  ],
+  "question": {
+   "text": "Blade Runner was released in which year?"
+  },
+  "tags": [
+   "film",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "622a1c3c7cc59eab6f95199a",
+  "correctAnswer": "OUTATIME",
+  "incorrectAnswers": [
+   "GOINBACK",
+   "SEEYAL8R",
+   "NOROADS"
+  ],
+  "question": {
+   "text": "What was the license plate on the Delorean in Back To The Future?"
+  },
+  "tags": [
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "62573fa09da29df7b05f73a7",
+  "correctAnswer": "The Lion King",
+  "incorrectAnswers": [
+   "The Wizard of Oz",
+   "Joker",
+   "Rear Window"
+  ],
+  "question": {
+   "text": "Name the movie that matches the following plot summary: 'Simba and his father are targeted by his uncle, who wants to ascend the throne himself.'"
+  },
+  "tags": [
+   "film",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "62573ffc9da29df7b05f73bb",
+  "correctAnswer": "Metropolis",
+  "incorrectAnswers": [
+   "The Lord of the Rings: The Fellowship of the Ring",
+   "The Lives of Others",
+   "The Departed"
+  ],
+  "question": {
+   "text": "Name the movie that matches the following plot summary: 'The son of a city's mastermind falls in love with a working-class prophet.'"
+  },
+  "tags": [
+   "film",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "622a1c367cc59eab6f950209",
+  "correctAnswer": "Ridley Scott",
+  "incorrectAnswers": [
+   "Steven Spielberg",
+   "Woody Allen",
+   "Martin Scorsese"
+  ],
+  "question": {
+   "text": "Which director directed Alien?"
+  },
+  "tags": [
+   "film",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "622a1c347cc59eab6f94f93f",
+  "correctAnswer": "M",
+  "incorrectAnswers": [
+   "Austin Powers: International Man of Mystery",
+   "Apocalypse Now",
+   "Home Alone"
+  ],
+  "question": {
+   "text": "Which film contains the character 'Hans Beckert'?"
+  },
+  "tags": [
+   "film",
+   "fictitious_characters",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "622a1c3c7cc59eab6f9517d3",
+  "correctAnswer": "Bosom Buddies",
+  "incorrectAnswers": [
+   "Pen Pals",
+   "Freaky Friends",
+   "Messy Mates"
+  ],
+  "question": {
+   "text": "Which eighties sitcom featured Tom Hanks in drag on a regular basis?"
+  },
+  "tags": [
+   "tv",
+   "film_and_tv",
+   "acting",
+   "1980's"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "622a1c377cc59eab6f9506de",
+  "correctAnswer": "Penélope Cruz",
+  "incorrectAnswers": [
+   "Amy Adams",
+   "Uma Thurman",
+   "Cameron Diaz"
+  ],
+  "question": {
+   "text": "Which actress has appeared in both Pirates of the Caribbean: On Stranger Tides and All About My Mother?"
+  },
+  "tags": [
+   "film_and_tv",
+   "acting",
+   "film"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "622a1c377cc59eab6f950754",
+  "correctAnswer": "Danny Glover",
+  "incorrectAnswers": [
+   "Dan Aykroyd",
+   "Gérard Depardieu",
+   "Shah Rukh Khan"
+  ],
+  "question": {
+   "text": "Which actor has featured in films including 2012 and The Color Purple?"
+  },
+  "tags": [
+   "acting",
+   "film",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "62573fae3d2f5c16bfb88337",
+  "correctAnswer": "Rear Window",
+  "incorrectAnswers": [
+   "Fight Club",
+   "All About Eve",
+   "The Dark Knight"
+  ],
+  "question": {
+   "text": "Name the movie that matches the following plot summary: 'A wheelchair-bound photographer spies on his neighbors from his apartment.'"
+  },
+  "tags": [
+   "film",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "649d6d6de3aef0a3c23f6429",
+  "correctAnswer": "George Clooney",
+  "incorrectAnswers": [
+   "Brad Pitt",
+   "Leonardo DiCaprio",
+   "Tom Hanks"
+  ],
+  "question": {
+   "text": "Which actor received 3 Oscar nominations in one year, winning for his supporting role in \"Syriana\"?"
+  },
+  "tags": [
+   "film_and_tv",
+   "film",
+   "acting",
+   "academy_awards"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "622a1c347cc59eab6f94f8e4",
+  "correctAnswer": "Barbara Stanwyck",
+  "incorrectAnswers": [
+   "Vivien Leigh",
+   "Anne Bancroft",
+   "Olivia Newton-John"
+  ],
+  "question": {
+   "text": "Which actress played the role of Phyllis Dietrichson in Double Indemnity?"
+  },
+  "tags": [
+   "people",
+   "acting",
+   "film",
+   "film_and_tv"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "film_and_tv",
+  "id": "622a1c347cc59eab6f94f9ed",
+  "correctAnswer": "Blue",
+  "incorrectAnswers": [
+   "Red",
+   "Black",
+   "White"
+  ],
+  "question": {
+   "text": "In The Matrix, which pill would have returned Neo to the fabricated reality of the Matrix with no memory of what happened?"
+  },
+  "tags": [
+   "film",
+   "cult_films"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "63f39501989356ef48370bdf",
+  "correctAnswer": "Double Bass",
+  "incorrectAnswers": [
+   "Violin",
+   "Viola",
+   "Cello"
+  ],
+  "question": {
+   "text": "What is the lowest pitched stringed instrument?"
+  },
+  "tags": [
+   "music",
+   "musical_instruments"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "62506430e12f6dec240bdfa0",
+  "correctAnswer": "Falco",
+  "incorrectAnswers": [
+   "Jermaine Stewart",
+   "Vanilla Ice",
+   "Sir Mix-A-Lot"
+  ],
+  "question": {
+   "text": "Who had a hit in 1984 with Rock Me Amedeus?"
+  },
+  "tags": [
+   "songs",
+   "one_hit_wonders",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c397cc59eab6f950ca3",
+  "correctAnswer": "Pink Floyd",
+  "incorrectAnswers": [
+   "Wings",
+   "Rudimental",
+   "The Alan Parsons Project"
+  ],
+  "question": {
+   "text": "Which English rock band released the song 'Have a Cigar'?"
+  },
+  "tags": [
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c357cc59eab6f94fd8e",
+  "correctAnswer": "REM",
+  "incorrectAnswers": [
+   "Green Day",
+   "U2",
+   "Radiohead"
+  ],
+  "question": {
+   "text": "Who Had Hits With \"It's The End Of The World As We Know It\" & \"Orange Crush\"?"
+  },
+  "tags": [
+   "general_knowledge",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "625063a4e12f6dec240bdf77",
+  "correctAnswer": "Come on Eileen",
+  "incorrectAnswers": [
+   "96 Tears",
+   "Heart And Soul",
+   "Turning Japanese"
+  ],
+  "question": {
+   "text": "What song did Dexy's Midnight Runners have a hit with in 1983?"
+  },
+  "tags": [
+   "songs",
+   "one_hit_wonders",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c387cc59eab6f950b8a",
+  "correctAnswer": "The Jimi Hendrix Experience",
+  "incorrectAnswers": [
+   "Poison",
+   "The Pussycat Dolls",
+   "Three 6 Mafia"
+  ],
+  "question": {
+   "text": "Which English-American psychedelic rock band released the album 'Are You Experienced'?"
+  },
+  "tags": [
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c367cc59eab6f95021c",
+  "correctAnswer": "Miles Davis ",
+  "incorrectAnswers": [
+   "Eminem",
+   "The Rolling Stones",
+   "Madonna"
+  ],
+  "question": {
+   "text": "Who released the album 'Bitches brew'? "
+  },
+  "tags": [
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "625063e1e12f6dec240bdf89",
+  "correctAnswer": "Cars",
+  "incorrectAnswers": [
+   "Heart And Soul",
+   "I Know What Boys Like",
+   "Somebody's Watching Me"
+  ],
+  "question": {
+   "text": "What song did Gary Numan have a hit with in 1980?"
+  },
+  "tags": [
+   "songs",
+   "one_hit_wonders",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c357cc59eab6f94fdbe",
+  "correctAnswer": "Can The Can",
+  "incorrectAnswers": [
+   "Do The Do",
+   "See The Sea",
+   "Dance The Dance"
+  ],
+  "question": {
+   "text": "What Was Suzi Quatro's First Hit In 1973?"
+  },
+  "tags": [
+   "songs",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c357cc59eab6f94fd79",
+  "correctAnswer": "The Righteous Brothers",
+  "incorrectAnswers": [
+   "The Isley Brothers",
+   "Wham!",
+   "The Temptations"
+  ],
+  "question": {
+   "text": "Who Were Bobby Hatfield & Bill Medley?"
+  },
+  "tags": [
+   "people",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "6266bb0eff7b6ee0496ec77d",
+  "correctAnswer": "Woodwind",
+  "incorrectAnswers": [
+   "Brass",
+   "Percussion",
+   "Stringed"
+  ],
+  "question": {
+   "text": "What type of instrument is a fife?"
+  },
+  "tags": [
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "62506436e12f6dec240bdfa2",
+  "correctAnswer": "Bobby McFerrin",
+  "incorrectAnswers": [
+   "David Naughton",
+   "Gary Numan",
+   "Falco"
+  ],
+  "question": {
+   "text": "Who had a hit in 1988 with Don't Worry Be Happy?"
+  },
+  "tags": [
+   "songs",
+   "one_hit_wonders",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c397cc59eab6f950bf2",
+  "correctAnswer": "The Doors",
+  "incorrectAnswers": [
+   "Styx",
+   "The Pussycat Dolls",
+   "Three 6 Mafia"
+  ],
+  "question": {
+   "text": "Which American rock band released the song 'People Are Strange'?"
+  },
+  "tags": [
+   "rock_music",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c3c7cc59eab6f951812",
+  "correctAnswer": "The Faces",
+  "incorrectAnswers": [
+   "The Rolling Stones",
+   "Deep Purple",
+   "Oasis"
+  ],
+  "question": {
+   "text": "Which band was Rod Stewart a member of before going solo?"
+  },
+  "tags": [
+   "musicians",
+   "bands",
+   "people",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c397cc59eab6f950d3c",
+  "correctAnswer": "The Beatles",
+  "incorrectAnswers": [
+   "Deep Purple",
+   "Feeder",
+   "Uriah Heep"
+  ],
+  "question": {
+   "text": "Which English rock band released the song 'She Loves You'?"
+  },
+  "tags": [
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c357cc59eab6f94fdd1",
+  "correctAnswer": "Tailor",
+  "incorrectAnswers": [
+   "Gambler",
+   "Dancer",
+   "Maid"
+  ],
+  "question": {
+   "text": "According To The Lyrics Of The Song “House Of The Rising Sun” What Was The Occupation Of Their Mother?"
+  },
+  "tags": [
+   "lyrics",
+   "songs",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "625064e1e12f6dec240bdfd4",
+  "correctAnswer": "Bow Wow Wow",
+  "incorrectAnswers": [
+   "Starland Vocal Band",
+   "Jane Child",
+   "M"
+  ],
+  "question": {
+   "text": "Who had a hit in 1982 with I Want Candy?"
+  },
+  "tags": [
+   "songs",
+   "one_hit_wonders",
+   "1980's",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c357cc59eab6f94ffd1",
+  "correctAnswer": "The Rolling Stones",
+  "incorrectAnswers": [
+   "Black",
+   "Sticky Fingers",
+   "Brown Sugar"
+  ],
+  "question": {
+   "text": "What was the title of the first album released by The Rolling Stones?"
+  },
+  "tags": [
+   "music_albums",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "64adcb300d501be39aa6c78a",
+  "correctAnswer": "A loser",
+  "incorrectAnswers": [
+   "An idiot",
+   "A dweeb",
+   "A sucker"
+  ],
+  "question": {
+   "text": "What does Beck refer to himself as in one of his songs?"
+  },
+  "tags": [
+   "songs",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c387cc59eab6f950bb7",
+  "correctAnswer": "Simon & Garfunkel",
+  "incorrectAnswers": [
+   "MercyMe",
+   "Three 6 Mafia",
+   "The Velvet Underground"
+  ],
+  "question": {
+   "text": "Which American music duo released the album 'Bookends'?"
+  },
+  "tags": [
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c357cc59eab6f94ff38",
+  "correctAnswer": "Michael Jackson",
+  "incorrectAnswers": [
+   "Nicki Minaj",
+   "Neil Young",
+   "Eric Clapton"
+  ],
+  "question": {
+   "text": "'Earth Song' was originally released by which musician?"
+  },
+  "tags": [
+   "songs",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c357cc59eab6f94fe6d",
+  "correctAnswer": "Lady Gaga",
+  "incorrectAnswers": [
+   "Hikaru Utada",
+   "Drake",
+   "Madonna"
+  ],
+  "question": {
+   "text": "Which American singer, songwriter, and actress released the song 'G.U.Y.'?"
+  },
+  "tags": [
+   "musicians",
+   "songs",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "6250641fe12f6dec240bdf9b",
+  "correctAnswer": "Bitter Sweet Symphony",
+  "incorrectAnswers": [
+   "Got to Be Real",
+   "Seasons in the Sun",
+   "Lovin' You"
+  ],
+  "question": {
+   "text": "The Verve had a one hit wonder in 1997 with which song?"
+  },
+  "tags": [
+   "songs",
+   "one_hit_wonders",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c357cc59eab6f94fd4f",
+  "correctAnswer": "Guitar",
+  "incorrectAnswers": [
+   "Piano",
+   "Drums",
+   "Saxophone"
+  ],
+  "question": {
+   "text": "With Which Instrument Is Les Paul Associated?"
+  },
+  "tags": [
+   "people",
+   "general_knowledge",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "music",
+  "id": "622a1c357cc59eab6f94fe9d",
+  "correctAnswer": "Rihanna",
+  "incorrectAnswers": [
+   "Drake",
+   "Nicki Minaj",
+   "Ricky Martin"
+  ],
+  "question": {
+   "text": "Which singer released the studio album 'Talk That Talk'?"
+  },
+  "tags": [
+   "music_albums",
+   "musicians",
+   "music"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "6494b7cbd7601042f7eaa93e",
+  "correctAnswer": "Doctor Zhivago",
+  "incorrectAnswers": [
+   "Catch-22",
+   "The Great Gatsby",
+   "Anna Karenina"
+  ],
+  "question": {
+   "text": "Which novel by Boris Pasternak, adapted into a film in 1965, tells the story of Yuri's passion for Lara amidst the backdrop of the Russian Revolution?"
+  },
+  "tags": [
+   "novels",
+   "arts_and_literature",
+   "literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c397cc59eab6f950ea4",
+  "correctAnswer": "Neil Gaiman",
+  "incorrectAnswers": [
+   "Stephen King",
+   "H. P. Lovecraft",
+   "Douglas Adams"
+  ],
+  "question": {
+   "text": "Which author wrote 'The Sandman'?"
+  },
+  "tags": [
+   "literature",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c397cc59eab6f950ed9",
+  "correctAnswer": "Jack London",
+  "incorrectAnswers": [
+   "Edgar Rice Burroughs",
+   "James Fenimore Cooper",
+   "Frederik Pohl"
+  ],
+  "question": {
+   "text": "Which author wrote 'Call of the Wild'?"
+  },
+  "tags": [
+   "literature",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c347cc59eab6f94f97f",
+  "correctAnswer": "Henderson the Rain King",
+  "incorrectAnswers": [
+   "The Moviegoer",
+   "The Old Man and the Sea",
+   "Howards End"
+  ],
+  "question": {
+   "text": "Which book contains the character 'Eugene Henderson'?"
+  },
+  "tags": [
+   "literature",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c367cc59eab6f9501d7",
+  "correctAnswer": "Little Women",
+  "incorrectAnswers": [
+   "Buddenbrooks",
+   "David Copperfield",
+   "Jane Eyre"
+  ],
+  "question": {
+   "text": "Which piece of written work starts with the line ''Christmas won't be Christmas without any presents''?"
+  },
+  "tags": [
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "65056f027a97013de78b53ae",
+  "correctAnswer": "Tennessee Williams",
+  "incorrectAnswers": [
+   "Graham Greene",
+   "Franz Grillparzer",
+   "Anthony Neilson"
+  ],
+  "question": {
+   "text": "What playwright wrote \"A Streetcar Named Desire\"?"
+  },
+  "tags": [
+   "arts_and_literature",
+   "theater"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c347cc59eab6f94fa13",
+  "correctAnswer": "Raphael",
+  "incorrectAnswers": [
+   "Henri Matisse",
+   "Jan van Eyck",
+   "Diego Rivera"
+  ],
+  "question": {
+   "text": "Which artist painted \"The Triumph of Galatea\""
+  },
+  "tags": [
+   "art",
+   "painting",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c397cc59eab6f950ecc",
+  "correctAnswer": "Haruki Murakami",
+  "incorrectAnswers": [
+   "Oscar Wilde",
+   "Umberto Eco",
+   "Søren Kierkegaard"
+  ],
+  "question": {
+   "text": "Which author wrote 'Kafka on the Shore'?"
+  },
+  "tags": [
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c367cc59eab6f9501ca",
+  "correctAnswer": "Ulysses",
+  "incorrectAnswers": [
+   "The Diary of a Chambermaid",
+   "The Neverending Story",
+   "The Count of Monte Cristo"
+  ],
+  "question": {
+   "text": "Which piece of written work starts with the line 'Stately, plump Buck Mulligan came from the stairhead, bearing a bowl of lather on which a mirror and a razor lay crossed.'?"
+  },
+  "tags": [
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c397cc59eab6f950e70",
+  "correctAnswer": "C. S. Lewis",
+  "incorrectAnswers": [
+   "Neil Gaiman",
+   "Jack Vance",
+   "Douglas Adams"
+  ],
+  "question": {
+   "text": "Which author wrote 'The Voyage of the Dawn Treader'?"
+  },
+  "tags": [
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c397cc59eab6f950f2f",
+  "correctAnswer": "Hans Christian Andersen",
+  "incorrectAnswers": [
+   "Beatrix Potter",
+   "Søren Kierkegaard",
+   "Oscar Wilde"
+  ],
+  "question": {
+   "text": "Which author wrote 'The Swineherd'?"
+  },
+  "tags": [
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c397cc59eab6f950e2e",
+  "correctAnswer": "Ovid",
+  "incorrectAnswers": [
+   "Miguel de Cervantes",
+   "Oscar Wilde",
+   "Agatha Christie"
+  ],
+  "question": {
+   "text": "Which author wrote 'Metamorphoses'?"
+  },
+  "tags": [
+   "literature",
+   "romans",
+   "classics",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "6462624dab138b829b81e9e3",
+  "correctAnswer": "Gilbert Stuart",
+  "incorrectAnswers": [
+   "Edward Mitchell Bannister",
+   "Hannah Robinson",
+   "Ralph Earl"
+  ],
+  "question": {
+   "text": "Which Rhode Islander painted portraits of the first 6 presidents of the USA?"
+  },
+  "tags": [
+   "painting",
+   "art",
+   "presidents",
+   "usa",
+   "history"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "646140774d46e537ca8cd9b8",
+  "correctAnswer": "Saul Bellow",
+  "incorrectAnswers": [
+   "Philip Roth",
+   "John Cheever",
+   "Flannery O'Connor"
+  ],
+  "question": {
+   "text": "Who is the author of the books 'Mr. Sammler's Planet' and 'Herzog'?"
+  },
+  "tags": [
+   "books",
+   "authors",
+   "novels",
+   "literature",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c397cc59eab6f950e97",
+  "correctAnswer": "Enid Blyton",
+  "incorrectAnswers": [
+   "J. R. R. Tolkien",
+   "Lewis Carroll",
+   "Oscar Wilde"
+  ],
+  "question": {
+   "text": "Which author wrote 'The Famous Five'?"
+  },
+  "tags": [
+   "literature",
+   "childrens_literature",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "645cb12a602ff42ca52fb427",
+  "correctAnswer": "Voltaire",
+  "incorrectAnswers": [
+   "Rousseau",
+   "Hugo",
+   "Flaubert"
+  ],
+  "question": {
+   "text": "Which author of \"Candide\" said, \"The secret of being a bore is to tell everything\"?"
+  },
+  "tags": [
+   "literature",
+   "authors",
+   "quotes",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c397cc59eab6f950f47",
+  "correctAnswer": "Edgar Allan Poe",
+  "incorrectAnswers": [
+   "Stephen King",
+   "Nathaniel Hawthorne",
+   "Mario Puzo"
+  ],
+  "question": {
+   "text": "Which author wrote 'The Oval Portrait'?"
+  },
+  "tags": [
+   "literature",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c397cc59eab6f950e41",
+  "correctAnswer": "Mikhail Bulgakov",
+  "incorrectAnswers": [
+   "Vladimir Nabokov",
+   "Ayn Rand",
+   "Stanisław Lem"
+  ],
+  "question": {
+   "text": "Which author wrote 'Heart of a Dog'?"
+  },
+  "tags": [
+   "literature",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c367cc59eab6f95017a",
+  "correctAnswer": "Van Gogh",
+  "incorrectAnswers": [
+   "Salvador Dali",
+   "Andy Warhol",
+   "Raphael"
+  ],
+  "question": {
+   "text": "Which painter reputedly cut off his own ear?"
+  },
+  "tags": [
+   "arts_and_literature",
+   "people",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c3a7cc59eab6f951366",
+  "correctAnswer": "Romanesque",
+  "incorrectAnswers": [
+   "Baroque",
+   "Gothic",
+   "Palladian"
+  ],
+  "question": {
+   "text": "Which medieval architectural style is characterized by large semi-circular arches?"
+  },
+  "tags": [
+   "architecture",
+   "medieval",
+   "art",
+   "middle_ages",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c3a7cc59eab6f95139f",
+  "correctAnswer": "Harry Potter",
+  "incorrectAnswers": [
+   "Voyages Extraordinaires",
+   "Percy Jackson & the Olympians",
+   "Twilight"
+  ],
+  "question": {
+   "text": "In which book series does Lord Voldemort appear?"
+  },
+  "tags": [
+   "fictitious_characters",
+   "childrens_literature",
+   "literature",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c397cc59eab6f950f8c",
+  "correctAnswer": "William Shakespeare",
+  "incorrectAnswers": [
+   "Arthur C. Clarke",
+   "Isaac Newton",
+   "Enid Blyton"
+  ],
+  "question": {
+   "text": "Which author wrote 'The Winter's Tale'?"
+  },
+  "tags": [
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "arts_and_literature",
+  "id": "622a1c3a7cc59eab6f95134b",
+  "correctAnswer": "Color Field Painting",
+  "incorrectAnswers": [
+   "Foreshortening",
+   "Gestural Painting",
+   "Canvas Filling"
+  ],
+  "question": {
+   "text": "Which technique in abstract painting developed in the 1950's focuses on the effects of large areas of color having a minimum of surface detail?"
+  },
+  "tags": [
+   "art",
+   "words",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "622a1c367cc59eab6f9503ea",
+  "correctAnswer": "Egg Mcmuffin",
+  "incorrectAnswers": [
+   "MSG",
+   "Aqua Faba",
+   "Instant Noodles"
+  ],
+  "question": {
+   "text": "What did Herb Peterson invent?"
+  },
+  "tags": [
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "624c60d150d1a5e051325a75",
+  "correctAnswer": "Mexico",
+  "incorrectAnswers": [
+   "Bhutan",
+   "Japan",
+   "Brazil"
+  ],
+  "question": {
+   "text": "Where in the world would you most expect to be served a taco?"
+  },
+  "tags": [
+   "food",
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "624ab088348a461bfc670680",
+  "correctAnswer": "South America",
+  "incorrectAnswers": [
+   "Europe",
+   "China",
+   "Central America"
+  ],
+  "question": {
+   "text": "Where in the world are tomatoes originally from?"
+  },
+  "tags": [
+   "food",
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "622a1c367cc59eab6f9502e5",
+  "correctAnswer": "Apricot ",
+  "incorrectAnswers": [
+   "Raspberry",
+   "Orange",
+   "Banana"
+  ],
+  "question": {
+   "text": "Laetrile is associated with the which fruit?"
+  },
+  "tags": [
+   "food",
+   "chemistry",
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "64902c3a6c4575eaf97c8ae9",
+  "correctAnswer": "Toddy",
+  "incorrectAnswers": [
+   "Mocha",
+   "Latte",
+   "Old Smoke"
+  ],
+  "question": {
+   "text": "What is the name of a spicy, hot beverage often served to cure a cold or sore throat?"
+  },
+  "tags": [
+   "drink",
+   "medicine",
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "622a1c367cc59eab6f9502d6",
+  "correctAnswer": "Sherry ",
+  "incorrectAnswers": [
+   "Ginger",
+   "Tomatoes",
+   "Bread"
+  ],
+  "question": {
+   "text": "What would you use the solera process on?"
+  },
+  "tags": [
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "622a1c367cc59eab6f95022b",
+  "correctAnswer": "Broccoli ",
+  "incorrectAnswers": [
+   "Carrots",
+   "Spinach",
+   "Cabbage"
+  ],
+  "question": {
+   "text": "Which vegetable did President George Bush senior declare publicly that he did not like?"
+  },
+  "tags": [
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "622a1c367cc59eab6f950266",
+  "correctAnswer": "Julienne ",
+  "incorrectAnswers": [
+   "Riband",
+   "Shaved",
+   "Sharded"
+  ],
+  "question": {
+   "text": "Which cooking term is used to describe vegetables cut into very thin strips?"
+  },
+  "tags": [
+   "food",
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "622a1c3b7cc59eab6f951602",
+  "correctAnswer": "A ",
+  "incorrectAnswers": [
+   "B",
+   "C",
+   "D"
+  ],
+  "question": {
+   "text": "Carrots Are Rich In which Vitamin?"
+  },
+  "tags": [
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "64720c933bbb58c31f411c8c",
+  "correctAnswer": "Carnitas",
+  "incorrectAnswers": [
+   "Tacos",
+   "Burritos",
+   "Enchiladas"
+  ],
+  "question": {
+   "text": "What Mexican dish that means \"little meats\" is made with shredded pork?"
+  },
+  "tags": [
+   "pork",
+   "meat",
+   "mexican_cuisine",
+   "food",
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "624ab07ac64ce21c11f06e9f",
+  "correctAnswer": "Central America",
+  "incorrectAnswers": [
+   "China",
+   "Central Asia",
+   "Europe"
+  ],
+  "question": {
+   "text": "Where in the world are bell peppers originally from?"
+  },
+  "tags": [
+   "food",
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "622a1c367cc59eab6f9502e7",
+  "correctAnswer": "Vin maison ",
+  "incorrectAnswers": [
+   "Vin chateau",
+   "Vin dom",
+   "Vin chambre"
+  ],
+  "question": {
+   "text": "How would you say 'house wine' in 'French'"
+  },
+  "tags": [
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "622a1c3b7cc59eab6f951627",
+  "correctAnswer": "Morocco ",
+  "incorrectAnswers": [
+   "Italy",
+   "France",
+   "Brazil"
+  ],
+  "question": {
+   "text": "A Tagine Is A Dish That Originated In Which Country?"
+  },
+  "tags": [
+   "food",
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "622a1c3b7cc59eab6f95163a",
+  "correctAnswer": "Rice",
+  "incorrectAnswers": [
+   "Potato",
+   "Corn",
+   "Fish"
+  ],
+  "question": {
+   "text": " What is Japanese \"sake\" made from?"
+  },
+  "tags": [
+   "drink",
+   "japan",
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "622a1c3b7cc59eab6f9515b0",
+  "correctAnswer": "Hot Spice ",
+  "incorrectAnswers": [
+   "Strong Taste",
+   "Lazy Cooking",
+   "Secret Flavour"
+  ],
+  "question": {
+   "text": "What does 'Garam Masala' mean in Hindi?"
+  },
+  "tags": [
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "6477bad7550bc819ad646b38",
+  "correctAnswer": "Pepsi",
+  "incorrectAnswers": [
+   "Coca-Cola",
+   "Dr. Pepper",
+   "Mountain Dew"
+  ],
+  "question": {
+   "text": "What is the name of the soda company whose diet version includes the word 'Max' in its name, referring to its taste?"
+  },
+  "tags": [
+   "drink",
+   "food_and_drink",
+   "brands"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "64dd35bb9cef2bd3a34a8d60",
+  "correctAnswer": "Melons",
+  "incorrectAnswers": [
+   "Oranges",
+   "Apples",
+   "Bananas"
+  ],
+  "question": {
+   "text": "What is the common name for the fruits named casaba, crenshaw, and honeydew?"
+  },
+  "tags": [
+   "fruit",
+   "food",
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "food_and_drink",
+  "id": "624ab06fc64ce21c11f06e9b",
+  "correctAnswer": "South America",
+  "incorrectAnswers": [
+   "Southeast Asia",
+   "Europe",
+   "India"
+  ],
+  "question": {
+   "text": "Where in the world are avocados originally from?"
+  },
+  "tags": [
+   "food_and_drink"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c367cc59eab6f9503c4",
+  "correctAnswer": "Atom Bombs",
+  "incorrectAnswers": [
+   "Race Horses",
+   "World War 2 Agents",
+   "Intel CPU Names"
+  ],
+  "question": {
+   "text": "What were 'Little Boy' and 'Fat Man'?"
+  },
+  "tags": [
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "645cb0ee602ff42ca52fb413",
+  "correctAnswer": "Cobra",
+  "incorrectAnswers": [
+   "Mustang",
+   "Charger",
+   "Thunderbird"
+  ],
+  "question": {
+   "text": "Which iconic sports car designed by Carroll Shelby was produced during the 1960s?"
+  },
+  "tags": [
+   "cars",
+   "motoring",
+   "1960's"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c3a7cc59eab6f951043",
+  "correctAnswer": "Lesser Lion",
+  "incorrectAnswers": [
+   "Iron Lion",
+   "Ferocious Lion",
+   "Brave Lion"
+  ],
+  "question": {
+   "text": "What is the meaning of the name of the constellation Leo Minor ?"
+  },
+  "tags": [
+   "astronomy",
+   "names",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "63a0394ac7d86251f9b65c36",
+  "correctAnswer": "Google Chrome",
+  "incorrectAnswers": [
+   "Mozilla Firefox",
+   "Microsoft Edge",
+   "Safari"
+  ],
+  "question": {
+   "text": "As of 2023, what is the most used web browser?"
+  },
+  "tags": [
+   "the_internet",
+   "technology",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "649c9f94e3aef0a3c23f6402",
+  "correctAnswer": "A Lie",
+  "incorrectAnswers": [
+   "A Disaster",
+   "An Accident",
+   "A Mistake"
+  ],
+  "question": {
+   "text": "What is another word for a prevarication?"
+  },
+  "tags": [
+   "words"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c357cc59eab6f94fc55",
+  "correctAnswer": "Winklepicker",
+  "incorrectAnswers": [
+   "Tittynope",
+   "Dipthong",
+   "Finifugal"
+  ],
+  "question": {
+   "text": "Which word is defined as 'style of shoe or boot in the 1950s with a sharp and long pointed toe'?"
+  },
+  "tags": [
+   "words",
+   "fashion",
+   "1950's",
+   "1960's",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c357cc59eab6f94fc73",
+  "correctAnswer": "Impignorate",
+  "incorrectAnswers": [
+   "Dipthong",
+   "Deipnophobia",
+   "Erf"
+  ],
+  "question": {
+   "text": "Which word is defined as 'to pawn or mortgage something'?"
+  },
+  "tags": [
+   "words",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "6239f80b9129041bf3925cc1",
+  "correctAnswer": "Echo",
+  "incorrectAnswers": [
+   "Elton",
+   "Elbow",
+   "Enable"
+  ],
+  "question": {
+   "text": "What word is used in the NATO Phonetic Alphabet for the letter E?"
+  },
+  "tags": [
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c357cc59eab6f94fc4f",
+  "correctAnswer": "Yarborough",
+  "incorrectAnswers": [
+   "Octothorpe",
+   "Grommet",
+   "Pauciloquent"
+  ],
+  "question": {
+   "text": "Which word is defined as 'hand of cards containing no card above a nine'?"
+  },
+  "tags": [
+   "words",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "6239f838a72e7a347ac879d6",
+  "correctAnswer": "Uniform",
+  "incorrectAnswers": [
+   "Unable",
+   "Underneath",
+   "Umbrella"
+  ],
+  "question": {
+   "text": "What word is used in the NATO Phonetic Alphabet for the letter U?"
+  },
+  "tags": [
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c3d7cc59eab6f951b87",
+  "correctAnswer": "Apple",
+  "incorrectAnswers": [
+   "Blackberry",
+   "Microsoft",
+   "Google"
+  ],
+  "question": {
+   "text": "Which computer company was set up by Steven Jobs and Stephen Wozniak?"
+  },
+  "tags": [
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c357cc59eab6f94fc94",
+  "correctAnswer": "Blatherskite",
+  "incorrectAnswers": [
+   "Agastopia",
+   "Cacophony",
+   "Impignorate"
+  ],
+  "question": {
+   "text": "Which word is defined as 'a person who talks at great length without making much sense'?"
+  },
+  "tags": [
+   "words",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "646339ce01d576cfac3aa3b8",
+  "correctAnswer": "Tennyson",
+  "incorrectAnswers": [
+   "Keats",
+   "Shelley",
+   "Wordsworth"
+  ],
+  "question": {
+   "text": "Which later poet was heavily influenced by Lord Byron and wrote 'The Lord of Burleigh' in 1842?"
+  },
+  "tags": [
+   "poetry",
+   "arts_and_literature"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "64dfa5baa6681754ea052bc2",
+  "correctAnswer": "First person",
+  "incorrectAnswers": [
+   "Second person",
+   "Third person",
+   "Plural"
+  ],
+  "question": {
+   "text": "In language, 'me' is which type of pronoun?"
+  },
+  "tags": [
+   "grammar",
+   "language"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "6239f8049129041bf3925cbe",
+  "correctAnswer": "Bravo",
+  "incorrectAnswers": [
+   "Boot",
+   "Ball",
+   "Baby"
+  ],
+  "question": {
+   "text": "What word is used in the NATO Phonetic Alphabet for the letter B?"
+  },
+  "tags": [
+   "words",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c3a7cc59eab6f951030",
+  "correctAnswer": "Northern Crown",
+  "incorrectAnswers": [
+   "Great Light",
+   "Brave Hunter",
+   "Dazzling Forest"
+  ],
+  "question": {
+   "text": "What is the meaning of the name of the constellation Corona Borealis?"
+  },
+  "tags": [
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "65056f877a97013de78b5469",
+  "correctAnswer": "Antonym",
+  "incorrectAnswers": [
+   "Synonym",
+   "Acronym",
+   "Hyponym"
+  ],
+  "question": {
+   "text": "What is the antonym of the word \"synonym\"?"
+  },
+  "tags": [
+   "words",
+   "language"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c357cc59eab6f94fc90",
+  "correctAnswer": "Cacophony",
+  "incorrectAnswers": [
+   "Cabotage",
+   "Gardyloo",
+   "Halfpace"
+  ],
+  "question": {
+   "text": "Which word is defined as 'a harsh, discordant mixture of sounds'?"
+  },
+  "tags": [
+   "words",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c367cc59eab6f95037f",
+  "correctAnswer": "Abraham Lincoln",
+  "incorrectAnswers": [
+   "George Washington",
+   "Ronald Regan",
+   "Thomas Jefferson"
+  ],
+  "question": {
+   "text": "Who proclaimed Thanksgiving a national holiday in the USA in 1863?"
+  },
+  "tags": [
+   "traditions",
+   "usa",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "6355b7f5e8b368eed3a6823b",
+  "correctAnswer": "nasal",
+  "incorrectAnswers": [
+   "fricative",
+   "affricative",
+   "plosive"
+  ],
+  "question": {
+   "text": "In phonetics, the m in 'mother' is an example of what kind of sound?"
+  },
+  "tags": [
+   "language",
+   "linguistics",
+   "general_knowledge",
+   "science"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "6463394f01d576cfac3aa344",
+  "correctAnswer": "East",
+  "incorrectAnswers": [
+   "North",
+   "West",
+   "South"
+  ],
+  "question": {
+   "text": "What is the meaning of the word 'Vostok' in Russian?"
+  },
+  "tags": [
+   "words",
+   "russia",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c357cc59eab6f94fd80",
+  "correctAnswer": "Mark David Chapman",
+  "incorrectAnswers": [
+   "J. D. Salinger",
+   "Lee Harvey Oswald",
+   "John Wilkes Booth"
+  ],
+  "question": {
+   "text": "Who Was Responsible For The Assassination Of John Lennon?"
+  },
+  "tags": [
+   "people",
+   "the_beatles",
+   "events",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "hard",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "622a1c377cc59eab6f950460",
+  "correctAnswer": "8 Maids A Milking",
+  "incorrectAnswers": [
+   "8 Lords a Leaping",
+   "8 Swans a Swimming",
+   "8 Jugglers Juggling"
+  ],
+  "question": {
+   "text": "What did 'my true love give to me' on the eighth day of Christmas?"
+  },
+  "tags": [
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "6471293544f8cbfa1325ce27",
+  "correctAnswer": "Mason",
+  "incorrectAnswers": [
+   "Carpenter",
+   "Electrician",
+   "Plumber"
+  ],
+  "question": {
+   "text": "Which expert should you call if you're building with stone?"
+  },
+  "tags": [
+   "building",
+   "materials",
+   "science",
+   "engineering",
+   "civil_engineering"
+  ],
+  "type": "text_choice",
+  "difficulty": "easy",
+  "regions": [],
+  "isNiche": false
+ },
+ {
+  "category": "general_knowledge",
+  "id": "6463395501d576cfac3aa34c",
+  "correctAnswer": "Sole",
+  "incorrectAnswers": [
+   "Heel",
+   "Arch",
+   "Instep"
+  ],
+  "question": {
+   "text": "What is the name for the undersurface of a foot?"
+  },
+  "tags": [
+   "medicine",
+   "anatomy",
+   "general_knowledge"
+  ],
+  "type": "text_choice",
+  "difficulty": "medium",
+  "regions": [],
+  "isNiche": false
+ }
+]

@@ -73,6 +73,13 @@ class QuestionSetIn(BaseModel):
     questions: list[QuestionSetItem]
 
 
+class BankQuestionIn(BaseModel):
+    category: str
+    text: str
+    answer: str
+    acceptable: Optional[list] = None
+
+
 class SubmissionsIn(BaseModel):
     open: bool
 
@@ -281,7 +288,38 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     def all_questions(host_key: str):
         require_host(host_key)
         rows = db().execute("SELECT * FROM question ORDER BY id").fetchall()
-        return {"questions": [host_question(r) for r in rows]}
+        cats = {r["id"]: r["name"] for r in db().execute("SELECT id, name FROM category")}
+        return {"questions": [
+            host_question(r) | {"category": cats.get(r["category_id"])} for r in rows]}
+
+    @app.post("/api/host/bank-question")
+    def add_bank_question(q: BankQuestionIn, host_key: str):
+        # The host (MC) adds her own questions to the pool — as host, not as a
+        # player. They join the per-category pools like everyone else's.
+        require_host(host_key)
+        try:
+            qid = models.add_question(db(), "host", q.category, q.text, q.answer,
+                                      q.acceptable, contributor_id=None, source="host")
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        return {"id": qid}
+
+    @app.delete("/api/host/questions/{question_id}")
+    def delete_question(question_id: int, host_key: str):
+        require_host(host_key)
+        row = db().execute("SELECT round_id FROM question WHERE id = ?",
+                           (question_id,)).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="no such question")
+        if row["round_id"] is not None:
+            raise HTTPException(status_code=409, detail="question is assigned to a round")
+        try:
+            db().execute("DELETE FROM question WHERE id = ?", (question_id,))
+        except sqlite3.Error:
+            db().rollback()  # e.g. a mark references it — don't poison the connection
+            raise HTTPException(status_code=409, detail="question is referenced by marks")
+        db().commit()
+        return {"ok": True}
 
     VALID_PHASES = {
         "draft", "lobby", "round_open", "round_closed", "marking", "reveal",

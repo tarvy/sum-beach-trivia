@@ -32,14 +32,19 @@ def _require_complete(text, answer):
 
 
 def add_question(conn, author_name, category_name, text, answer, acceptable=None,
-                 contributor_id=None) -> int:
+                 contributor_id=None, source="contributor") -> int:
     _require_complete(text, answer)
     cat_id = _category_id(conn, category_name)
-    cur = conn.execute(
-        "INSERT INTO question (author_name, category_id, text, answer, acceptable_answers, "
-        "contributor_id) VALUES (?, ?, ?, ?, ?, ?)",
-        (author_name, cat_id, text, answer, json.dumps(acceptable or []), contributor_id),
-    )
+    try:
+        cur = conn.execute(
+            "INSERT INTO question (author_name, category_id, text, answer, acceptable_answers, "
+            "contributor_id, source) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (author_name, cat_id, text, answer, json.dumps(acceptable or []), contributor_id,
+             source),
+        )
+    except sqlite3.Error:
+        conn.rollback()  # a failed write must never poison the connection
+        raise
     conn.commit()
     return cur.lastrowid
 
