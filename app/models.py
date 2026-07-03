@@ -171,6 +171,10 @@ def join_team(conn, name: str) -> dict:
             (name, name.lower(), recovery),
         )
     except sqlite3.IntegrityError:
+        # Roll back or the implicit transaction opened by the failed INSERT
+        # keeps this thread's connection holding the write lock forever —
+        # every later write on other connections then 500s "database is locked".
+        conn.rollback()
         raise ValueError("Team name already taken")
     conn.commit()
     return {"team_id": cur.lastrowid, "name": name, "recovery_code": recovery}
@@ -180,10 +184,14 @@ def add_team_member(conn, team_id: int, name: str, contributor_id: int | None = 
     name = (name or "").strip()
     if not name:
         raise ValueError("Member name required")
-    cur = conn.execute(
-        "INSERT INTO team_member (team_id, name, contributor_id) VALUES (?, ?, ?)",
-        (team_id, name, contributor_id),
-    )
+    try:
+        cur = conn.execute(
+            "INSERT INTO team_member (team_id, name, contributor_id) VALUES (?, ?, ?)",
+            (team_id, name, contributor_id),
+        )
+    except sqlite3.IntegrityError:
+        conn.rollback()  # stale team/contributor id (e.g. after a game reset)
+        raise ValueError("Unknown team")
     conn.commit()
     return cur.lastrowid
 
