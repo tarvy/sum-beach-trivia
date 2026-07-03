@@ -16,7 +16,8 @@ async def test_join_and_list_teams(client):
     r = await client.post("/api/teams", json={"name": "Beach Bums"})
     assert r.status_code == 200
     body = r.json()
-    assert body["recovery_code"]
+    assert body["team_id"] == 1 and body["name"] == "Beach Bums"
+    assert "recovery_code" not in body  # no codes: joining is open, tap-to-join
 
     dup = await client.post("/api/teams", json={"name": "beach bums"})
     assert dup.status_code == 409
@@ -28,13 +29,10 @@ async def test_join_and_list_teams(client):
 
 
 @pytest.mark.anyio
-async def test_recover_team(client):
-    r = await client.post("/api/teams", json={"name": "Sandy"})
-    rc = r.json()["recovery_code"]
-    ok = await client.get("/api/teams/recover", params={"recovery_code": rc})
-    assert ok.json()["name"] == "Sandy"
-    bad = await client.get("/api/teams/recover", params={"recovery_code": "nope"})
-    assert bad.status_code == 404
+async def test_removed_team_endpoints_are_gone(client):
+    t = (await client.post("/api/teams", json={"name": "Sandy"})).json()
+    assert (await client.get("/api/teams/recover", params={"recovery_code": "x"})).status_code == 404
+    assert (await client.get(f"/api/teams/{t['team_id']}/members")).status_code == 404
 
 
 @pytest.mark.anyio
