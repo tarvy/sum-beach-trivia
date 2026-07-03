@@ -1,7 +1,7 @@
 """Curated pick-lists so the host never has to author a final or tiebreak.
 
 FINAL_OPTIONS: multi-item bar-trivia finals. Each option is
-    {"text": str, "items": [3-8 str], "ordered": bool, "wager_cap": int}
+    {"text": str, "items": [3-8 str], "ordered": bool}
 The list endpoint hides "items" so the person setting up can pick blind and
 still play; the ?id= fetch returns the full option for POST /api/host/final.
 
@@ -15,26 +15,22 @@ FINAL_OPTIONS = [
         "items": ["Roman Empire", "Mongol Empire", "Ottoman Empire",
                   "Spanish Empire", "British Empire"],
         "ordered": True,
-        "wager_cap": 10,
     },
     {
         "text": "Name the five Great Lakes.",
         "items": ["Superior", "Michigan", "Huron", "Erie", "Ontario"],
         "ordered": False,
-        "wager_cap": 10,
     },
     {
         "text": "Put these five planets in order of diameter, largest first: "
                 "Earth, Jupiter, Neptune, Saturn, Uranus.",
         "items": ["Jupiter", "Saturn", "Uranus", "Neptune", "Earth"],
         "ordered": True,
-        "wager_cap": 10,
     },
     {
         "text": "Name the six main characters (first names) on the sitcom Friends.",
         "items": ["Rachel", "Monica", "Phoebe", "Ross", "Chandler", "Joey"],
         "ordered": False,
-        "wager_cap": 10,
     },
     {
         "text": "Put these American wars in chronological order by the year "
@@ -42,73 +38,62 @@ FINAL_OPTIONS = [
         "items": ["Revolutionary War", "Civil War", "World War I",
                   "World War II", "Korean War"],
         "ordered": True,
-        "wager_cap": 10,
     },
     {
         "text": "Name the five colors of the Olympic rings.",
         "items": ["Blue", "Yellow", "Black", "Green", "Red"],
         "ordered": False,
-        "wager_cap": 8,
     },
     {
         "text": "Name all seven dwarfs in Disney's Snow White.",
         "items": ["Doc", "Grumpy", "Happy", "Sleepy", "Bashful", "Sneezy", "Dopey"],
         "ordered": False,
-        "wager_cap": 12,
     },
     {
         "text": "Put these inventions in order from oldest to newest.",
         "items": ["Printing press", "Steam engine", "Telephone",
                   "Television", "World Wide Web"],
         "ordered": True,
-        "wager_cap": 10,
     },
     {
         "text": "Put these five US states in order of population, largest first.",
         "items": ["California", "Texas", "Florida", "New York", "Pennsylvania"],
         "ordered": True,
-        "wager_cap": 10,
     },
     {
         "text": "Name the six wives of Henry VIII.",
         "items": ["Catherine of Aragon", "Anne Boleyn", "Jane Seymour",
                   "Anne of Cleves", "Catherine Howard", "Catherine Parr"],
         "ordered": False,
-        "wager_cap": 15,
     },
     {
         "text": "Put these animals in order by average adult weight, heaviest first.",
         "items": ["Blue whale", "African elephant", "Hippopotamus",
                   "Grizzly bear", "Gray wolf"],
         "ordered": True,
-        "wager_cap": 8,
     },
     {
         "text": "Name the five boroughs of New York City.",
         "items": ["Manhattan", "Brooklyn", "Queens", "The Bronx", "Staten Island"],
         "ordered": False,
-        "wager_cap": 10,
     },
     {
         "text": "Name the eight planets of the solar system.",
         "items": ["Mercury", "Venus", "Earth", "Mars",
                   "Jupiter", "Saturn", "Uranus", "Neptune"],
         "ordered": False,
-        "wager_cap": 10,
     },
     {
         "text": "Put these blockbuster movies in order of release, earliest first.",
         "items": ["Jaws", "E.T. the Extra-Terrestrial", "Jurassic Park",
                   "Titanic", "Avatar"],
         "ordered": True,
-        "wager_cap": 10,
     },
     {
         "text": "Put these musicians in order of birth year, oldest first.",
         "items": ["Elvis Presley", "John Lennon", "David Bowie",
                   "Michael Jackson", "Whitney Houston"],
         "ordered": True,
-        "wager_cap": 12,
     },
     {
         "text": "Put these world landmarks in order by the year they were "
@@ -116,7 +101,6 @@ FINAL_OPTIONS = [
         "items": ["Great Pyramid of Giza", "Colosseum", "Taj Mahal",
                   "Eiffel Tower", "Sydney Opera House"],
         "ordered": True,
-        "wager_cap": 10,
     },
 ]
 

@@ -78,11 +78,9 @@
         <p class="text-dim" style="font-size: var(--fs-sm);">How much of your total score do you want to risk? You win the wager if you get the final question right.</p>
 
         <div class="card card--accent mt-md stack">
-          <div class="wager-display" id="wager-display">0</div>
-          <input type="range" id="wager-slider" min="0" max="10" value="0">
-          <div class="cluster" style="justify-content: space-between;">
-            <span class="label text-dim">0</span>
-            <span class="label text-dim" id="wager-cap-label">max: 10</span>
+          <div class="field">
+            <label for="wager-input">Points to wager <span class="text-dim">(no cap — bet what you dare)</span></label>
+            <input type="number" id="wager-input" min="0" step="1" inputmode="numeric" placeholder="0">
           </div>
           <button class="btn btn--primary" id="btn-wager">Lock in wager</button>
         </div>
@@ -311,13 +309,6 @@
 
         case 'final_wager':
           showPanel('wager');
-          if (current_round) {
-            const cap = current_round.wager_cap || 10;
-            const slider = document.getElementById('wager-slider');
-            const capLabel = document.getElementById('wager-cap-label');
-            slider.max = cap;
-            capLabel.textContent = `max: ${cap}`;
-          }
           break;
 
         case 'tiebreak':
@@ -411,9 +402,7 @@
     });
 
     // ── WAGER ────────────────────────────────────────────────
-    const slider = document.getElementById('wager-slider');
-    const wagerDisplay = document.getElementById('wager-display');
-    slider.addEventListener('input', () => { wagerDisplay.textContent = slider.value; });
+    const wagerInput = document.getElementById('wager-input');
 
     document.getElementById('btn-wager').addEventListener('click', async () => {
       if (wagerLocked) { toast('Wager already locked in', 'info'); return; }
@@ -428,7 +417,7 @@
         const r = await fetch('/api/wager', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({team_id: teamId, round_id: state.current_round.id, amount: parseInt(slider.value)})
+          body: JSON.stringify({team_id: teamId, round_id: state.current_round.id, amount: Math.max(0, parseInt(wagerInput.value) || 0)})
         });
         if (!r.ok) {
           const e = await r.json().catch(() => ({}));
@@ -436,7 +425,7 @@
           btn.disabled = false;
         } else {
           wagerLocked = true;
-          toast(`Wager of ${slider.value} locked in`, 'ok');
+          toast(`Wager of ${Math.max(0, parseInt(wagerInput.value) || 0)} locked in`, 'ok');
         }
       } catch (_) {
         toast('Network error', 'err');

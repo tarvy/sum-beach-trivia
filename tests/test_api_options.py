@@ -29,7 +29,6 @@ def test_curated_content_shape():
         assert 3 <= len(o["items"]) <= 8
         assert all(isinstance(i, str) and i.strip() for i in o["items"])
         assert isinstance(o["ordered"], bool)
-        assert isinstance(o["wager_cap"], int) and o["wager_cap"] > 0
     assert len(TIEBREAK_OPTIONS) >= 20
     for o in TIEBREAK_OPTIONS:
         assert o["question"].strip()
@@ -53,7 +52,7 @@ async def test_final_options_list_hides_items(app_client):
     assert len(opts) == len(FINAL_OPTIONS)
     for i, o in enumerate(opts):
         # exactly the blind-pick fields — no items/answers leak
-        assert set(o) == {"id", "text", "ordered", "item_count", "wager_cap"}
+        assert set(o) == {"id", "text", "ordered", "item_count"}
         assert o["id"] == i
         assert o["item_count"] == len(FINAL_OPTIONS[i]["items"])
 
@@ -68,7 +67,6 @@ async def test_final_option_by_id_returns_items(app_client):
     assert d["items"] == FINAL_OPTIONS[0]["items"]
     assert d["text"] == FINAL_OPTIONS[0]["text"]
     assert d["ordered"] == FINAL_OPTIONS[0]["ordered"]
-    assert d["wager_cap"] == FINAL_OPTIONS[0]["wager_cap"]
 
 
 @pytest.mark.anyio
@@ -113,10 +111,9 @@ async def test_picked_final_option_round_trips(app_client):
     hk = _hk(app)
     d = (await c.get("/api/host/final-options", params={"host_key": hk, "id": 1})).json()
     r = await c.post("/api/host/final", params={"host_key": hk}, json={
-        "text": d["text"], "items": d["items"],
-        "ordered": d["ordered"], "wager_cap": d["wager_cap"]})
+        "text": d["text"], "items": d["items"], "ordered": d["ordered"]})
     assert r.status_code == 200
     rid = r.json()["round_id"]
     rounds = (await c.get("/api/host/rounds", params={"host_key": hk})).json()["rounds"]
     fin = next(x for x in rounds if x["id"] == rid)
-    assert fin["is_final"] and fin["wager_cap"] == d["wager_cap"]
+    assert fin["is_final"] and fin["wager_cap"] is None  # wagers are uncapped

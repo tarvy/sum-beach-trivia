@@ -111,10 +111,11 @@ class SettingsIn(BaseModel):
 
 
 class FinalIn(BaseModel):
+    # no wager cap — teams bet whatever they dare (clients sending a legacy
+    # wager_cap key are ignored harmlessly by pydantic)
     text: str
     items: list[str]
     ordered: bool = False
-    wager_cap: int = 10
 
 
 class WagerIn(BaseModel):
@@ -601,7 +602,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         if id is None:
             return {"options": [
                 {"id": i, "text": o["text"], "ordered": o["ordered"],
-                 "item_count": len(o["items"]), "wager_cap": o["wager_cap"]}
+                 "item_count": len(o["items"])}
                 for i, o in enumerate(opts)]}
         if not 0 <= id < len(opts):
             raise HTTPException(status_code=404, detail="no such option")
@@ -625,7 +626,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             "SELECT COALESCE(MAX(display_order), -1) FROM round").fetchone()
         cur = db().execute(
             "INSERT INTO round (title, display_order, is_final, wager_cap, bonus_multiplier) "
-            "VALUES ('Final Round', ?, 1, ?, 1)", (max_order + 1, body.wager_cap))
+            "VALUES ('Final Round', ?, 1, NULL, 1)", (max_order + 1,))
         rid = cur.lastrowid
         db().execute(
             "INSERT INTO question (author_name, category_id, text, answer_items, ordered, "
@@ -641,12 +642,11 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         g = models.get_game(db())
         if g["phase"] != "final_wager":
             raise HTTPException(status_code=409, detail="wagering closed")
-        round_row = db().execute("SELECT wager_cap FROM round WHERE id=?",
+        round_row = db().execute("SELECT id FROM round WHERE id=?",
                                  (body.round_id,)).fetchone()
         if round_row is None:
             raise HTTPException(status_code=404, detail="no such round")
-        cap = round_row["wager_cap"] or 0
-        amount = max(0, min(body.amount, cap))
+        amount = max(0, body.amount)  # no cap — bet what you dare
         try:
             db().execute(
                 "INSERT INTO wager (team_id, round_id, amount) VALUES (?, ?, ?) "

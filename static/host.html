@@ -165,7 +165,7 @@
             <div class="card stack">
               <h3>3 · Final round <span id="final-status-setup" class="badge badge--dim">not set</span></h3>
               <p class="text-dim" style="font-size: var(--fs-sm);">
-                Pick one blind — answers stay hidden so you can still play. You can also do this later, any time before the final.
+                Write the final question yourself — or browse the bank for ideas if you're stuck (answers stay hidden until you reveal them). You can also do this later, any time before the final.
               </p>
               <div id="final-picker-setup"></div>
             </div>
@@ -695,7 +695,25 @@
 
     function renderFinalPicker(containerId) {
       const root = $(containerId);
-      root.innerHTML =
+      // author-first: the host WRITES the final; the bank is the optional route
+      root.innerHTML = `
+        <div class="stack">
+          <div class="field">
+            <label>Question text</label>
+            <textarea class="cf-text" rows="2" placeholder="Name as many beach songs as you can…"></textarea>
+          </div>
+          <div class="field">
+            <label>Answer items <span class="text-dim">(one per line)</span></label>
+            <textarea class="cf-items" rows="3" placeholder="In the Summertime&#10;Kokomo&#10;Margaritaville"></textarea>
+          </div>
+          <label class="label" style="display: flex; align-items: center; gap: 0.4rem;">
+            <input type="checkbox" class="cf-ordered"> Answers must be in order
+          </label>
+          <div><button class="btn btn--primary create-final">Create final round</button></div>
+        </div>
+        <details class="mt-sm">
+          <summary class="label" style="cursor:pointer;">Or browse the bank for ideas</summary>
+          <div class="mt-sm">` +
         finalOpts.map(o => `
           <div class="pick-row" data-id="${o.id}">
             <div class="pick-main">
@@ -703,7 +721,6 @@
               <p class="cluster mt-sm">
                 <span class="badge badge--dim">${o.item_count} answers</span>
                 <span class="badge badge--dim">${o.ordered ? 'in order' : 'any order'}</span>
-                <span class="badge badge--dim">wager cap ${o.wager_cap}</span>
               </p>
               <div class="pick-answers panel hidden"></div>
             </div>
@@ -712,27 +729,6 @@
               <button class="btn btn--sm btn--secondary reveal-final" data-id="${o.id}">Reveal answers</button>
             </div>
           </div>`).join('') + `
-        <details class="mt-sm">
-          <summary class="label" style="cursor:pointer;">Write your own instead</summary>
-          <div class="stack mt-sm">
-            <div class="field">
-              <label>Question text</label>
-              <textarea class="cf-text" rows="2" placeholder="Name as many beach songs as you can…"></textarea>
-            </div>
-            <div class="field">
-              <label>Answer items <span class="text-dim">(one per line)</span></label>
-              <textarea class="cf-items" rows="3" placeholder="In the Summertime&#10;Kokomo&#10;Margaritaville"></textarea>
-            </div>
-            <div class="cluster">
-              <div class="field" style="flex: 1;">
-                <label>Wager cap</label>
-                <input type="number" class="cf-cap" value="10" min="0">
-              </div>
-              <label class="label" style="display: flex; align-items: center; gap: 0.4rem;">
-                <input type="checkbox" class="cf-ordered"> Ordered
-              </label>
-            </div>
-            <div><button class="btn btn--secondary create-final">Create final round</button></div>
           </div>
         </details>`;
       root.addEventListener('click', onFinalPickerClick);
@@ -763,22 +759,21 @@
           const o = await fullFinalOption(parseInt(pick.dataset.id));
           if (!o) { toast('Could not load that option', 'err'); return; }
           const r = await post('/api/host/final',
-            {text: o.text, items: o.items, ordered: o.ordered, wager_cap: o.wager_cap});
+            {text: o.text, items: o.items, ordered: o.ordered});
           if (!r.ok) { const e2 = await r.json().catch(()=>({})); toast(e2.detail || 'Failed to set final', 'err'); return; }
           toast('Final round set', 'ok');
           await tick();
         });
       } else if (create) {
         if (finalRound()) { toast('A final round is already set', 'err'); return; }
-        const scope = create.closest('details');
+        const scope = create.closest('.stack');
         const text = scope.querySelector('.cf-text').value.trim();
         const items = scope.querySelector('.cf-items').value.split('\n').map(s => s.trim()).filter(Boolean);
-        const cap = parseInt(scope.querySelector('.cf-cap').value) || 10;
         const ordered = scope.querySelector('.cf-ordered').checked;
         if (!text) { toast('Enter the question text', 'err'); return; }
         if (!items.length) { toast('Enter at least one answer item', 'err'); return; }
         await withSpinner(create, async () => {
-          const r = await post('/api/host/final', {text, items, ordered, wager_cap: cap});
+          const r = await post('/api/host/final', {text, items, ordered});
           if (!r.ok) { const e2 = await r.json().catch(()=>({})); toast(e2.detail || 'Failed', 'err'); return; }
           toast('Final round created', 'ok');
           await tick();
