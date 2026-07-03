@@ -338,11 +338,10 @@
     }
 
     function renderFinalWager(lbTeams, round) {
-      const cap = round && round.wager_cap;
       root.innerHTML = `
         <div class="display-phase">FINAL ROUND</div>
         <div class="display-title display-title--md">Place your wagers!</div>
-        ${cap ? `<div class="writing-cue">Wager up to ${Number(cap)} points — check the standings 👇</div>` : ''}
+        <div class="writing-cue">No cap — bet what you dare. Check the standings 👇</div>
         ${lbRows(lbTeams, false)}
       `;
     }

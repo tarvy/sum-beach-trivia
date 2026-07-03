@@ -31,12 +31,16 @@ async def test_final_wager_flow(app_client):
 
     await c.post("/api/host/phase", params={"host_key": hk},
                  json={"phase": "final_wager", "round_id": rid})
+    # no cap: any amount sticks (negative clamps to 0)
     w = await c.post("/api/wager", json={"team_id": t["team_id"], "round_id": rid, "amount": 99})
     assert w.status_code == 200
-    # clamped to cap
     amt = app.state.conn.execute("SELECT amount FROM wager WHERE team_id=?",
                                  (t["team_id"],)).fetchone()["amount"]
-    assert amt == 10
+    assert amt == 99
+    neg = await c.post("/api/wager", json={"team_id": t["team_id"], "round_id": rid, "amount": -5})
+    assert neg.status_code == 200 and neg.json()["amount"] == 0
+    # settle on 10 so the scoring math below stays legible
+    await c.post("/api/wager", json={"team_id": t["team_id"], "round_id": rid, "amount": 10})
 
     # host marks 4/5 correct on the final question -> +6
     qid = app.state.conn.execute("SELECT id FROM question WHERE round_id=?",
