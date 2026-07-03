@@ -639,23 +639,28 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
 
     @app.delete("/api/host/final")
     def delete_final(host_key: str):
-        # Nothing is set in stone until the final is actually in play: the host
-        # can swap the final freely until wagers or marks exist for it.
+        # Nothing is set in stone: the host (Lacey) can swap the final at ANY
+        # time, even mid-game. Any wagers/marks tied to the old final go with it
+        # (the client warns first when they exist). Order matters — clear child
+        # rows before the questions/round they reference (foreign_keys is ON).
         require_host(host_key)
         fin = db().execute("SELECT id FROM round WHERE is_final = 1").fetchone()
         if fin is None:
             raise HTTPException(status_code=404, detail="no final round to change")
         rid = fin["id"]
-        in_play = db().execute(
-            "SELECT 1 FROM wager WHERE round_id=? LIMIT 1", (rid,)).fetchone() or db().execute(
-            "SELECT 1 FROM mark m JOIN question q ON q.id=m.question_id "
-            "WHERE q.round_id=? LIMIT 1", (rid,)).fetchone()
-        if in_play:
-            raise HTTPException(status_code=409,
-                                detail="final already in play (wagers or marks exist)")
-        db().execute("DELETE FROM question WHERE round_id=?", (rid,))
-        db().execute("DELETE FROM round WHERE id=?", (rid,))
-        db().commit()
+        try:
+            db().execute(
+                "DELETE FROM mark WHERE question_id IN "
+                "(SELECT id FROM question WHERE round_id=?)", (rid,))
+            db().execute("DELETE FROM wager WHERE round_id=?", (rid,))
+            db().execute("DELETE FROM question WHERE round_id=?", (rid,))
+            if models.get_game(db())["current_round_id"] == rid:
+                models.set_current_round(db(), None)
+            db().execute("DELETE FROM round WHERE id=?", (rid,))
+            db().commit()
+        except sqlite3.Error:
+            db().rollback()
+            raise HTTPException(status_code=500, detail="could not clear the final")
         return {"ok": True}
 
     @app.post("/api/wager")

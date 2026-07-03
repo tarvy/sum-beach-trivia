@@ -146,7 +146,9 @@ async def test_final_can_be_changed_until_in_play(app_client):
 
 
 @pytest.mark.anyio
-async def test_final_locked_once_wagers_exist(app_client):
+async def test_final_change_allowed_mid_play_and_clears_dependents(app_client):
+    """Nothing is locked: the host can swap the final even after wagers exist;
+    the old final's wagers/marks go with it and current_round is cleared."""
     app, c = app_client
     hk = _hk(app)
     t = (await c.post("/api/teams", json={"name": "Locks"})).json()
@@ -155,5 +157,10 @@ async def test_final_locked_once_wagers_exist(app_client):
     await c.post("/api/host/phase", params={"host_key": hk},
                  json={"phase": "final_wager", "round_id": rid})
     await c.post("/api/wager", json={"team_id": t["team_id"], "round_id": rid, "amount": 5})
+
     d = await c.delete("/api/host/final", params={"host_key": hk})
-    assert d.status_code == 409  # in play — no swapping now
+    assert d.status_code == 200  # in play, but still changeable
+    conn = app.state.conn
+    assert conn.execute("SELECT 1 FROM round WHERE id=?", (rid,)).fetchone() is None
+    assert conn.execute("SELECT 1 FROM wager WHERE round_id=?", (rid,)).fetchone() is None
+    assert conn.execute("SELECT current_round_id FROM game").fetchone()["current_round_id"] is None
