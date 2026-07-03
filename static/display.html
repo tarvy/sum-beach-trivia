@@ -265,6 +265,10 @@
 
     const root = document.getElementById('display-root');
 
+    // the TV is unattended — reload the page itself whenever the server has
+    // restarted (= a deploy), so this tab can never render stale UI
+    let bootSeen = null;
+
     async function poll() {
       try {
         const [stateRes, lbRes, teamsRes] = await Promise.all([
@@ -274,6 +278,8 @@
         ]);
         if (!stateRes.ok) return;
         const state = await stateRes.json();
+        if (bootSeen === null) bootSeen = state.boot;
+        else if (state.boot && state.boot !== bootSeen) { location.reload(); return; }
         const lb    = lbRes.ok ? await lbRes.json() : {teams:[]};
         const teams = teamsRes.ok ? await teamsRes.json() : {teams:[]};
         render(state, lb, teams);
