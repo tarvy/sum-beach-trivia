@@ -107,3 +107,34 @@ async def test_question_seconds_setting(app_client):
     assert r.status_code == 200
     s = (await c.get("/api/state")).json()
     assert s["question_seconds"] == 45 and s["questions_per_person"] == 3
+
+
+@pytest.mark.anyio
+async def test_answers_readback_exposes_answers_cursor_paced(app_client):
+    """Answers go public ONLY during phase=answers, sliced by the cursor."""
+    app, c = app_client
+    hk = _hk(app)
+    await _open_round(c, hk)
+
+    # never during the live round
+    s = (await c.get("/api/state")).json()
+    assert all("answer" not in q for q in s["current_round"]["questions"])
+
+    await c.post("/api/host/phase", params={"host_key": hk}, json={"phase": "answers"})
+    s = (await c.get("/api/state")).json()
+    qs = s["current_round"]["questions"]
+    assert s["question_idx"] == 0 and len(qs) == 1  # read-back restarts at item 1
+    assert qs[0]["answer"] == "a" and qs[0]["author_name"] == "me"
+
+    # cursor nav works during the read-back
+    r = await c.post("/api/host/question", params={"host_key": hk}, json={"action": "next"})
+    assert r.json()["question_idx"] == 1
+    s = (await c.get("/api/state")).json()
+    assert len(s["current_round"]["questions"]) == 2
+    assert all(q["answer"] == "a" for q in s["current_round"]["questions"])
+
+    # ...and answers vanish again once scores are released
+    await c.post("/api/host/phase", params={"host_key": hk}, json={"phase": "reveal"})
+    s = (await c.get("/api/state")).json()
+    assert all("answer" not in q for q in s["current_round"]["questions"])
+    assert len(s["current_round"]["questions"]) == 4  # full list at reveal

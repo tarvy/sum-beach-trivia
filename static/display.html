@@ -99,6 +99,13 @@
       line-height: 1.15; max-width: min(90vw, 1100px);
       letter-spacing: -0.01em;
     }
+    .hero-answer {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(1.4rem, 3.2vw, 2.6rem);
+      color: var(--accent-2); margin-top: 1.2rem;
+      max-width: min(88vw, 1000px);
+    }
+    .hero-answer ol, .hero-answer ul { text-align: left; margin: 0.4em auto 0; display: inline-block; }
     .q-timer {
       display: flex; align-items: center; gap: 1rem;
       width: min(60vw, 560px); margin-top: 1.8rem;
@@ -299,15 +306,17 @@
         ? {seconds: state.question_seconds || 60, elapsed: state.question_elapsed, at: Date.now()}
         : null;
 
-      // previous questions of the live round, upper-left
+      // previous questions of the live round, upper-left (during the answer
+      // read-back the earlier answers ride along)
       const prevBox = document.getElementById('prev-qs');
-      const showPrev = (phase === 'round_open' || phase === 'round_closed') &&
+      const showPrev = (phase === 'round_open' || phase === 'answers') &&
         current_round && current_round.questions.length > 1;
       prevBox.classList.toggle('hidden', !showPrev);
       if (showPrev) {
         const prev = current_round.questions.slice(0, -1);
         prevBox.innerHTML = '<p class="label mb-sm">Earlier this round</p>' +
-          prev.map((q, i) => `<div class="pq"><span class="pq-num">${String(i+1).padStart(2,'0')}</span>${esc(q.text)}</div>`).join('');
+          prev.map((q, i) => `<div class="pq"><span class="pq-num">${String(i+1).padStart(2,'0')}</span>${esc(q.text)}` +
+            (q.answer ? ` — <strong>${esc(q.answer)}</strong>` : '') + `</div>`).join('');
       }
 
       // standings ticker after round 1 (and on the final) — never on round 1
@@ -321,7 +330,8 @@
         case 'lobby':        renderLobby(teams); break;
         case 'round_open':   renderRound(current_round, false); break;
         case 'round_closed': renderRound(current_round, true); break;
-        case 'marking':      renderMarking(lb.teams); break;
+        case 'marking':      renderMarking(); break;
+        case 'answers':      renderAnswers(current_round); break;
         case 'reveal':       renderReveal(current_round, lb.teams); break;
         case 'final_wager':  renderFinalWager(lb.teams, current_round); break;
         case 'final_open':   renderFinal(current_round); break;
@@ -396,22 +406,52 @@
     function renderRound(round, pensDown) {
       if (!round) { renderStandby(pensDown ? 'Pens down' : 'Round open', ''); return; }
       const qs = round.questions || [];
-      const liveQ = qs[qs.length - 1];
       const roundTag = round.round_number
         ? `ROUND ${round.round_number} OF ${round.round_count}` : 'ROUND';
+      if (pensDown) {
+        // the round is over — all its questions come back to the main area
+        root.innerHTML = `
+          <div class="banner">✋ PENS DOWN — hand in your sheets!</div>
+          <div class="display-phase">ROUND CLOSED</div>
+          <div class="round-label">${esc(round.title || '')} · ${roundTag}</div>
+          <ol class="display-q-list" aria-label="Questions">${qItems(qs, false)}</ol>
+        `;
+        return;
+      }
+      const liveQ = qs[qs.length - 1];
       root.innerHTML = `
-        ${pensDown ? '<div class="banner">✋ PENS DOWN — hand in your sheets!</div>' : ''}
-        <div class="display-phase">${pensDown ? 'ROUND CLOSED' : 'QUESTION ' + qs.length + ' OF ' + (round.question_count || qs.length)}</div>
+        <div class="display-phase">QUESTION ${qs.length} OF ${round.question_count || qs.length}</div>
         <div class="round-label">${esc(round.title || '')} · ${roundTag}</div>
         <div class="hero-q">${liveQ ? esc(liveQ.text) : ''}</div>
-        ${pensDown ? '' : `
         <div class="q-timer" aria-hidden="true">
           <div class="q-timer-track"><div class="q-timer-bar" id="q-timer-bar"></div></div>
           <span class="q-timer-num" id="q-timer-num"></span>
         </div>
-        <div class="writing-cue">✍️ Write your answers on paper</div>`}
+        <div class="writing-cue">✍️ Write your answers on paper</div>
       `;
       paintTimer();
+    }
+
+    // answer read-back: Lacey walks question by question, answer huge under it
+    function renderAnswers(round) {
+      if (!round) { renderStandby('Answers', ''); return; }
+      const qs = round.questions || [];
+      const liveQ = qs[qs.length - 1];
+      let answerHtml = '';
+      if (liveQ && liveQ.answer_items && liveQ.answer_items.length) {
+        answerHtml = (liveQ.ordered ? '<ol>' : '<ul>') +
+          liveQ.answer_items.map(i => `<li>${esc(i)}</li>`).join('') +
+          (liveQ.ordered ? '</ol>' : '</ul>');
+      } else if (liveQ && liveQ.answer) {
+        answerHtml = esc(liveQ.answer);
+      }
+      root.innerHTML = `
+        <div class="display-phase">ANSWER ${qs.length} OF ${round.question_count || qs.length}</div>
+        <div class="round-label">${esc(round.title || '')} · the answers</div>
+        <div class="hero-q">${liveQ ? esc(liveQ.text) : ''}</div>
+        <div class="hero-answer">${answerHtml}</div>
+        ${liveQ && liveQ.author_name ? `<div class="writing-cue">✒️ ${esc(liveQ.author_name)}'s question</div>` : ''}
+      `;
     }
 
     // loose countdown: purely a vibe — hitting zero blocks nothing
@@ -450,14 +490,14 @@
       }
     }
 
-    // Standings interstitial while the MC marks — totals tick up live.
-    function renderMarking(lbTeams) {
+    function renderMarking() {
       root.innerHTML = `
         <div class="display-phase">MARKING</div>
-        <div class="display-title display-title--md">Scores coming up…</div>
-        ${lbRows(lbTeams, false)}
+        <div class="display-title display-title--md">Sheets are in.<br><span>Marking…</span></div>
+        <div class="writing-cue">Answers read-back next — scores stay under wraps 🤫</div>
       `;
     }
+
 
     // Reveal: who wrote each question in the just-graded round, plus scores.
     // The MC reads the answers aloud — they never appear on screen.
