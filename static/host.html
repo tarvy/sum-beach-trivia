@@ -204,6 +204,7 @@
                 <p id="action-status" class="mono" style="font-size: var(--fs-sm);"></p>
                 <div class="cluster">
                   <button class="btn btn--primary btn--lg" id="primary-action">…</button>
+                  <button class="btn btn--sm btn--secondary hidden" id="btn-prev-q">← Back a question</button>
                   <button class="btn btn--secondary hidden" id="btn-tiebreak-side">Tiebreak</button>
                 </div>
               </div>
@@ -241,9 +242,15 @@
               <details class="card" id="rounds-details">
                 <summary>Rounds &amp; questions <span class="badge badge--dim">adjustable</span></summary>
                 <div class="stack mt-sm">
-                  <div class="field" style="max-width: 16rem;">
-                    <label for="qpp-run">Questions kept per person (1–5)</label>
-                    <input type="number" id="qpp-run" min="1" max="5" value="5">
+                  <div class="cluster" style="align-items: flex-end;">
+                    <div class="field" style="max-width: 14rem;">
+                      <label for="qpp-run">Questions kept per person (1–5)</label>
+                      <input type="number" id="qpp-run" min="1" max="5" value="5">
+                    </div>
+                    <div class="field" style="max-width: 14rem;">
+                      <label for="q-seconds">Seconds per question <span class="text-dim">(loose)</span></label>
+                      <input type="number" id="q-seconds" min="10" max="600" step="5" value="60">
+                    </div>
                   </div>
                   <p class="text-dim" style="font-size: var(--fs-sm);">
                     Change this any time. Rebuild to regroup the rounds — it replaces the
@@ -470,12 +477,17 @@
       $('btn-start').disabled = qTally.total === 0;
     }
 
-    // keep both qpp inputs (setup + run stages) in step with the server
+    // keep the settings inputs (setup + run stages) in step with the server
     function syncQpp() {
-      if (state.questions_per_person == null) return;
-      for (const id of ['qpp', 'qpp-run']) {
-        const el = $(id);
-        if (el && document.activeElement !== el) el.value = state.questions_per_person;
+      if (state.questions_per_person != null) {
+        for (const id of ['qpp', 'qpp-run']) {
+          const el = $(id);
+          if (el && document.activeElement !== el) el.value = state.questions_per_person;
+        }
+      }
+      const qs = $('q-seconds');
+      if (qs && state.question_seconds != null && document.activeElement !== qs) {
+        qs.value = state.question_seconds;
       }
     }
 
@@ -490,6 +502,25 @@
     }
     $('qpp').addEventListener('change', e => saveQpp(e.currentTarget));
     $('qpp-run').addEventListener('change', e => saveQpp(e.currentTarget));
+
+    // loose per-question timer length — settable mid-game
+    $('q-seconds').addEventListener('change', async e => {
+      const el = e.currentTarget;
+      let v = parseInt(el.value);
+      if (isNaN(v)) return;
+      v = Math.min(600, Math.max(10, v));
+      el.value = v;
+      const r = await post('/api/host/settings', {question_seconds: v});
+      if (r.ok) toast(`Timer set to ${v}s per question`, 'ok');
+      else toast('Could not save the timer', 'err');
+    });
+
+    async function nudgeQuestion(action) {
+      const r = await post('/api/host/question', {action});
+      if (!r.ok) { const e2 = await r.json().catch(()=>({})); toast(e2.detail || 'Could not change question', 'err'); return; }
+      await tick();
+    }
+    $('btn-prev-q').addEventListener('click', () => nudgeQuestion('prev'));
 
     // mid-game rebuild: regroup non-final rounds, then drop to lobby so the
     // host re-opens Round 1 cleanly (avoids a dangling current-round pointer)
@@ -553,8 +584,17 @@
         if (nf.length) { a.label = `Open ${nf[0].title}`; a.fn = () => setPhase('round_open', nf[0].id); }
         else { a.label = 'No rounds built'; a.disabled = true; }
       } else if (p === 'round_open') {
-        a.label = 'Pens down'; a.fn = () => setPhase('round_closed');
-        if (sheets) a.status = `${sheets.got} of ${sheets.total} sheets in`;
+        // one question at a time — Lacey advances; the last question flips to pens-down
+        const total = cur ? (cur.question_count || 0) : 0;
+        const idx = state.question_idx || 0;
+        const liveQ = cur && cur.questions.length ? cur.questions[cur.questions.length - 1] : null;
+        if (idx < total - 1) {
+          a.label = `Next question (${idx + 2} of ${total}) →`;
+          a.fn = () => nudgeQuestion('next');
+        } else {
+          a.label = 'Pens down'; a.fn = () => setPhase('round_closed');
+        }
+        a.status = liveQ ? `Q${idx + 1}/${total}: ${liveQ.text}` : '';
       } else if (p === 'round_closed') {
         a.label = 'Start marking'; a.fn = () => setPhase('marking');
         if (sheets) a.status = `${sheets.got} of ${sheets.total} sheets in`;
@@ -591,6 +631,7 @@
     function renderRun() {
       const p = state.phase;
       renderStepper();
+      syncQpp();
       $('phase-hint').textContent = HINTS[p] || '';
 
       const summary = $('setup-summary');
@@ -604,6 +645,10 @@
         if (currentAction) { btn.textContent = currentAction.label; btn.disabled = currentAction.disabled; }
       }
       $('action-status').textContent = currentAction ? currentAction.status : '';
+
+      // loose step-back while a round is live
+      const prevBtn = $('btn-prev-q');
+      prevBtn.classList.toggle('hidden', !(p === 'round_open' && (state.question_idx || 0) > 0));
 
       // tiebreak side button — highlighted when the top two are tied
       const tbBtn = $('btn-tiebreak-side');

@@ -165,6 +165,13 @@ def set_mc_mode(conn, mode: str) -> None:
     conn.commit()
 
 
+def set_question_seconds(conn, seconds: int) -> None:
+    if not 10 <= seconds <= 600:
+        raise ValueError("question_seconds must be between 10 and 600")
+    conn.execute("UPDATE game SET question_seconds = ? WHERE id = 1", (seconds,))
+    conn.commit()
+
+
 def set_questions_per_person(conn, n: int) -> None:
     if not 1 <= n <= 5:
         raise ValueError("questions_per_person must be between 1 and 5")
