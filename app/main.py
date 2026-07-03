@@ -407,9 +407,12 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         g = models.get_game(db())
         cur = _round_public(g["current_round_id"], reveal=g["phase"] == "reveal") \
             if g["current_round_id"] else None
+        # Tiebreak QUESTION text is public once the tiebreak starts (the display
+        # shows it); the tiebreak VALUE is the answer and stays host-only.
         return {"phase": g["phase"], "paused": bool(g["paused"]),
                 "submissions_open": bool(g["submissions_open"]),
-                "mc_mode": g["mc_mode"], "current_round": cur}
+                "mc_mode": g["mc_mode"], "current_round": cur,
+                "tiebreak_question": g["tiebreak_question"] if g["phase"] == "tiebreak" else None}
 
     # round_closed included on purpose: "pens down" stops writing, but teams still
     # need a window to photograph + hand in the sheet they already wrote. The
