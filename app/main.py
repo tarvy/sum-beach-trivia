@@ -637,6 +637,27 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         db().commit()
         return {"round_id": rid}
 
+    @app.delete("/api/host/final")
+    def delete_final(host_key: str):
+        # Nothing is set in stone until the final is actually in play: the host
+        # can swap the final freely until wagers or marks exist for it.
+        require_host(host_key)
+        fin = db().execute("SELECT id FROM round WHERE is_final = 1").fetchone()
+        if fin is None:
+            raise HTTPException(status_code=404, detail="no final round to change")
+        rid = fin["id"]
+        in_play = db().execute(
+            "SELECT 1 FROM wager WHERE round_id=? LIMIT 1", (rid,)).fetchone() or db().execute(
+            "SELECT 1 FROM mark m JOIN question q ON q.id=m.question_id "
+            "WHERE q.round_id=? LIMIT 1", (rid,)).fetchone()
+        if in_play:
+            raise HTTPException(status_code=409,
+                                detail="final already in play (wagers or marks exist)")
+        db().execute("DELETE FROM question WHERE round_id=?", (rid,))
+        db().execute("DELETE FROM round WHERE id=?", (rid,))
+        db().commit()
+        return {"ok": True}
+
     @app.post("/api/wager")
     def place_wager(body: WagerIn):
         g = models.get_game(db())

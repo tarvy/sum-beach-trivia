@@ -167,6 +167,7 @@
               <p class="text-dim" style="font-size: var(--fs-sm);">
                 Write the final question yourself — or browse the bank for ideas if you're stuck (answers stay hidden until you reveal them). You can also do this later, any time before the final.
               </p>
+              <div id="final-current-setup" class="panel hidden"></div>
               <div id="final-picker-setup"></div>
             </div>
 
@@ -223,7 +224,8 @@
 
               <details class="card" id="final-details">
                 <summary>Final round <span id="final-status-run" class="badge badge--dim">not set</span></summary>
-                <div id="final-picker-run" class="mt-sm"></div>
+                <div id="final-current-run" class="panel hidden mt-sm"></div>
+                  <div id="final-picker-run" class="mt-sm"></div>
               </details>
 
               <details class="card" id="tb-details">
@@ -697,6 +699,7 @@
       const root = $(containerId);
       // author-first: the host WRITES the final; the bank is the optional route
       root.innerHTML = `
+        <div class="final-editor">
         <div class="stack">
           <div class="field">
             <label>Question text</label>
@@ -730,7 +733,8 @@
             </div>
           </div>`).join('') + `
           </div>
-        </details>`;
+        </details>
+        </div>`;
       root.addEventListener('click', onFinalPickerClick);
     }
 
@@ -877,7 +881,52 @@
         el.className = `badge ${has ? 'badge--teal' : 'badge--dim'}`;
       }
       document.querySelectorAll('.pick-final, .create-final').forEach(b => { b.disabled = has; });
+      renderFinalCurrent();
     }
+
+    // current-final summary + "Change" — nothing is locked until wagers open
+    let renderedFinalId;
+    async function renderFinalCurrent() {
+      const fin = finalRound();
+      const finId = fin ? fin.id : null;
+      if (finId === renderedFinalId) return;
+      renderedFinalId = finId;
+      let text = '';
+      if (fin) {
+        const r = await fetch(`/api/questions?${hk()}`).catch(() => null);
+        if (r && r.ok) {
+          const q = (await r.json()).questions.find(q => q.round_id === fin.id);
+          text = q ? q.text : '';
+        }
+      }
+      for (const cid of ['final-current-setup', 'final-current-run']) {
+        const box = $(cid);
+        if (!box) continue;
+        if (!fin) { box.classList.add('hidden'); box.innerHTML = ''; continue; }
+        box.innerHTML = `
+          <p class="label mb-sm">Current final</p>
+          <p>${esc(text) || '<span class="text-dim">(final question)</span>'}</p>
+          <div class="mt-sm"><button class="btn btn--sm btn--secondary change-final">Change the final</button></div>`;
+        box.classList.remove('hidden');
+      }
+      document.querySelectorAll('.final-editor').forEach(el => el.classList.toggle('hidden', !!fin));
+    }
+
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.change-final');
+      if (!btn) return;
+      await withSpinner(btn, async () => {
+        const r = await fetch(`/api/host/final?${hk()}`, {method: 'DELETE'});
+        if (!r.ok) {
+          const e2 = await r.json().catch(() => ({}));
+          toast(e2.detail || 'Cannot change the final', 'err');
+          return;
+        }
+        toast('Final cleared — write or pick a new one', 'ok');
+        renderedFinalId = undefined;
+        await tick();
+      });
+    });
 
     // ── Lacey marking console — one question at a time ───────
     let mk = null;   // {roundId, qids, byQ, teams, idx}
