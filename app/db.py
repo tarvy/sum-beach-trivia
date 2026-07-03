@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS game (
     host_key TEXT NOT NULL,
     mc_mode TEXT NOT NULL DEFAULT 'gladys',  -- 'gladys' = AI grades photos, 'lacey' = human MC marks by hand
     questions_per_person INTEGER NOT NULL DEFAULT 5,  -- keep the FIRST N of each contributor's questions at round-build
+    current_question_idx INTEGER NOT NULL DEFAULT 0,  -- one-question-at-a-time cursor within the open round
+    question_seconds INTEGER NOT NULL DEFAULT 60,     -- loose per-question timer (visual cue only)
+    question_opened_at TEXT,                          -- when the current question went up (elapsed computed in SQL)
     tiebreak_question TEXT,
     tiebreak_value REAL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -157,6 +160,10 @@ def init_db(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE game ADD COLUMN mc_mode TEXT NOT NULL DEFAULT 'gladys'")
     if "questions_per_person" not in gcols:
         conn.execute("ALTER TABLE game ADD COLUMN questions_per_person INTEGER NOT NULL DEFAULT 5")
+    if "current_question_idx" not in gcols:
+        conn.execute("ALTER TABLE game ADD COLUMN current_question_idx INTEGER NOT NULL DEFAULT 0")
+        conn.execute("ALTER TABLE game ADD COLUMN question_seconds INTEGER NOT NULL DEFAULT 60")
+        conn.execute("ALTER TABLE game ADD COLUMN question_opened_at TEXT")
     if "source" not in cols:
         conn.execute("ALTER TABLE question ADD COLUMN source TEXT NOT NULL DEFAULT 'contributor'")
     for order, name in enumerate(STANDARD_CATEGORIES):

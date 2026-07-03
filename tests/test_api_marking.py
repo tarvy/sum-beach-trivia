@@ -48,7 +48,9 @@ async def test_submit_grades_and_scores(app_client):
     app, c = app_client
     hk = _hk(app)
     rid, team_id = await _setup_open_round(app, c, hk)
-    qids = [q["id"] for q in (await c.get("/api/state")).json()["current_round"]["questions"]]
+    qids = [q["id"] for q in (await c.get(
+        "/api/questions", params={"host_key": hk})).json()["questions"]
+            if q["round_id"] == rid]
     app.state.grading_client = FakeGrader({qids[0]: (True, None), qids[1]: (False, None)})
 
     r = await c.post("/api/submit",
@@ -79,7 +81,9 @@ async def test_host_override_recomputes_total(app_client):
     app, c = app_client
     hk = _hk(app)
     rid, team_id = await _setup_open_round(app, c, hk)
-    qids = [q["id"] for q in (await c.get("/api/state")).json()["current_round"]["questions"]]
+    qids = [q["id"] for q in (await c.get(
+        "/api/questions", params={"host_key": hk})).json()["questions"]
+            if q["round_id"] == rid]
     app.state.grading_client = FakeGrader({qids[0]: (False, None), qids[1]: (False, None)})
     await c.post("/api/submit", data={"team_id": str(team_id), "round_id": str(rid)},
                  files={"photo": ("s.png", b"x", "image/png")})

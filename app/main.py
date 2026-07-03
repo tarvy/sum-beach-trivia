@@ -106,8 +106,13 @@ class McModeIn(BaseModel):
     mode: str
 
 
+class QuestionNavIn(BaseModel):
+    action: str  # 'next' | 'prev'
+
+
 class SettingsIn(BaseModel):
-    questions_per_person: int
+    questions_per_person: Optional[int] = None
+    question_seconds: Optional[int] = None
 
 
 class FinalIn(BaseModel):
@@ -327,13 +332,19 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         "final_wager", "final_open", "tiebreak", "done", "paused",
     }
 
-    def _round_public(round_id: int, reveal: bool = False) -> dict | None:
+    def _round_public(round_id: int, reveal: bool = False, upto: int | None = None) -> dict | None:
         r = db().execute("SELECT * FROM round WHERE id = ?", (round_id,)).fetchone()
         if r is None:
             return None
         qs = db().execute(
             "SELECT * FROM question WHERE round_id = ? ORDER BY display_order", (round_id,)
         ).fetchall()
+        total = len(qs)
+        # One-question-at-a-time anti-spoiler: while a round is live, clients only
+        # ever receive questions up to the current cursor — future questions must
+        # not reach the player/display payload at all.
+        if upto is not None:
+            qs = qs[:upto + 1]
         out = []
         for q in qs:
             pq = public_question(q)
@@ -341,9 +352,16 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             if reveal:
                 pq["author_name"] = q["author_name"]
             out.append(pq)
+        # Round position among the non-final rounds (the display's "Round 2 of 4"
+        # + the standings ticker shows only after round 1). Final → number None.
+        nf = [row["id"] for row in db().execute(
+            "SELECT id FROM round WHERE is_final = 0 ORDER BY display_order").fetchall()]
         return {
             "id": r["id"], "title": r["title"], "is_final": bool(r["is_final"]),
             "wager_cap": r["wager_cap"], "questions": out,
+            "question_count": total,
+            "round_number": (nf.index(r["id"]) + 1) if r["id"] in nf else None,
+            "round_count": len(nf),
         }
 
     @app.post("/api/host/build-rounds")
@@ -380,7 +398,29 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         models.set_phase(db(), body.phase)
         if body.round_id is not None:
             models.set_current_round(db(), body.round_id)
+        if body.phase in ("round_open", "final_open"):
+            # a round going live starts at question 1 with a fresh timer
+            db().execute("UPDATE game SET current_question_idx = 0, "
+                         "question_opened_at = datetime('now') WHERE id = 1")
+            db().commit()
         return {"ok": True}
+
+    @app.post("/api/host/question")
+    def question_nav(body: QuestionNavIn, host_key: str):
+        # Lacey drives: advance (or loosely step back) the live question.
+        g = require_host(host_key)
+        if g["phase"] != "round_open" or not g["current_round_id"]:
+            raise HTTPException(status_code=409, detail="no live round")
+        if body.action not in ("next", "prev"):
+            raise HTTPException(status_code=400, detail="action must be next or prev")
+        (total,) = db().execute("SELECT COUNT(*) FROM question WHERE round_id = ?",
+                                (g["current_round_id"],)).fetchone()
+        idx = g["current_question_idx"] + (1 if body.action == "next" else -1)
+        idx = max(0, min(idx, max(total - 1, 0)))
+        db().execute("UPDATE game SET current_question_idx = ?, "
+                     "question_opened_at = datetime('now') WHERE id = 1", (idx,))
+        db().commit()
+        return {"question_idx": idx}
 
     @app.post("/api/host/pause")
     def pause_route(body: PauseIn, host_key: str):
@@ -401,10 +441,14 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
 
     @app.post("/api/host/settings")
     def set_settings(body: SettingsIn, host_key: str):
-        # Adjustable during the gathering phase; takes effect at the next round build.
+        # All settings are adjustable mid-game; keep-N takes effect at the next
+        # round build, the timer at the next question.
         require_host(host_key)
         try:
-            models.set_questions_per_person(db(), body.questions_per_person)
+            if body.questions_per_person is not None:
+                models.set_questions_per_person(db(), body.questions_per_person)
+            if body.question_seconds is not None:
+                models.set_question_seconds(db(), body.question_seconds)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         return {"ok": True}
@@ -429,14 +473,24 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     @app.get("/api/state")
     def state():
         g = models.get_game(db())
-        cur = _round_public(g["current_round_id"], reveal=g["phase"] == "reveal") \
+        # While a normal round is live, only expose questions up to the cursor.
+        upto = g["current_question_idx"] if g["phase"] in ("round_open", "round_closed") else None
+        cur = _round_public(g["current_round_id"], reveal=g["phase"] == "reveal", upto=upto) \
             if g["current_round_id"] else None
+        elapsed = None
+        if g["question_opened_at"]:
+            (elapsed,) = db().execute(
+                "SELECT CAST(strftime('%s','now') - strftime('%s', question_opened_at) "
+                "AS INTEGER) FROM game WHERE id = 1").fetchone()
         # Tiebreak QUESTION text is public once the tiebreak starts (the display
         # shows it); the tiebreak VALUE is the answer and stays host-only.
         return {"phase": g["phase"], "paused": bool(g["paused"]),
                 "submissions_open": bool(g["submissions_open"]),
                 "mc_mode": g["mc_mode"],
                 "questions_per_person": g["questions_per_person"],
+                "question_idx": g["current_question_idx"],
+                "question_seconds": g["question_seconds"],
+                "question_elapsed": elapsed,
                 "current_round": cur,
                 "tiebreak_question": g["tiebreak_question"] if g["phase"] == "tiebreak" else None}
 

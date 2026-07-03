@@ -86,6 +86,60 @@
       padding-top: 0.3em;
       min-width: 2.5em;
     }
+    /* one-question-at-a-time */
+    .round-label {
+      font-family: var(--font-mono);
+      font-size: clamp(0.8rem, 1.6vw, 1.1rem);
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 0.8rem;
+    }
+    .hero-q {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(1.8rem, 4.5vw, 3.6rem);
+      line-height: 1.15; max-width: min(90vw, 1100px);
+      letter-spacing: -0.01em;
+    }
+    .q-timer {
+      display: flex; align-items: center; gap: 1rem;
+      width: min(60vw, 560px); margin-top: 1.8rem;
+    }
+    .q-timer-track {
+      flex: 1; height: 14px; background: var(--ground-2);
+      border: 1px solid var(--ink); border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .q-timer-bar { height: 100%; width: 100%; background: var(--accent-2); transition: width 1s linear; }
+    .q-timer-bar.warn { background: var(--accent); }
+    .q-timer-bar.over { background: var(--danger); }
+    .q-timer-num {
+      font-family: var(--font-mono); font-weight: 700;
+      font-size: clamp(1rem, 2.2vw, 1.6rem); min-width: 3.2ch; text-align: right;
+    }
+    .q-timer-num.over { color: var(--danger); }
+    .prev-qs {
+      position: fixed; top: 4rem; left: 1.2rem; z-index: 40;
+      max-width: 26vw; text-align: left;
+      font-size: clamp(0.75rem, 1.3vw, 1rem); color: var(--text-dim);
+    }
+    .prev-qs .pq { padding: 0.35em 0; border-bottom: 1px solid var(--border-subtle); }
+    .prev-qs .pq:last-child { border-bottom: none; }
+    .prev-qs .pq-num { font-family: var(--font-mono); font-weight: 700; margin-right: 0.5em; }
+    /* standings ticker — wall-street style, fixed to the bottom edge */
+    .ticker {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+      background: var(--ink); color: #fff;
+      padding: 0.45em 0; overflow: hidden;
+      border-top: 3px solid var(--brand);
+    }
+    .ticker-track {
+      display: inline-block; white-space: nowrap;
+      font-family: var(--font-mono); font-size: clamp(0.85rem, 1.7vw, 1.15rem);
+      animation: tickerScroll 40s linear infinite;
+    }
+    .ticker .up   { color: var(--accent); }
+    .ticker .sep  { opacity: 0.4; margin: 0 1.2em; }
+    @keyframes tickerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
     .lb-display-wrap {
       width: 100%;
       max-width: 700px;
@@ -196,6 +250,9 @@
   </div>
 
   <!-- shown on top of ANY phase while the host has the game paused -->
+  <div class="prev-qs hidden" id="prev-qs"></div>
+  <div class="ticker hidden" id="ticker"><div class="ticker-track" id="ticker-track"></div></div>
+
   <div class="paused-overlay hidden" id="paused-overlay">
     <div class="display-phase">PAUSED</div>
     <div class="display-title">Back in<br><span>a minute 🍹</span></div>
@@ -223,10 +280,35 @@
       } catch (_) {}
     }
 
+    // timer context, re-synced on every poll; a 1s interval paints the countdown
+    let timerCtx = null;   // {seconds, elapsed, at}
+
     function render(state, lb, teamsData) {
       const {phase, paused, current_round} = state;
       const teams = teamsData.teams || [];
       document.getElementById('paused-overlay').classList.toggle('hidden', !paused);
+
+      // loose per-question timer only ticks while a question is live
+      timerCtx = (phase === 'round_open' || phase === 'final_open') && state.question_elapsed != null
+        ? {seconds: state.question_seconds || 60, elapsed: state.question_elapsed, at: Date.now()}
+        : null;
+
+      // previous questions of the live round, upper-left
+      const prevBox = document.getElementById('prev-qs');
+      const showPrev = (phase === 'round_open' || phase === 'round_closed') &&
+        current_round && current_round.questions.length > 1;
+      prevBox.classList.toggle('hidden', !showPrev);
+      if (showPrev) {
+        const prev = current_round.questions.slice(0, -1);
+        prevBox.innerHTML = '<p class="label mb-sm">Earlier this round</p>' +
+          prev.map((q, i) => `<div class="pq"><span class="pq-num">${String(i+1).padStart(2,'0')}</span>${esc(q.text)}</div>`).join('');
+      }
+
+      // standings ticker after round 1 (and on the final) — never on round 1
+      const tickerOn = ['round_open', 'round_closed', 'final_open'].includes(phase) &&
+        current_round && (current_round.is_final || (current_round.round_number || 1) > 1) &&
+        lb.teams.length > 0;
+      renderTicker(tickerOn, lb.teams);
 
       switch (phase) {
         case 'draft':        renderDraft(teams); break;
@@ -307,13 +389,59 @@
 
     function renderRound(round, pensDown) {
       if (!round) { renderStandby(pensDown ? 'Pens down' : 'Round open', ''); return; }
+      const qs = round.questions || [];
+      const liveQ = qs[qs.length - 1];
+      const roundTag = round.round_number
+        ? `ROUND ${round.round_number} OF ${round.round_count}` : 'ROUND';
       root.innerHTML = `
         ${pensDown ? '<div class="banner">✋ PENS DOWN — hand in your sheets!</div>' : ''}
-        <div class="display-phase">${round.is_final ? 'FINAL ROUND' : pensDown ? 'ROUND CLOSED' : 'ROUND OPEN'}</div>
-        <div class="display-title display-title--md">${esc(round.title || '')}</div>
-        <ol class="display-q-list" aria-label="Questions">${qItems(round.questions, false)}</ol>
-        ${pensDown ? '' : '<div class="writing-cue">✍️ Write your answers on paper</div>'}
+        <div class="display-phase">${pensDown ? 'ROUND CLOSED' : 'QUESTION ' + qs.length + ' OF ' + (round.question_count || qs.length)}</div>
+        <div class="round-label">${esc(round.title || '')} · ${roundTag}</div>
+        <div class="hero-q">${liveQ ? esc(liveQ.text) : ''}</div>
+        ${pensDown ? '' : `
+        <div class="q-timer" aria-hidden="true">
+          <div class="q-timer-track"><div class="q-timer-bar" id="q-timer-bar"></div></div>
+          <span class="q-timer-num" id="q-timer-num"></span>
+        </div>
+        <div class="writing-cue">✍️ Write your answers on paper</div>`}
       `;
+      paintTimer();
+    }
+
+    // loose countdown: purely a vibe — hitting zero blocks nothing
+    function paintTimer() {
+      const bar = document.getElementById('q-timer-bar');
+      const num = document.getElementById('q-timer-num');
+      if (!bar || !num || !timerCtx) return;
+      const gone = timerCtx.elapsed + (Date.now() - timerCtx.at) / 1000;
+      const left = Math.ceil(timerCtx.seconds - gone);
+      const frac = Math.max(0, Math.min(1, left / timerCtx.seconds));
+      bar.style.width = (frac * 100) + '%';
+      bar.classList.toggle('warn', left <= 10 && left > 0);
+      bar.classList.toggle('over', left <= 0);
+      num.classList.toggle('over', left <= 0);
+      num.textContent = left > 0
+        ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
+        : 'TIME!';
+      if (left <= 0) bar.style.width = '100%';
+    }
+    setInterval(paintTimer, 1000);
+
+    // ticker: content only swaps when standings change, so the CSS marquee
+    // animation is never restarted by the 2.5s poll repaint
+    function renderTicker(on, teams) {
+      const el = document.getElementById('ticker');
+      const track = document.getElementById('ticker-track');
+      el.classList.toggle('hidden', !on);
+      if (!on) { track.dataset.content = ''; return; }
+      const entries = teams.map((t, i) =>
+        `<span class="up">${i === 0 ? '▲' : '●'} ${i + 1}</span> ${esc(t.name)} ${t.total}pts`);
+      const line = entries.join('<span class="sep">···</span>');
+      const content = `<span>${line}<span class="sep">···</span></span><span>${line}<span class="sep">···</span></span>`;
+      if (track.dataset.content !== content) {
+        track.dataset.content = content;
+        track.innerHTML = content;
+      }
     }
 
     // Standings interstitial while the MC marks — totals tick up live.

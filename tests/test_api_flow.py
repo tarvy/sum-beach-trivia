@@ -38,9 +38,11 @@ async def test_build_rounds_and_open(app_client):
     state = (await c.get("/api/state")).json()
     assert state["phase"] == "round_open"
     assert state["current_round"]["id"] == rid
-    # questions exposed to players must NOT include answers
+    # one-question-at-a-time: players only see the live question, but the
+    # payload says how many exist; answers never leak
     qs = state["current_round"]["questions"]
-    assert len(qs) == 3
+    assert len(qs) == 1
+    assert state["current_round"]["question_count"] == 3
     assert all("answer" not in q for q in qs)
 
 
