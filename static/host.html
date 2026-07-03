@@ -216,13 +216,20 @@
 
     function hk() { return `host_key=${encodeURIComponent(hostKey)}`; }
 
+    // true = valid key, false = rejected, null = couldn't reach the server
+    async function verifyHostKey(val) {
+      try {
+        const r = await fetch('/api/host/rounds?host_key=' + encodeURIComponent(val));
+        return r.ok;
+      } catch (_) { return null; }
+    }
+
     document.getElementById('btn-set-key').addEventListener('click', async () => {
       const val = document.getElementById('host-key-input').value.trim();
       if (!val) { toast('Enter the host key', 'err'); return; }
-      // Quick verify — build URL directly from val so an empty hostKey doesn't corrupt the substitution
-      const r = await fetch('/api/host/marks?round_id=0&host_key=' + encodeURIComponent(val)).catch(() => null);
-      // 403 = bad key, anything else = key accepted (even 404 for no round)
-      if (r && r.status === 403) { toast('Invalid host key', 'err'); return; }
+      const ok = await verifyHostKey(val);
+      if (ok === null) { toast('Could not reach the server — try again', 'err'); return; }
+      if (!ok)         { toast('Invalid host key', 'err'); return; }
       hostKey = val;
       localStorage.setItem('host_key', hostKey);
       showHostMain();
@@ -592,10 +599,20 @@
       setInterval(pollSubs, 2500);
     }
 
-    // Auto-unlock if key stored
+    // Auto-unlock only if the stored key still checks out server-side
+    // (a stale key from a previous game must NOT open the host UI)
     if (hostKey) {
       document.getElementById('host-key-input').value = hostKey;
-      showHostMain();
+      verifyHostKey(hostKey).then(ok => {
+        if (ok) { showHostMain(); return; }
+        if (ok === false) {
+          localStorage.removeItem('host_key');
+          hostKey = '';
+          document.getElementById('host-key-input').value = '';
+          toast('Your saved host key is from a previous game — enter the new one', 'err');
+        }
+        // null (server unreachable): stay on the key panel; retry via the button
+      });
     }
   </script>
 </body>
