@@ -125,7 +125,14 @@ def main() -> None:
     conn = sqlite3.connect(args.db)
     conn.row_factory = sqlite3.Row
     if conn.execute("SELECT name FROM sqlite_master WHERE name='question'").fetchone() is None:
-        raise SystemExit(f"{args.db} has no question table — run the app once to create it")
+        # fresh DB (e.g. right after a game-reset wipe, before the app booted):
+        # create the schema ourselves instead of racing the app's first boot
+        import pathlib
+        import sys
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+        from app.db import init_db
+        conn.execute("PRAGMA foreign_keys = ON")
+        init_db(conn)
     counts = import_questions(conn, raws)
     conn.close()
     print(f"inserted={counts['inserted']} duplicate={counts['duplicate']} "

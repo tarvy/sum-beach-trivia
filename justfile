@@ -68,7 +68,8 @@ deploy-reset:
 game-reset:
     sprite exec -s {{SPRITE}} -- bash -c "rm -f /data/trivia.db /data/trivia.db-wal /data/trivia.db-shm && rm -rf /data/uploads/* 2>/dev/null; true"
     sprite exec -s {{SPRITE}} -- sprite-env services restart web
-    sleep 8
+    # wait until the app is actually up (first boot creates the fresh game + host key)
+    bash -c 'URL=$(sprite info -s {{SPRITE}} | grep -i "^URL" | awk "{print \$2}"); for i in $(seq 1 20); do curl -sf -m 5 "$URL/api/state" >/dev/null && exit 0; sleep 3; done; echo "app never came up" >&2; exit 1'
     sprite exec -s {{SPRITE}} -- python3 /app/scripts/import_bank.py --from-file /app/data/bank-starter.json --db /data/trivia.db
     @just sprite-keys
 
