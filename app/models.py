@@ -160,6 +160,13 @@ def set_mc_mode(conn, mode: str) -> None:
     conn.commit()
 
 
+def set_questions_per_person(conn, n: int) -> None:
+    if not 1 <= n <= 5:
+        raise ValueError("questions_per_person must be between 1 and 5")
+    conn.execute("UPDATE game SET questions_per_person = ? WHERE id = 1", (n,))
+    conn.commit()
+
+
 def join_team(conn, name: str) -> dict:
     name = name.strip()
     if not name:
