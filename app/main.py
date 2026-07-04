@@ -470,6 +470,23 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         models.set_submissions_open(db(), body.open)
         return {"submissions_open": body.open}
 
+    @app.get("/api/admin-summary")
+    def admin_summary(admin_token: str = ""):
+        # For the personal admin/home-base sprite: everything it shows about
+        # this game in one call. Gated by ADMIN_TOKEN from the environment
+        # (/data/secrets.env on the sprite); the endpoint doesn't exist
+        # without it, so a bare deployment exposes nothing.
+        expected = os.environ.get("ADMIN_TOKEN", "")
+        if not expected:
+            raise HTTPException(status_code=404, detail="not found")
+        if admin_token != expected:
+            raise HTTPException(status_code=403, detail="bad token")
+        g = models.get_game(db())
+        (teams,) = db().execute("SELECT COUNT(*) FROM team").fetchone()
+        (questions,) = db().execute("SELECT COUNT(*) FROM question").fetchone()
+        return {"code": g["code"], "host_key": g["host_key"], "phase": g["phase"],
+                "mc_mode": g["mc_mode"], "teams": teams, "questions": questions}
+
     @app.get("/api/qr")
     def qr(origin: str = "", request: Request = None):
         # Prefer the display's reported origin (the public sprite URL it loaded
