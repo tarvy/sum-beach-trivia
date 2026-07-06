@@ -105,6 +105,7 @@
           <option value="bank">bank</option>
           <option value="host">host</option>
         </select>
+        <button class="btn btn--sm btn--secondary" id="btn-toggle-answers" type="button">Show answers</button>
         <span id="count-line" class="label" style="margin-left: auto;"></span>
       </div>
 
@@ -170,18 +171,34 @@
     let sortCol = 'id', sortDir = 1;
 
     let roundInfo = {};
+    // Answers are hidden until the game starts (phase leaves 'draft'), so a
+    // shared setup screen doesn't spoil them. The host can still toggle.
+    let revealAnswers = false;
+    let revealInitialized = false;
 
     async function loadQuestions() {
-      const [r, rr] = await Promise.all([
+      const [r, rr, sr] = await Promise.all([
         fetch(`/api/questions?${hk()}`),
         fetch(`/api/host/rounds?${hk()}`),
+        fetch('/api/state'),
       ]);
       if (!r.ok) { toast('Failed to load questions', 'err'); return; }
       if (rr.ok) roundInfo = Object.fromEntries((await rr.json()).rounds.map(x => [x.id, x]));
+      if (sr.ok && !revealInitialized) {
+        const phase = (await sr.json()).phase;
+        revealAnswers = phase !== 'draft';   // shown by default once the game starts
+        revealInitialized = true;
+        updateAnswerToggle();
+      }
       // the final round's question is managed on the host page, not here
       questions = (await r.json()).questions
         .filter(q => !(q.round_id != null && roundInfo[q.round_id]?.is_final));
       render();
+    }
+
+    function updateAnswerToggle() {
+      document.getElementById('btn-toggle-answers').textContent =
+        revealAnswers ? 'Hide answers' : 'Show answers';
     }
 
     async function loadCategories() {
@@ -212,7 +229,7 @@
           <td>${esc(q.author_name)}</td>
           <td>${esc(q.category)}</td>
           <td>${esc(q.text)}</td>
-          <td>${esc(q.answer)}</td>
+          <td>${revealAnswers ? esc(q.answer) : '<span class="text-dim">•••</span>'}</td>
           <td>${q.round_id != null ? `<span class="badge badge--teal">${esc(roundInfo[q.round_id]?.title || 'round ' + q.round_id)}</span>` : '<span class="text-dim">—</span>'}</td>
           <td>${q.round_id == null
             ? `<button class="btn btn--sm btn--danger del-btn" data-id="${q.id}">Delete</button>`
@@ -231,6 +248,11 @@
 
     document.getElementById('filter-category').addEventListener('change', render);
     document.getElementById('filter-source').addEventListener('change', render);
+    document.getElementById('btn-toggle-answers').addEventListener('click', () => {
+      revealAnswers = !revealAnswers;
+      updateAnswerToggle();
+      render();
+    });
     document.getElementById('head-row').addEventListener('click', e => {
       const col = e.target.dataset.col;
       if (!col) return;
