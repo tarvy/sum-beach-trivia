@@ -74,9 +74,9 @@ async def test_contributor_resolve_is_stable_by_token(client):
 @pytest.mark.anyio
 async def test_questions_attributed_to_contributor_and_loaded_back(client):
     cid = (await client.post("/api/contributor", json={"token": "t1", "name": "Pat"})).json()["contributor_id"]
-    for txt in ("Q1?", "Q2?"):
+    for txt, cat in (("Q1?", "History"), ("Q2?", "Geography")):  # one per category
         r = await client.post("/api/questions", json={
-            "author": "Pat", "category": "History", "text": txt, "answer": "x",
+            "author": "Pat", "category": cat, "text": txt, "answer": "x",
             "contributor_id": cid,
         })
         assert r.status_code == 200
@@ -87,9 +87,9 @@ async def test_questions_attributed_to_contributor_and_loaded_back(client):
 @pytest.mark.anyio
 async def test_authors_listed_once_per_person(client):
     cid = (await client.post("/api/contributor", json={"token": "t2", "name": "Lee"})).json()["contributor_id"]
-    for txt in ("A?", "B?", "C?"):
+    for txt, cat in (("A?", "History"), ("B?", "Geography"), ("C?", "Music")):
         await client.post("/api/questions", json={
-            "author": "Lee", "category": "History", "text": txt, "answer": "x",
+            "author": "Lee", "category": cat, "text": txt, "answer": "x",
             "contributor_id": cid,
         })
     authors = (await client.get("/api/authors")).json()["authors"]
@@ -188,8 +188,13 @@ async def test_cannot_edit_someone_elses_question(client):
     assert r.status_code in (403, 404)
 
 
+# Distinct categories per question (one-per-category rule); 9 available covers n<=6.
+_CATS = ["History", "Geography", "Science & Nature", "Sports", "Film & TV",
+         "Music", "Art & Literature", "Food & Drink", "General Knowledge"]
+
+
 def _set(client, cid, n=3, **bad):
-    qs = [{"category": "History", "text": f"Q{i}?", "answer": "a"} for i in range(n)]
+    qs = [{"category": _CATS[i], "text": f"Q{i}?", "answer": "a"} for i in range(n)]
     qs = bad.get("questions", qs)
     return client.post("/api/questions/set",
                        json={"contributor_id": cid, "author": "Set", "questions": qs})
@@ -235,6 +240,54 @@ async def test_individual_add_requires_all_three(client):
     r = await client.post("/api/questions", json={
         "author": "X", "category": "Nope", "text": "Q?", "answer": "a"})
     assert r.status_code == 400
+
+
+@pytest.mark.anyio
+async def test_add_rejects_second_question_in_same_category(client):
+    cid = (await client.post("/api/contributor", json={"token": "dup", "name": "Dup"})).json()["contributor_id"]
+    first = await client.post("/api/questions", json={
+        "author": "Dup", "category": "History", "text": "Q1?", "answer": "a",
+        "contributor_id": cid})
+    assert first.status_code == 200
+    dup = await client.post("/api/questions", json={
+        "author": "Dup", "category": "History", "text": "Q2?", "answer": "b",
+        "contributor_id": cid})
+    assert dup.status_code == 400
+    # a different category is fine
+    other = await client.post("/api/questions", json={
+        "author": "Dup", "category": "Music", "text": "Q3?", "answer": "c",
+        "contributor_id": cid})
+    assert other.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_set_rejects_duplicate_categories(client):
+    cid = (await client.post("/api/contributor", json={"token": "dset", "name": "D"})).json()["contributor_id"]
+    qs = [{"category": "History", "text": "Q1?", "answer": "a"},
+          {"category": "History", "text": "Q2?", "answer": "b"},
+          {"category": "Music", "text": "Q3?", "answer": "c"}]
+    r = await client.post("/api/questions/set",
+                          json={"contributor_id": cid, "author": "D", "questions": qs})
+    assert r.status_code == 400
+
+
+@pytest.mark.anyio
+async def test_edit_into_used_category_rejected_but_keeping_own_ok(client):
+    cid = (await client.post("/api/contributor", json={"token": "edc", "name": "Ec"})).json()["contributor_id"]
+    await client.post("/api/questions", json={
+        "author": "Ec", "category": "History", "text": "H?", "answer": "a",
+        "contributor_id": cid})
+    q2 = (await client.post("/api/questions", json={
+        "author": "Ec", "category": "Music", "text": "M?", "answer": "b",
+        "contributor_id": cid})).json()["id"]
+    # moving q2 into History (already used) is rejected
+    bad = await client.put(f"/api/questions/{q2}", json={
+        "contributor_id": cid, "category": "History", "text": "M?", "answer": "b"})
+    assert bad.status_code == 400
+    # editing q2 while keeping its own category (Music) is fine
+    ok = await client.put(f"/api/questions/{q2}", json={
+        "contributor_id": cid, "category": "Music", "text": "M2?", "answer": "b"})
+    assert ok.status_code == 200
 
 
 @pytest.mark.anyio

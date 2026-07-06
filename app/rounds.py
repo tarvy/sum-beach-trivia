@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import random
 import sqlite3
 
 _MIN_MIXED = 3  # a Mixed Bag round smaller than this pulls any-category bank fill
@@ -19,21 +20,25 @@ def _title(name: str, idx: int) -> str:
     return name if idx == 0 else f"{name} {_roman(idx + 1)}"
 
 
-def build_rounds(conn: sqlite3.Connection, target_size: int = 5) -> list[dict]:
-    """Rebuild all non-final rounds from scratch. Idempotent; never touches
-    is_final rounds or their questions.
+def build_rounds(conn: sqlite3.Connection, target_size: int = 5,
+                 rng: random.Random | None = None) -> list[dict]:
+    """Rebuild all non-final rounds from scratch. Never touches is_final rounds
+    or their questions.
 
-    Selection: keep the FIRST game.questions_per_person questions of each
-    contributor (by id = submission order) — so everyone who submitted gets at
-    least their first question in. Non-selected questions stay stored with
-    round_id NULL. source in ('bank','host') questions are filler only, never
-    guaranteed.
+    Selection: keep a RANDOM game.questions_per_person questions of each
+    contributor (everyone who submitted gets at least one in; if they submitted
+    <= N, all of theirs are kept). Because the pick is random, a rebuild reshuffles
+    which of an over-cap contributor's questions are used; the round shaping below
+    is deterministic given the selected set. Non-selected questions stay stored
+    with round_id NULL. source in ('bank','host') questions are filler only, never
+    guaranteed. Pass rng (a random.Random) for a deterministic pick in tests.
 
     Shaping: every category is a round of exactly target_size; oversized
     categories split as evenly as possible ("History" / "History II");
     undersized ones top up from same-category bank/host (oldest first) or,
     still short, pool into "Mixed Bag" round(s) at the end.
     """
+    rng = rng or random
     try:
         # Detach questions from non-final rounds, then delete those rounds.
         conn.execute(
@@ -45,20 +50,30 @@ def build_rounds(conn: sqlite3.Connection, target_size: int = 5) -> list[dict]:
         game = conn.execute("SELECT questions_per_person FROM game WHERE id = 1").fetchone()
         n_keep = game["questions_per_person"] if game else 5
 
-        # Keep the first n_keep per contributor. Legacy questions with no
+        # Keep n_keep RANDOM questions per contributor. Legacy questions with no
         # contributor link can't be capped per-person, so they're always kept.
-        selected_by_cat: dict[int, list[int]] = {}
-        kept: dict[int, int] = {}
+        by_contrib: dict[int, list[tuple[int, int]]] = {}  # cid -> [(qid, cat_id)]
+        selected: list[tuple[int, int]] = []               # (qid, cat_id) kept
         for q in conn.execute(
             "SELECT id, category_id, contributor_id FROM question "
             "WHERE round_id IS NULL AND source = 'contributor' ORDER BY id"
         ):
-            cid = q["contributor_id"]
-            if cid is not None:
-                kept[cid] = kept.get(cid, 0) + 1
-                if kept[cid] > n_keep:
-                    continue  # non-destructive: stays stored, just unselected
-            selected_by_cat.setdefault(q["category_id"], []).append(q["id"])
+            if q["contributor_id"] is None:
+                selected.append((q["id"], q["category_id"]))  # legacy: always kept
+            else:
+                by_contrib.setdefault(q["contributor_id"], []).append(
+                    (q["id"], q["category_id"]))
+        for qs in by_contrib.values():
+            # non-selected questions stay stored (round_id NULL), just unselected
+            selected += qs if len(qs) <= n_keep else rng.sample(qs, n_keep)
+
+        # Group by category, keeping id order within a category so the even-split
+        # shaping below is stable given the selected set.
+        selected_by_cat: dict[int, list[int]] = {}
+        for qid, cat_id in selected:
+            selected_by_cat.setdefault(cat_id, []).append(qid)
+        for lst in selected_by_cat.values():
+            lst.sort()
 
         def bank_fill(n: int, category_id: int | None = None, exclude=()) -> list[int]:
             """Oldest unassigned bank/host questions, optionally same-category."""

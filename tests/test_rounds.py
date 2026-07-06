@@ -2,12 +2,15 @@
 
 Old tests encoded the v1 semantics (every thin category became its own round;
 12 questions split 5+5+2 by striding) and were deliberately rewritten:
-- selection now keeps the FIRST game.questions_per_person questions per
-  contributor (id = submission order); bank/host questions are filler only
+- selection keeps a RANDOM game.questions_per_person questions per contributor
+  (everyone gets >= 1 in; <= N kept whole); bank/host questions are filler only.
+  Tests pass a seeded rng and assert count/subset invariants, not which ids.
 - rounds target exactly 5; oversized categories split as evenly as possible
   (7 -> 4+3); undersized ones top up from same-category bank or pool into
   "Mixed Bag" round(s) at the end
 """
+import random
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -46,52 +49,57 @@ def _round_qids(db, title):
         "WHERE r.title = ? ORDER BY q.display_order", (title,))]
 
 
-# --- selection: guarantee + keep-first-N ---
+# --- selection: guarantee + random-keep-N ---
 
-def test_every_contributor_guaranteed_at_least_first_question(gdb):
-    firsts = []
+def test_every_contributor_guaranteed_at_least_one(gdb):
+    contribs = {}
     for name, count in [("A", 1), ("B", 3), ("C", 5)]:
         cid = _contributor(gdb, name)
-        ids = [_q(gdb, "History", cid) for _ in range(count)]
-        firsts.append(ids[0])
+        contribs[cid] = [_q(gdb, "History", cid) for _ in range(count)]
     models.set_questions_per_person(gdb, 1)
-    build_rounds(gdb)
-    assert set(firsts) <= _assigned(gdb)
+    build_rounds(gdb, rng=random.Random(0))
+    assigned = _assigned(gdb)
+    for ids in contribs.values():
+        assert len(set(ids) & assigned) == 1  # exactly one of theirs, guaranteed
     assert not any("Contributor" in w for w in imbalance_warnings(gdb))
 
 
-def test_n1_keeps_exactly_each_contributors_first(gdb):
-    firsts, rest = [], []
+def test_n1_keeps_one_random_per_contributor(gdb):
+    contribs = {}
     for name in ["A", "B", "C"]:
         cid = _contributor(gdb, name)
-        ids = [_q(gdb, "History", cid) for _ in range(5)]
-        firsts.append(ids[0])
-        rest += ids[1:]
+        contribs[cid] = [_q(gdb, "History", cid) for _ in range(5)]
     models.set_questions_per_person(gdb, 1)
-    build_rounds(gdb)
-    assert _assigned(gdb) == set(firsts)
-    # non-selected questions stay stored, untouched (round_id NULL)
-    for qid in rest:
-        assert gdb.execute(
-            "SELECT round_id FROM question WHERE id = ?", (qid,)).fetchone()["round_id"] is None
+    build_rounds(gdb, rng=random.Random(1))
+    assigned = _assigned(gdb)
+    assert len(assigned) == 3  # one per contributor
+    for ids in contribs.values():
+        assert len(set(ids) & assigned) == 1  # a random one of theirs
+    # the other 12 stay stored, untouched (round_id NULL)
+    unassigned = gdb.execute(
+        "SELECT COUNT(*) FROM question WHERE round_id IS NULL AND source = 'contributor'"
+    ).fetchone()[0]
+    assert unassigned == 12
 
 
 def test_n5_keeps_all_in_submission_order(gdb):
     cid = _contributor(gdb, "A")
     ids = [_q(gdb, "History", cid) for _ in range(5)]
-    build_rounds(gdb)  # default N=5
+    build_rounds(gdb)  # default N=5: <= N kept whole, sorted by id
     assert _round_qids(gdb, "History") == ids
 
 
-def test_rebuild_after_changing_n_changes_selection(gdb):
+def test_rebuild_after_changing_n_changes_count(gdb):
     cid = _contributor(gdb, "A")
     ids = [_q(gdb, "History", cid) for _ in range(5)]
     models.set_questions_per_person(gdb, 1)
-    build_rounds(gdb)
-    assert _assigned(gdb) == {ids[0]}
+    build_rounds(gdb, rng=random.Random(2))
+    a1 = _assigned(gdb)
+    assert len(a1) == 1 and a1 <= set(ids)
     models.set_questions_per_person(gdb, 3)
-    build_rounds(gdb)
-    assert _assigned(gdb) == set(ids[:3])
+    build_rounds(gdb, rng=random.Random(3))
+    a3 = _assigned(gdb)
+    assert len(a3) == 3 and a3 <= set(ids)
 
 
 def test_double_build_is_idempotent(gdb):

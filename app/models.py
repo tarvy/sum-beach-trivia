@@ -31,10 +31,31 @@ def _require_complete(text, answer):
         raise ValueError("Answer required")
 
 
+def _assert_category_unused(conn, contributor_id, cat_id, exclude_qid=None):
+    """One question per category per contributor. No-op for bank/host questions
+    (contributor_id is None). Raises ValueError if this contributor already has a
+    contributor-authored question in the category (ignoring exclude_qid, so an
+    in-place edit that keeps its own category passes)."""
+    if contributor_id is None:
+        return
+    sql = ("SELECT 1 FROM question WHERE contributor_id = ? AND category_id = ? "
+           "AND source = 'contributor'")
+    args: list = [contributor_id, cat_id]
+    if exclude_qid is not None:
+        sql += " AND id != ?"
+        args.append(exclude_qid)
+    if conn.execute(sql, args).fetchone():
+        name = conn.execute(
+            "SELECT name FROM category WHERE id = ?", (cat_id,)).fetchone()["name"]
+        raise ValueError(f"You already have a question in {name} — one per category")
+
+
 def add_question(conn, author_name, category_name, text, answer, acceptable=None,
                  contributor_id=None, source="contributor") -> int:
     _require_complete(text, answer)
     cat_id = _category_id(conn, category_name)
+    if source == "contributor":
+        _assert_category_unused(conn, contributor_id, cat_id)
     try:
         cur = conn.execute(
             "INSERT INTO question (author_name, category_id, text, answer, acceptable_answers, "
@@ -60,6 +81,7 @@ def update_question(conn, question_id, contributor_id, category_name, text, answ
         return False
     _require_complete(text, answer)
     cat_id = _category_id(conn, category_name)
+    _assert_category_unused(conn, contributor_id, cat_id, exclude_qid=question_id)
     conn.execute(
         "UPDATE question SET category_id=?, text=?, answer=?, acceptable_answers=? WHERE id=?",
         (cat_id, text, answer, json.dumps(acceptable or []), question_id),
@@ -78,6 +100,9 @@ def submit_question_set(conn, contributor_id, author_name, questions) -> list[in
     for q in questions:  # validate all before writing anything
         _require_complete(q.get("text"), q.get("answer"))
         _category_id(conn, q.get("category"))
+    cats = [q.get("category") for q in questions]
+    if len(set(cats)) != len(cats):
+        raise ValueError("Only one question per category")
     conn.execute("DELETE FROM question WHERE contributor_id = ?", (contributor_id,))
     ids = []
     for q in questions:
