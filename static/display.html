@@ -245,6 +245,45 @@
       text-align: center;
       padding: 2rem;
     }
+    /* Gladys, your AI hostess — a caption in her voice under the content */
+    .gladys-says {
+      font-family: var(--font-body);
+      font-style: italic;
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      line-height: 1.35;
+      color: var(--ink-soft);
+      max-width: min(88vw, 900px);
+      margin-top: 1.4rem;
+    }
+    .gladys-says .gladys-tag {
+      display: block;
+      font-family: var(--font-mono);
+      font-style: normal;
+      font-size: 0.62em;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      margin-bottom: 0.35em;
+    }
+    /* opt-in voice toggle, tucked top-right (clear of brand, prev-qs, ticker) */
+    .gladys-voice-btn {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 70;
+      font-family: var(--font-mono);
+      font-size: clamp(0.68rem, 1.2vw, 0.9rem);
+      letter-spacing: 0.06em;
+      padding: 0.5em 0.9em;
+      background: var(--ground-2);
+      border: 1px solid var(--ink);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .gladys-voice-btn.on { background: var(--accent); }
+    .gladys-voice-btn.hidden { display: none; }
   </style>
 </head>
 <body>
@@ -265,6 +304,9 @@
     <div class="display-title">Back in<br><span>a minute 🍹</span></div>
   </div>
 
+  <button class="gladys-voice-btn hidden" id="gladys-voice-btn" type="button">🔇 Let Gladys talk</button>
+
+  <script src="/gladys.js"></script>
   <script>
     function esc(s) {
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -339,7 +381,79 @@
         case 'done':         renderDone(lb.teams); break;
         default:             renderStandby(phase.replace(/_/g,' '), '');
       }
+
+      driveGladys(state);
     }
+
+    // ── Gladys: on-screen quips + opt-in Web Speech voice ──
+    // phase -> her line-bank context (absent = she hushes, e.g. live writing time)
+    const GLADYS_CONTEXT = {
+      lobby: 'lobby', round_closed: 'round_closed', marking: 'marking',
+      answers: 'answers', reveal: 'reveal', final_wager: 'final_wager',
+      final_open: 'final_open', tiebreak: 'tiebreak', done: 'done',
+    };
+    let lastSpokenKey;   // undefined until the first paint (which primes silently)
+
+    function driveGladys(state) {
+      const btn = document.getElementById('gladys-voice-btn');
+      const V = window.Gladys && window.Gladys.Voice;
+      const modeGladys = (state.mc_mode || 'gladys') === 'gladys';
+      const canSpeak = modeGladys && V && V.supported;
+
+      // voice toggle: only in Gladys mode, only if this browser can speak
+      btn.classList.toggle('hidden', !canSpeak);
+      if (canSpeak) {
+        btn.classList.toggle('on', V.enabled);
+        btn.textContent = V.enabled ? '🔊 Gladys is live' : '🔇 Let Gladys talk';
+      }
+
+      const ctx = modeGladys && window.Gladys ? GLADYS_CONTEXT[state.phase] : null;
+      const round = state.current_round;
+      const roundId = round ? round.id : '';
+      const isAnswers = state.phase === 'answers';
+      // seed keeps the pick STABLE across the 2.5s poll; the answer read-back
+      // varies it per question so each answer gets its own line.
+      const seed = isAnswers ? (roundId + ':' + state.question_idx)
+                             : (state.phase + ':' + roundId);
+      const key = ctx ? (ctx + '|' + seed) : null;
+
+      // caption under the content — present in text even with the sound off
+      if (ctx) {
+        const quip = window.Gladys.pickLine(ctx, seed);
+        if (quip) {
+          const cap = document.createElement('div');
+          cap.className = 'gladys-says';
+          cap.innerHTML = '<span class="gladys-tag">💋 Gladys says</span>' + esc(quip);
+          root.appendChild(cap);
+        }
+      }
+
+      // speak once per state change; first paint primes so a reload/redeploy
+      // doesn't make her re-announce whatever's already on screen
+      if (lastSpokenKey === undefined) { lastSpokenKey = key; return; }
+      if (key !== lastSpokenKey) {
+        if (key && V && V.enabled) {
+          let toSay = window.Gladys.pickLine(ctx, seed);
+          if (isAnswers && round) {
+            const qs = round.questions || [];
+            const ans = window.Gladys.answerText(qs[qs.length - 1]);
+            if (ans) toSay += ' ' + window.Gladys.pickLine('answerLeadIn', seed) + ' ' + ans + '.';
+          }
+          V.speak(toSay);
+        }
+        lastSpokenKey = key;
+      }
+    }
+
+    document.getElementById('gladys-voice-btn').addEventListener('click', () => {
+      const V = window.Gladys && window.Gladys.Voice;
+      if (!V) return;
+      const on = V.toggle();   // this click also unlocks browser autoplay
+      const btn = document.getElementById('gladys-voice-btn');
+      btn.classList.toggle('on', on);
+      btn.textContent = on ? '🔊 Gladys is live' : '🔇 Let Gladys talk';
+      if (on) V.speak("Well hello, gorgeous. Gladys is on the mic — let's have some fun.");
+    });
 
     // ── shared pieces ──
 

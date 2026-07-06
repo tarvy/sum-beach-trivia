@@ -19,3 +19,15 @@ async def test_static_pages_served(client, path):
     r = await client.get(path)
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
+
+
+@pytest.mark.anyio
+async def test_gladys_script_served(client):
+    """Gladys's personality/voice engine ships as a plain static file — no route,
+    no build. Lock the wiring so the display can always load /gladys.js."""
+    r = await client.get("/gladys.js")
+    assert r.status_code == 200
+    assert "javascript" in r.headers["content-type"]
+    body = r.text
+    assert "window.Gladys" in body      # the global the display depends on
+    assert "bubbeleh" in body           # a known catchphrase — the persona is present

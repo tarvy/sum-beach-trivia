@@ -157,7 +157,7 @@
                 </button>
                 <button class="mc-card" id="mc-card-gladys">
                   <strong>Gladys (AI)</strong>
-                  <span>Teams snap a photo, Gladys transcribes and proposes marks, the MC just confirms.</span>
+                  <span>Teams snap a photo; Gladys — your brassy AI hostess — transcribes, proposes marks, and works the room. You just confirm.</span>
                 </button>
               </div>
               <p class="text-dim" style="font-size: var(--fs-sm);">Switchable any time, even mid-game.</p>
@@ -763,7 +763,7 @@
     async function setMcMode(mode, silent) {
       const r = await post('/api/host/mc-mode', {mode}).catch(() => null);
       if (r && r.ok) {
-        if (!silent) toast(mode === 'lacey' ? 'Lacey is in charge' : 'Gladys has the con', 'ok');
+        if (!silent) toast(mode === 'lacey' ? 'Lacey is in charge' : 'Gladys grabbed the mic 💋', 'ok');
         await tick();
       } else if (!silent) toast('Could not switch MC mode', 'err');
     }
