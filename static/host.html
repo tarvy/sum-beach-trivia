@@ -152,13 +152,12 @@
               <h3>2 · Who's your MC?</h3>
               <div class="mc-cards">
                 <button class="mc-card" id="mc-card-lacey">
-                  <span class="badge badge--amber">recommended</span>
                   <strong>Lacey in Charge</strong>
                   <span>A human MC collects the sheets and marks every answer by hand. Photos are optional keepsakes.</span>
                 </button>
                 <button class="mc-card" id="mc-card-gladys">
-                  <strong>Gladys the AI MILF</strong>
-                  <span>Teams snap a photo, the AI transcribes and proposes marks, the MC just confirms.</span>
+                  <strong>Gladys (AI)</strong>
+                  <span>Teams snap a photo, Gladys transcribes and proposes marks, the MC just confirms.</span>
                 </button>
               </div>
               <p class="text-dim" style="font-size: var(--fs-sm);">Switchable any time, even mid-game.</p>
@@ -1306,14 +1305,9 @@
     function initHost() {
       buildPhaseButtons();
       loadPickers();
-      tick().then(() => {
-        // Index on Lacey: she'll almost certainly run the game. Default the MC
-        // mode to her once, before the game starts; the host can still pick Gladys.
-        if (state && state.phase === 'draft' && !localStorage.getItem('sbt_mc_defaulted')) {
-          localStorage.setItem('sbt_mc_defaulted', '1');
-          if (state.mc_mode !== 'lacey') setMcMode('lacey', true);
-        }
-      });
+      // MC mode defaults to Gladys (AI) — the server default (see app/db.py).
+      // The host can switch to Lacey any time from the setup card or mini toggle.
+      tick();
       setInterval(tick, 2000);
     }
 
