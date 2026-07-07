@@ -34,12 +34,10 @@ window.Gladys = (function () {
       "Welcome, welcome! I'm Gladys: your MC, your muse, and possibly your future stepmother.",
       "Ohhh I love a full house. Reminds me of cousin Marsha's wedding, minus the fistfight. Join up, sweeties!",
       "Well, well, WELL. I hear rule number one of this trip was 'No Gladys.' And yet here I am on the big screen, sweeties — you can't keep a good woman out. Hah!",
-      "SUM BEACH 2026, LEMME SEE YOUR HANDSSSSS! ...Mmm, and what big hands they are, sweetie. You know what they say — big hands, big trivia knowledge.",
       "The teams tonight are completely random, sweeties. Completely. Random. Wink.",
       "Bar's open, darlings — and before anybody asks: yes, the Dr Pepper is here.",
       "Nice jerseys, boys. Very World Cup. The ladies made iron-on COUTURE, sweetie — that's commitment.",
       "I heard about the dissolving swim trunks, sweetie. Don't you worry — Gladys is a strong swimmer and a PATIENT woman. Hah!",
-      "Travis, doll, wear the crop top. Mama didn't come all this way for sleeves.",
       "Ten-passenger van to AJ's later, and Mama calls a lap. I don't care whose.",
     ],
     round_closed: [
