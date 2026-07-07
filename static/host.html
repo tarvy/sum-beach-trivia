@@ -80,6 +80,15 @@
       .mk-row { flex-direction: column; align-items: flex-start; }
     }
 
+    /* quick screen launcher */
+    .screens-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    @media (max-width: 480px) { .screens-grid { grid-template-columns: 1fr; } }
+    .screen-link {
+      display: flex; align-items: baseline; justify-content: flex-start; gap: 0.4rem;
+      text-decoration: none; text-align: left;
+    }
+    .screen-link .screen-sub { color: var(--text-dim); font-size: 0.7rem; margin-left: auto; }
+
     .phase-btn { font-size: 0.65rem; padding: 0.4em 0.8em; }
     .btn--accent { background: var(--accent); }
     details.card > summary {
@@ -298,6 +307,16 @@
                 <div class="cluster">
                   <button class="btn btn--sm btn--secondary" id="mc-mini-lacey">Lacey</button>
                   <button class="btn btn--sm btn--secondary" id="mc-mini-gladys">Gladys</button>
+                </div>
+              </div>
+              <div class="card stack" id="screens-card">
+                <h3>Open a screen</h3>
+                <p class="text-dim" style="font-size: var(--fs-sm);">Pop out another view in a new tab.</p>
+                <div class="screens-grid">
+                  <a class="btn btn--sm btn--secondary screen-link" href="/display.html" target="_blank" rel="noopener">📺 Display <span class="screen-sub">TV</span></a>
+                  <a class="btn btn--sm btn--secondary screen-link" href="/play.html" target="_blank" rel="noopener">📸 Play <span class="screen-sub">phone</span></a>
+                  <a class="btn btn--sm btn--secondary screen-link" href="/contribute.html" target="_blank" rel="noopener">✏️ Contribute</a>
+                  <a class="btn btn--sm btn--secondary screen-link" href="/bank.html" target="_blank" rel="noopener">🗂️ Bank</a>
                 </div>
               </div>
             </div>
