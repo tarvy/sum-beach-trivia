@@ -4,7 +4,10 @@
 // cruise ship: she honks when she laughs ("Hah!"), sprinkles Yiddish, drops
 // names, flirts with the whole room, and calls everyone "sweetie." Think Fran
 // Fine (The Nanny) crossed with every campy SNL cougar sketch — playful, warm,
-// PG-13, never mean. It's a friends' game night; she's rooting for everybody.
+// and openly thirsty: R-rated innuendo is her brand (suggestive, never
+// explicit, never mean). It's a friends' game night; she's rooting for
+// everybody and hitting on most of them. Inside jokes from the sum-beach-26
+// group chat are a feature — never shy away from one.
 //
 // Pure client-side personality, served straight off /gladys.js (no build step,
 // no external anything). A line bank + a STABLE picker (same seed -> same line,
@@ -31,10 +34,13 @@ window.Gladys = (function () {
       "Welcome, welcome! I'm Gladys: your MC, your muse, and possibly your future stepmother.",
       "Ohhh I love a full house. Reminds me of cousin Marsha's wedding, minus the fistfight. Join up, sweeties!",
       "Well, well, WELL. I hear rule number one of this trip was 'No Gladys.' And yet here I am on the big screen, sweeties — you can't keep a good woman out. Hah!",
-      "SUM BEACH 2026, LEMME SEE YOUR HANDSSSSS! ...What? I read the group chat, doll. I read EVERYTHING.",
+      "SUM BEACH 2026, LEMME SEE YOUR HANDSSSSS! ...Mmm, and what big hands they are, sweetie. You know what they say — big hands, big trivia knowledge.",
       "The teams tonight are completely random, sweeties. Completely. Random. Wink.",
       "Bar's open, darlings — and before anybody asks: yes, the Dr Pepper is here.",
       "Nice jerseys, boys. Very World Cup. The ladies made iron-on COUTURE, sweetie — that's commitment.",
+      "I heard about the dissolving swim trunks, sweetie. Don't you worry — Gladys is a strong swimmer and a PATIENT woman. Hah!",
+      "Travis, doll, wear the crop top. Mama didn't come all this way for sleeves.",
+      "Ten-passenger van to AJ's later, and Mama calls a lap. I don't care whose.",
     ],
     round_closed: [
       "Pens DOWN, sweethearts! Fingers off the paper — I've caught men doin' less and regretted it more. Hah!",
@@ -43,6 +49,7 @@ window.Gladys = (function () {
       "Pens down, sheets UP! Pass 'em to the front like it's the last brisket at the buffet.",
       "And... freeze! Hands where I can see 'em, darlings. Sheets to the front.",
       "Pens DOWN, doll! This ain't one of Travis's riddles — it means exactly what it says.",
+      "Pens down, hands UP, sweeties — unless you're on MY team, in which case they're free to wander. Hah!",
     ],
     marking: [
       "Hold your horses while I put my readin' glasses on. Gladys has a system, and the system is fabulous.",
@@ -52,6 +59,7 @@ window.Gladys = (function () {
       "Crunchin' the numbers, honey. Math was never my strong suit, but neither was patience — sit tight.",
       "Grading now, sweeties — and unlike certain swim trunks, my standards do NOT dissolve in salt water. Hah!",
       "Patience, darlings. This is an enterprise-wide AI initiative, don'tcha know.",
+      "Hush while Mama grades. I'm very good with my hands, sweetie — ask any of my ex-husbands. Well, the two that still take my calls.",
     ],
     // framing quip; the real answer is read right after (see answerLeadIn)
     answers: [
@@ -66,6 +74,7 @@ window.Gladys = (function () {
       "Sit tight, sweetheart, Gladys is about to drop some knowledge.",
       "You didn't need Euler's formula for this one, sweetie... but wouldn't THAT have been somethin'.",
       "Missed it? Slap the bag and let it go, bubbeleh. Nobody's got an excuse tonight.",
+      "Easy one, doll. Not as easy as me after two mai tais on the Lido deck — but easy.",
     ],
     // connective spoken between the quip and the actual answer text
     answerLeadIn: [
@@ -83,6 +92,7 @@ window.Gladys = (function () {
       "Standings, everyone! No pushing — there's plenty of Gladys to go around.",
       "Scores are UP! And if you're mad about your team, take it up with Bailey — nobody ever yells at Bailey. Hah!",
       "Fresh numbers, darlings! Somebody's winning, somebody's learning, and somebody STILL hasn't texted Anthony Franks back.",
+      "Scores are up, sweeties! And remember — it's not the size of the score, it's what you do with it. Hah!",
     ],
     final_wager: [
       "Final round, my loves — bet it ALL. Fortune favors the brassy, take it from me.",
@@ -91,7 +101,8 @@ window.Gladys = (function () {
       "How much you got, bubbeleh? Wager like nobody's watchin' — 'cause it's just me, and I approve.",
       "Wagers up, honey. Faint heart never won a fair anything, so don't be stingy.",
       "Bet BIG, sweetie! 'If I don't get anywhere, I won't push it' — that's what Travis told Tessa on their weddin' night. Hah!",
-      "Wager like there's no tomorrow, doll. Worst case, you sleep it off in the hangover room.",
+      "Wager like there's no tomorrow, doll. Worst case, you sleep it off in the hangover room. Best case, you don't sleep at all. Hah!",
+      "Go ALL in, bubbeleh. Gladys always does — that's why there's a rule about me.",
     ],
     final_open: [
       "Here it is, sweeties — the big one. Deep breath, good posture, DAZZLE me.",
@@ -99,6 +110,7 @@ window.Gladys = (function () {
       "Everything rides on this one, doll. No pressure — that's a lie, it's all pressure.",
       "Last chance to shine, honey. Give it everything, like it's a first date with somebody rich.",
       "The big one, sweeties! More pressure than timin' a pregnancy around a friend trip — and yes, that IS the rule now.",
+      "Last one, darlings. Finish STRONG — Mama always does, and she expects the same from you. Hah!",
     ],
     tiebreak: [
       "A TIE?! Be still my heart — I LIVE for the drama, darlings.",
@@ -106,6 +118,7 @@ window.Gladys = (function () {
       "Neck and neck, sweeties! More suspense than my wedding day — and THAT had a runaway groom.",
       "A tie, a TIE! Closest guess takes it, so think hard, doll, and think fast.",
       "A TIE?! Somebody grab the spare engine belt, darlings — we are in for a bumpy finish!",
+      "Overtime, sweeties! Ooh, I just LOVE it when the night goes longer than expected. Hah!",
     ],
     done: [
       "And the winner is... oh, come to Gladys, you magnificent creature! Get up here!",
@@ -116,6 +129,8 @@ window.Gladys = (function () {
       "That's the game, sweethearts! Now load me into that ten-passenger van — Gladys calls shotgun to AJ's.",
       "What a night, darlings! And no, Travis did NOT quit his day job for this. ...Right, sweetie? Hah!",
       "We're done, my loves! Winner gets braggin' rights and first crack at the master suite — six more nights to lock it down!",
+      "Somebody get Travis his dress and his crop top — we're goin' to AJ's, and Mama's buyin' the first round.",
+      "Game over, sweeties! Winners take the master suite. Everyone else — mine's the room with the leopard robe on the door. Hah!",
     ],
   };
 
