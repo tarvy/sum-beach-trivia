@@ -2,16 +2,15 @@
 //
 // A brassy, big-haired, leopard-print cougar from Flushing by way of a Princess
 // cruise ship: she honks when she laughs ("Hah!"), sprinkles Yiddish, drops
-// names, flirts with the whole room, and calls everyone "sweetie." Think Fran
-// Fine (The Nanny) crossed with every campy SNL cougar sketch — playful, warm,
-// and openly thirsty: R-rated innuendo is her brand (suggestive, never
-// explicit, never mean). It's a friends' game night; she's rooting for
+// names, flirts with the whole room, and calls everyone "sweetie." Her comedy
+// shape is original showbiz-roast patter: fast reversals, vanity, petty status
+// games, ex-husband lore, and Deborah Vance (Hacks) energy. Warm, suggestive,
+// never explicit, never mean. It's a friends' game night; she's rooting for
 // everybody and hitting on most of them. Inside jokes from the sum-beach-26
-// group chat are a feature — never shy away from one.
+// group chat are a feature; never shy away from one.
 //
-// EVERY line needs her angle — cougar swagger, post-menopausal candor, ex-
-// husband lore, Deborah Vance (Hacks) energy. A line that's just game-night
-// logistics in a wig ("hold your horses while I grade") is a cut, not a keep.
+// EVERY line needs her angle. A line that's just game-night logistics in a wig
+// ("hold your horses while I grade") is a cut, not a keep.
 //
 // Pure client-side personality, served straight off /gladys.js (no build step,
 // no external anything). A line bank + a STABLE picker (same seed -> same line,
@@ -24,60 +23,60 @@
 window.Gladys = (function () {
   'use strict';
 
-  // Line banks keyed by game context. Deliberately repeatable — a catchphrase
+  // Line banks keyed by game context. Deliberately repeatable: a catchphrase
   // is FUNNIER the third time; that's the running bit. No `round_open` bank:
   // while a question is live it's quiet writing/thinking time, Gladys hushes.
   const LINES = {
     lobby: [
-      "Well hello, hello, HELLO, youse gorgeous little troublemakers! Sit your tuchus down — Gladys came down the Shore and she did NOT pack a modest blouse.",
+      "Well hello, hello, HELLO, youse gorgeous little troublemakers! Gladys came down the Shore and did NOT pack a modest blouse.",
       "Scan the little square with your phone, doll. It doesn't bite, unlike Aunt Gladys after two espresso martinis and a compliment from a married man. Hah!",
-      "Look at all these punims! Grab a team, grab a cocktail, and loosen up — not too much, that's my job.",
+      "Look at all these punims! Grab a team, grab a cocktail, and loosen up. Not too much, that's my job.",
       "I haven't seen a crowd this good-lookin' since Seaside Heights before the boardwalk lights came on. Get in here before I start pickin' favorites.",
-      "The more the merrier, darlings — that's my policy for trivia, husbands, and hotel hot tubs with questionable filtration.",
+      "The more the merrier, darlings. That's my policy for trivia, husbands, and hotel hot tubs with questionable filtration.",
       "Don't be shy, honey. Nobody ever had a memorable weekend by standin' in the corner holdin' a lukewarm White Claw.",
       "Welcome, welcome! I'm Gladys: your MC, your muse, and the reason your father started wearin' cologne again.",
       "Ohhh I love a full house. Reminds me of cousin Marsha's wedding, right before the DJ played Pitbull and three marriages got negotiated.",
-      "Well, well, WELL. I hear rule number one of this trip was 'No Gladys.' Sweeties, I'm like a Jersey accent in a quiet restaurant — you can't keep me out.",
+      "Well, well, WELL. I hear rule number one was 'No Gladys.' Sweeties, I'm a Jersey accent in a quiet restaurant. You can't keep me out.",
       "The teams tonight are completely random, sweeties. Completely. Random. Like who ends up in my DMs after last call.",
-      "Bar's open, darlings — and before anybody asks: yes, the Dr Pepper is here, and no, I will not be explainin' what I mixed it with.",
-      "Nice jerseys, boys. Very World Cup. The ladies made iron-on COUTURE, sweetie — that's foreplay with a Cricut.",
-      "I heard about the dissolving swim trunks, sweetie. Don't you worry — Gladys is a strong swimmer and an even stronger looker.",
+      "Bar's open, darlings. Yes, the Dr Pepper is here, and no, I will not be explainin' what I mixed it with.",
+      "Nice jerseys, boys. Very World Cup. The ladies made iron-on COUTURE, sweetie. That's foreplay with a Cricut.",
+      "I heard about the dissolving swim trunks, sweetie. Don't worry. Gladys is a strong swimmer and an even stronger looker.",
       "Ten-passenger van to AJ's later, and Mama calls a lap. I don't care whose, but I do appreciate good suspension.",
     ],
     round_closed: [
-      "Pens DOWN, sweethearts! Fingers off the paper — I know a sneaky hand when I see one, and usually I charge dinner first.",
+      "Pens DOWN, sweethearts! Fingers off the paper. I know a sneaky hand when I see one, and usually I charge dinner first.",
       "That's it, cap those pens! Hand 'em over, chop chop, Mama's bra is underwire and my patience is thinner.",
-      "Time, doll! Put the pen down. Chewin' it won't help ya now — though Gladys does admire an oral fixation. Hah!",
+      "Time, doll! Put the pen down. Chewin' it won't help ya now. Gladys does admire commitment, though. Hah!",
       "Pens down, sheets UP! Pass 'em forward like a phone number you regret givin' out in Belmar.",
       "And... freeze! Hands where I can see 'em, darlings. I learned that line from a cop in Wildwood. Long story.",
-      "Pens DOWN, doll! This ain't one of Travis's riddles — it means exactly what it says, which is rare for a man.",
-      "Pens down, hands UP, sweeties — unless you're on MY team, in which case we can discuss placement later.",
+      "Pens DOWN, doll! This ain't one of Travis's riddles. It means exactly what it says, which is rare for a man.",
+      "Pens down, hands UP, sweeties. Unless you're on MY team, in which case we can discuss placement later.",
     ],
     marking: [
-      "Readin' glasses ON, darlings. Menopause took the eyes and the filter — you're gettin' your scores honest, loud, and slightly sweaty.",
-      "Gimme a minute, darlings — I grade like my mother judged my boyfriends: suspiciously, thoroughly, and with notes about stamina.",
+      "Readin' glasses ON, darlings. Menopause took the eyes and the filter, so you're gettin' scores honest and loud.",
+      "Gimme a minute, darlings. I grade like my mother judged my boyfriends: suspiciously, thoroughly, and with notes.",
       "Markin' now, sweeties. No peeking, no bribing... unless the bribe comes with olives and a room key. Hah!",
       "One moment while I squint at your penmanship. Oy, some of you write like Grandma Yetta after boxed wine and a boat ride.",
-      "Crunchin' the numbers, honey. Math was never my strong suit — that's why I dated accountants and tipped in compliments.",
-      "Patience, sweeties — Gladys has been HOT for fifty years. The last five were just flashes, but who's countin'?",
-      "Grading now, sweeties — and unlike certain swim trunks, my standards do NOT dissolve when things get wet.",
+      "Crunchin' the numbers, honey. Math was never my strong suit. That's why I dated accountants and tipped in compliments.",
+      "Patience, sweeties. Gladys has been HOT for fifty years. The last five were just flashes, but who's countin'?",
+      "Grading now, sweeties. Unlike certain swim trunks, my standards do NOT dissolve when things get wet.",
       "Patience, darlings. This is an enterprise-wide AI initiative, which is fancy talk for 'Mama's lookin' at your sheet real close.'",
-      "Hush while Mama grades. I'm very good with my hands, sweetie — ask any ex-husband who didn't fake a back injury.",
+      "Hush while Mama grades. I'm very good with my hands, sweetie. Ask any ex-husband who didn't fake a back injury.",
     ],
     // framing quip; the real answer is read right after (see answerLeadIn)
     answers: [
-      "Ooh, this one — a classic, sweetie. Listen close and try not to disappoint me twice.",
+      "Ooh, this one is a classic, sweetie. Listen close and try not to disappoint me twice.",
       "Now THIS one, darling, I know by heart. I also know two restraining-order stories by heart, but that's for later.",
       "Alright, drumroll for Mama... and keep it steady, doll, I like rhythm.",
       "Here we go, bubbeleh, don't blink. That's also what I tell men over fifty.",
       "Oh, I love this one. Reminds me of a fella I dated in Hoboken. Great hair, terrible follow-through.",
-      "Pay attention, doll, this is the good part — the educational part, not the hotel-bar part.",
-      "Don't be upset if you missed it — we can't all be geniuses AND dangerous in animal print.",
+      "Pay attention, doll. This is the educational part, not the hotel-bar part.",
+      "Don't be upset if you missed it. We can't all be geniuses AND dangerous in animal print.",
       "Ohhh, tricky little thing, wasn't it? I respect that. I, too, am difficult and worth the effort.",
       "Sit tight, sweetheart, Gladys is about to drop some knowledge like it's hot gossip at a bridal shower.",
       "You didn't need Euler's formula for this one, sweetie... though I do enjoy a man who can solve for X.",
       "Missed it? Slap the bag and let it go, bubbeleh. Nobody's got an excuse tonight except poor lighting and bad decisions.",
-      "Easy one, doll. Not as easy as me after two mai tais on the Lido deck — but we're in the same zip code.",
+      "Easy one, doll. Not as easy as me after two mai tais on the Lido deck, but we're in the same zip code.",
     ],
     // connective spoken between the quip and the actual answer text
     answerLeadIn: [
@@ -88,52 +87,52 @@ window.Gladys = (function () {
       "Correct answer, sweetie:",
     ],
     reveal: [
-      "Let's see who's been naughty and who's been NICE. Scores are up, sweeties — and Gladys has opinions on both lists.",
-      "Moment of truth, darlings — and remember, it's not the winning, it's the gloating and the eye contact afterward.",
+      "Let's see who's been naughty and who's been NICE. Scores are up, sweeties, and Gladys has opinions on both lists.",
+      "Moment of truth, darlings. It's not the winning, it's the gloating and the eye contact afterward.",
       "Fresh scores, hot off the press! Somebody's buyin' Gladys a cocktail with a garnish I can play with.",
-      "Here come the numbers, honey. Chin up if you're losin' — you're still gorgeous, and pity is a perfectly valid strategy.",
-      "Standings, everyone! No pushing — there's plenty of Gladys to go around, medically speaking.",
-      "Scores are UP! And if you're mad about your team, take it up with Bailey — nobody ever yells at Bailey, the lucky little angel.",
+      "Here come the numbers, honey. Chin up if you're losin'. You're still gorgeous, and pity is a valid strategy.",
+      "Standings, everyone! No pushing. There's plenty of Gladys to go around, medically speaking.",
+      "Scores are UP! If you're mad about your team, take it up with Bailey. Nobody ever yells at Bailey.",
       "Fresh numbers, darlings! Somebody's winning, somebody's learning, and somebody STILL hasn't texted Anthony Franks back.",
-      "Scores are up, sweeties! And remember — it's not the size of the score, it's whether you know how to use a bonus round.",
+      "Scores are up, sweeties! Remember, it's not the size of the score. It's whether you know how to use a bonus round.",
     ],
     final_wager: [
-      "Final round, my loves — bet it ALL. Fortune favors the brassy, and so do recently divorced men from Paramus.",
-      "Time to wager, sweethearts. Go big or go home — and honestly, home's where the sensible shoes are.",
+      "Final round, my loves. Bet it ALL. Fortune favors the brassy, and so do recently divorced men from Paramus.",
+      "Time to wager, sweethearts. Go big or go home. Honestly, home's where the sensible shoes are.",
       "Place your bets, darlings! I've gambled on worse and married two of 'em after last call.",
-      "How much you got, bubbeleh? Wager like nobody's watchin' — except me, and honey, I am watchin'.",
+      "How much you got, bubbeleh? Wager like nobody's watchin'. Except me, and honey, I am watchin'.",
       "Wagers up, honey. Faint heart never won a fair anything, so don't be stingy with your points OR your compliments.",
-      "Bet BIG, sweetie! 'If I don't get anywhere, I won't push it' — that's what Travis told Tessa on their weddin' night. Hah!",
+      "Bet BIG, sweetie! 'If I don't get anywhere, I won't push it.' That's what Travis told Tessa on their weddin' night. Hah!",
       "Wager like there's no tomorrow, doll. Worst case, you sleep it off in the hangover room. Best case, you don't sleep at all.",
-      "Go ALL in, bubbeleh. Gladys always does — emotionally, financially, and once on a mechanical bull in Atlantic City.",
+      "Go ALL in, bubbeleh. Gladys always does: emotionally, financially, and once on a mechanical bull in Atlantic City.",
     ],
     final_open: [
-      "Here it is, sweeties — the big one. Deep breath, good posture, and for the love of Jersey, commit.",
+      "Here it is, sweeties. The big one. Deep breath, good posture, and for the love of Jersey, commit.",
       "The final question, darlings. Make Gladys proud, or at least make a noise I can respect.",
-      "Everything rides on this one, doll. No pressure — that's a lie, it's all pressure, like shapewear after pasta.",
+      "Everything rides on this one, doll. No pressure. That's a lie, it's all pressure, like shapewear after pasta.",
       "Last chance to shine, honey. Give it everything, like it's a first date with somebody rich and recently separated.",
-      "The big one, sweeties! More pressure than timin' a pregnancy around a friend trip — and yes, that IS the rule now.",
-      "Last one, darlings. Finish STRONG — Mama always does, eventually, and she expects the same from you.",
+      "The big one, sweeties! More pressure than timin' a pregnancy around a friend trip, and yes, that IS the rule now.",
+      "Last one, darlings. Finish STRONG. Mama always does, eventually, and she expects the same from you.",
     ],
     tiebreak: [
-      "A TIE?! Be still my heart — I LIVE for the drama, darlings, especially when nobody signed a prenup.",
+      "A TIE?! Be still my heart. I LIVE for the drama, darlings, especially when nobody signed a prenup.",
       "Would you believe it, a tiebreak! Somebody's a hero, somebody's buyin' the next round, and somebody's makin' eye contact with Mama.",
-      "Neck and neck, sweeties! More suspense than my wedding day — and THAT had a runaway groom and a cash bar.",
+      "Neck and neck, sweeties! More suspense than my wedding day, and THAT had a runaway groom and a cash bar.",
       "A tie, a TIE! Closest guess takes it, so think hard, doll, and don't finish too early.",
-      "A TIE?! Somebody grab the spare engine belt, darlings — we are in for a bumpy finish, my favorite kind.",
+      "A TIE?! Somebody grab the spare engine belt, darlings. We are in for a bumpy finish, my favorite kind.",
       "Overtime, sweeties! Ooh, I just LOVE it when the night goes longer than expected.",
     ],
     done: [
       "And the winner is... oh, come to Gladys, you magnificent creature! Get up here and let Mama objectify your brain.",
       "We have a champion, darlings! Somebody get this genius a crown, my number, and a believable alibi.",
-      "That's a wrap, sweethearts! Winners, you're fabulous — everyone else, ALSO fabulous, just... less useful in a crisis.",
-      "Ohhh what a night! Give it up for our winners — and for your hostess, who is still somehow single and moisture-wicked.",
+      "That's a wrap, sweethearts! Winners, you're fabulous. Everyone else is also fabulous, just less useful in a crisis.",
+      "Ohhh what a night! Give it up for our winners, and for your hostess, who is still somehow single and moisture-wicked.",
       "Victory, doll! I'd say the best team won, but really the best team is whoever's drivin' me home and knows where the snacks are.",
-      "That's the game, sweethearts! Now load me into that ten-passenger van — Gladys calls shotgun and maybe a thigh.",
+      "That's the game, sweethearts! Now load me into that ten-passenger van. Gladys calls shotgun and maybe a thigh.",
       "What a night, darlings! And no, Travis did NOT quit his day job for this. ...Right, sweetie? Hah!",
-      "We're done, my loves! Winner gets braggin' rights and first crack at the master suite — six more nights to make questionable choices!",
-      "Somebody get Travis his dress and his crop top — we're goin' to AJ's, and Mama's buyin' the first round if somebody fans me.",
-      "Game over, sweeties! Winners take the master suite. Everyone else — mine's the room with the leopard robe and the emotional availability.",
+      "We're done, my loves! Winner gets braggin' rights and first crack at the master suite. Six more nights, sweeties.",
+      "Somebody get Travis his dress and his crop top. We're goin' to AJ's, and Mama's buyin' the first round if somebody fans me.",
+      "Game over, sweeties! Winners take the master suite. Everyone else gets Gladys and her emotional availability.",
     ],
   };
 
