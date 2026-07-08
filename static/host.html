@@ -1144,31 +1144,39 @@
           </div>`;
       }).join('');
 
-      el.innerHTML = `
+      // Rendered twice — above the question and below the last team row — so a
+      // phone MC who just marked the bottom team doesn't scroll back up for Next.
+      const navRow = `
         <div class="cluster" style="justify-content: space-between;">
-          <button class="btn btn--sm btn--secondary" id="mk-prev" ${mk.idx === 0 ? 'disabled' : ''}>← Prev</button>
+          <button class="btn btn--sm btn--secondary mk-prev" ${mk.idx === 0 ? 'disabled' : ''}>← Prev</button>
           <span class="mono" style="font-size: var(--fs-sm);">Q ${mk.idx + 1} of ${mk.qids.length}</span>
-          <span id="mk-qmarked" class="badge badge--dim"></span>
-          <button class="btn btn--sm btn--secondary" id="mk-next" ${mk.idx === mk.qids.length - 1 ? 'disabled' : ''}>Next →</button>
-        </div>
+          <span class="badge badge--dim mk-qmarked"></span>
+          <button class="btn btn--sm btn--secondary mk-next" ${mk.idx === mk.qids.length - 1 ? 'disabled' : ''}>Next →</button>
+        </div>`;
+
+      el.innerHTML = `
+        ${navRow}
         <div>
           <p class="eyebrow">${q.point_value || 1} pt${(q.point_value || 1) === 1 ? '' : 's'}${q.author_name ? ' · by ' + esc(q.author_name) : ''}</p>
           <h2 class="mt-sm">${esc(q.text)}</h2>
           <div class="panel mk-answer mt-sm">${answerHtml}</div>
         </div>
         <div id="mk-teams">${rows}</div>
+        ${navRow}
         <div><button class="btn btn--sm btn--secondary" id="mk-reload">Reload sheet data</button></div>`;
       paintQuestionChip();
     }
 
     function paintQuestionChip() {
-      const chip = $('mk-qmarked');
-      if (!chip || !mk || mk.loading) return;
+      const chips = document.querySelectorAll('#mk-console .mk-qmarked');
+      if (!chips.length || !mk || mk.loading) return;
       const qid = mk.qids[mk.idx];
       const done = mk.teams.filter(t => t.marks[qid]?.marked).length;
       const all = done === mk.teams.length && mk.teams.length > 0;
-      chip.textContent = all ? 'all marked ✓' : `${done}/${mk.teams.length} marked`;
-      chip.className = `badge ${all ? 'badge--teal' : 'badge--dim'}`;
+      for (const chip of chips) {
+        chip.textContent = all ? 'all marked ✓' : `${done}/${mk.teams.length} marked`;
+        chip.className = `mk-qmarked badge ${all ? 'badge--teal' : 'badge--dim'}`;
+      }
       $('action-status').textContent = state.phase === 'marking' ? markingProgress() : $('action-status').textContent;
     }
 
@@ -1201,8 +1209,8 @@
     }
 
     $('mk-console').addEventListener('click', e => {
-      if (e.target.closest('#mk-prev')) { mk.idx--; renderConsole(); return; }
-      if (e.target.closest('#mk-next')) { mk.idx++; renderConsole(); return; }
+      if (e.target.closest('.mk-prev')) { mk.idx--; renderConsole(); return; }
+      if (e.target.closest('.mk-next')) { mk.idx++; renderConsole(); return; }
       if (e.target.closest('#mk-reload')) {
         if (state.current_round) { mk = null; buildConsole(state.current_round); }
         return;
