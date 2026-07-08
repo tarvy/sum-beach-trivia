@@ -66,7 +66,10 @@ def grade_sheet(image_bytes: bytes, media_type: str, questions: List[dict], clie
                 {"type": "text", "text": build_prompt(questions)},
             ],
         }],
-        output_config={"format": _schema_format()},
+        # output_format (not a hand-built output_config schema): the SDK converts
+        # the Pydantic model to an API-legal schema — bare model_json_schema()
+        # lacks additionalProperties:false and the API 400s on it.
+        output_format=SheetGrade,
     )
     parsed = resp.parsed_output
     if isinstance(parsed, SheetGrade):
@@ -75,7 +78,3 @@ def grade_sheet(image_bytes: bytes, media_type: str, questions: List[dict], clie
         return SheetGrade(**parsed)
     # parsed_output may already be the typed object; fall back to text JSON
     return SheetGrade(**json.loads(parsed))
-
-
-def _schema_format():
-    return {"type": "json_schema", "schema": SheetGrade.model_json_schema()}
