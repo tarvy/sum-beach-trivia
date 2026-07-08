@@ -345,6 +345,10 @@
       document.getElementById('round-eyebrow').textContent =
         closed ? 'Pens down!' : (round.is_final ? 'Final round' : 'Round open');
       document.getElementById('round-title').textContent   = round.title || 'Current Round';
+      // Writing is still in progress during an open normal round — keep the
+      // submit prompt hidden until pens-down (round_closed). The final round has
+      // no closed phase (final_open → marking), so it keeps submit available.
+      document.getElementById('submit-panel').classList.toggle('hidden', phase === 'round_open');
       // submit copy: urgency after pens-down; Lacey mode = photo is just a keepsake
       const heading = document.getElementById('submit-heading');
       const copy    = document.getElementById('submit-copy');
