@@ -471,12 +471,18 @@
       const r = await fetch(`/api/questions?${hk()}`);
       if (!r.ok) return;
       const { questions } = await r.json();
+      // Count only real contributions — bank/host questions are filler that never
+      // form rounds alone, so they don't count as "submitted" (keeps the header,
+      // by-author list, and Start-enable in step with the round-plan math).
       const byAuthor = {};
+      let total = 0;
       for (const q of questions) {
+        if (q.source && q.source !== 'contributor') continue;
+        total++;
         const a = q.author_name || 'Anonymous';
         byAuthor[a] = (byAuthor[a] || 0) + 1;
       }
-      qTally = {total: questions.length, byAuthor};
+      qTally = {total, byAuthor};
     }
 
     async function pollPlan() {
