@@ -175,6 +175,10 @@
     // shared setup screen doesn't spoil them. The host can still toggle.
     let revealAnswers = false;
     let revealInitialized = false;
+    // In Gladys (AI) mode the host plays along and the AI owns the answers, so
+    // once the game starts answers are locked hidden here (no toggle). Lacey
+    // mode keeps the host's manual toggle.
+    let gladysLock = false;
 
     async function loadQuestions() {
       const [r, rr, sr] = await Promise.all([
@@ -184,11 +188,9 @@
       ]);
       if (!r.ok) { toast('Failed to load questions', 'err'); return; }
       if (rr.ok) roundInfo = Object.fromEntries((await rr.json()).rounds.map(x => [x.id, x]));
-      if (sr.ok && !revealInitialized) {
-        const phase = (await sr.json()).phase;
-        revealAnswers = phase !== 'draft';   // shown by default once the game starts
-        revealInitialized = true;
-        updateAnswerToggle();
+      if (sr.ok) {
+        const st = await sr.json();
+        applyAnswerPolicy(st.phase, st.mc_mode);
       }
       // the final round's question is managed on the host page, not here
       questions = (await r.json()).questions
@@ -197,8 +199,34 @@
     }
 
     function updateAnswerToggle() {
-      document.getElementById('btn-toggle-answers').textContent =
-        revealAnswers ? 'Hide answers' : 'Show answers';
+      const btn = document.getElementById('btn-toggle-answers');
+      btn.classList.toggle('hidden', gladysLock);   // Gladys mode: no manual reveal
+      btn.textContent = revealAnswers ? 'Hide answers' : 'Show answers';
+    }
+
+    // Decide whether the host may see answers, from live phase + MC mode.
+    // Default reveal once the game starts (Lacey); Gladys locks it hidden.
+    function applyAnswerPolicy(phase, mcMode) {
+      const prevLock = gladysLock;
+      gladysLock = mcMode === 'gladys' && phase !== 'draft';
+      if (!revealInitialized) {
+        revealAnswers = phase !== 'draft';   // shown by default once the game starts
+        revealInitialized = true;
+      }
+      if (gladysLock) revealAnswers = false;
+      else if (prevLock) revealAnswers = phase !== 'draft';   // just unlocked → restore default
+      updateAnswerToggle();
+    }
+
+    // Light poll so the bank reacts if the game starts / the MC mode flips
+    // while this page sits open.
+    async function syncAnswerPolicy() {
+      const r = await fetch('/api/state').catch(() => null);
+      if (!r || !r.ok) return;
+      const st = await r.json();
+      const wasLocked = gladysLock, wasRevealed = revealAnswers;
+      applyAnswerPolicy(st.phase, st.mc_mode);
+      if (gladysLock !== wasLocked || revealAnswers !== wasRevealed) render();
     }
 
     async function loadCategories() {
@@ -249,6 +277,7 @@
     document.getElementById('filter-category').addEventListener('change', render);
     document.getElementById('filter-source').addEventListener('change', render);
     document.getElementById('btn-toggle-answers').addEventListener('click', () => {
+      if (gladysLock) return;   // locked hidden in Gladys mode
       revealAnswers = !revealAnswers;
       updateAnswerToggle();
       render();
@@ -289,6 +318,7 @@
       document.getElementById('bank-main').classList.remove('hidden');
       loadCategories();
       loadQuestions();
+      setInterval(syncAnswerPolicy, 3000);
     }
 
     // Auto-unlock only if the stored key still checks out server-side

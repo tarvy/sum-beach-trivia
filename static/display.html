@@ -139,11 +139,41 @@
       border-top: 3px solid var(--brand);
     }
     .ticker-track {
-      display: inline-block; white-space: nowrap;
+      display: flex; white-space: nowrap; width: max-content;
       font-family: var(--font-mono); font-size: clamp(0.85rem, 1.7vw, 1.15rem);
       animation: tickerScroll 40s linear infinite;
     }
-    .ticker .up   { color: var(--accent); }
+    .ticker-line {
+      display: inline-flex;
+      align-items: baseline;
+      white-space: nowrap;
+    }
+    .ticker-entry {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.45em;
+    }
+    .ticker-move {
+      font-weight: 700;
+      min-width: 1.1em;
+      text-align: center;
+    }
+    .ticker-move.up { color: var(--success); }
+    .ticker-move.down { color: var(--danger); }
+    .ticker-move.steady { color: var(--accent); }
+    .ticker-rank { color: rgba(255, 255, 255, 0.72); }
+    .ticker-team { color: #fff; }
+    .ticker-score {
+      display: inline-block;
+      padding: 0.06em 0.42em 0.08em;
+      background: var(--accent);
+      color: var(--ink);
+      border: 1px solid rgba(255, 255, 255, 0.86);
+      border-radius: 999px;
+      font-weight: 700;
+      line-height: 1.1;
+      box-shadow: 1px 1px 0 var(--brand);
+    }
     .ticker .sep  { opacity: 0.4; margin: 0 1.2em; }
     @keyframes tickerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
@@ -596,10 +626,18 @@
       const track = document.getElementById('ticker-track');
       el.classList.toggle('hidden', !on);
       if (!on) { track.dataset.content = ''; return; }
-      const entries = teams.map((t, i) =>
-        `<span class="up">${i === 0 ? '▲' : '●'} ${i + 1}</span> ${esc(t.name)} ${t.total}pts`);
+      const entries = teams.map((t, i) => {
+        const direction = t.movement === 'down' ? 'down' : (i === 0 || t.movement === 'up' ? 'up' : 'steady');
+        const icon = direction === 'down' ? '▼' : (direction === 'up' ? '▲' : '●');
+        return `<span class="ticker-entry">` +
+          `<span class="ticker-move ${direction}">${icon}</span>` +
+          `<span class="ticker-rank">${i + 1}</span>` +
+          `<span class="ticker-team">${esc(t.name)}</span>` +
+          `<span class="ticker-score">${t.total} pts</span>` +
+        `</span>`;
+      });
       const line = entries.join('<span class="sep">···</span>');
-      const content = `<span>${line}<span class="sep">···</span></span><span>${line}<span class="sep">···</span></span>`;
+      const content = `<span class="ticker-line">${line}<span class="sep">···</span></span><span class="ticker-line">${line}<span class="sep">···</span></span>`;
       if (track.dataset.content !== content) {
         track.dataset.content = content;
         track.innerHTML = content;

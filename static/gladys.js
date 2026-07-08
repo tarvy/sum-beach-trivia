@@ -2,9 +2,10 @@
 //
 // A brassy, big-haired, leopard-print cougar from Flushing by way of a Princess
 // cruise ship: she honks when she laughs ("Hah!"), sprinkles Yiddish, drops
-// names, flirts with the whole room, and calls everyone "sweetie." Think Fran
-// Fine (The Nanny) crossed with every campy SNL cougar sketch — playful, warm,
-// PG-13, never mean. It's a friends' game night; she's rooting for everybody.
+// names, flirts with the whole room, and calls everyone "sweetie." The comedy
+// shape is original showbiz-roast patter: short setups, fast reversals, vanity,
+// petty status games, and old-performer authority. Playful, warm, PG-13, never
+// mean. It's a friends' game night; she's rooting for everybody.
 //
 // Pure client-side personality, served straight off /gladys.js (no build step,
 // no external anything). A line bank + a STABLE picker (same seed -> same line,
@@ -17,45 +18,45 @@
 window.Gladys = (function () {
   'use strict';
 
-  // Line banks keyed by game context. Deliberately repeatable — a catchphrase
+  // Line banks keyed by game context. Deliberately repeatable: a catchphrase
   // is FUNNIER the third time; that's the running bit. No `round_open` bank:
   // while a question is live it's quiet writing/thinking time, Gladys hushes.
   const LINES = {
     lobby: [
-      "Well hello, hello, HELLO! Sit your gorgeous tuchus down, sweetie — Gladys is your hostess tonight, and oh, do we have fun.",
-      "Scan the little square with your phone, doll, it doesn't bite. Unlike me. Hah!",
-      "Look at all these punims! Grab a team, grab a cocktail, and let's make some magic, bubbeleh.",
-      "I haven't seen a crowd this good-lookin' since I hosted bingo on the Lido deck. Get in here!",
-      "The more the merrier, darlings — just like my ex-husbands. Sign on up!",
-      "Don't be shy, honey — nobody good ever got anywhere bein' shy. Tap a team and let's go.",
-      "Welcome, welcome! I'm Gladys: your MC, your muse, and possibly your future stepmother.",
-      "Ohhh I love a full house. Reminds me of cousin Marsha's wedding, minus the fistfight. Join up, sweeties!",
+      "Well hello, hello, HELLO! Sit your gorgeous tuchus down, sweetie. Gladys is hosting, so lower your expectations and raise your glass.",
+      "Scan the little square with your phone, doll. It doesn't bite. I save that for birthdays and bad service.",
+      "Look at all these punims! Grab a team, grab a cocktail, and pretend this was your idea.",
+      "I haven't seen a crowd this good-lookin' since I hosted bingo on the Lido deck. Security still talks about me.",
+      "The more the merrier, darlings. Same rule as ex-husbands, but with better lighting.",
+      "Don't be shy, honey. Shy people don't win trivia; they marry accountants and call it peace.",
+      "Welcome, welcome! I'm Gladys: your MC, your muse, and the reason this room suddenly has standards.",
+      "Ohhh I love a full house. Reminds me of cousin Marsha's wedding, before the seating chart became evidence.",
     ],
     round_closed: [
-      "Pens DOWN, sweethearts! Fingers off the paper — I've caught men doin' less and regretted it more. Hah!",
+      "Pens DOWN, sweethearts! Fingers off the paper. I've caught men doing less and charged them dinner.",
       "That's it, cap those pens! Hand 'em over, chop chop, Mama hasn't got all night.",
       "Time, doll! Put it down. If you didn't know it, chewin' that pen isn't gonna help ya now.",
       "Pens down, sheets UP! Pass 'em to the front like it's the last brisket at the buffet.",
-      "And... freeze! Hands where I can see 'em, darlings. Sheets to the front.",
+      "And... freeze! Hands where I can see 'em, darlings. I ran tighter rooms with looser morals.",
     ],
     marking: [
       "Hold your horses while I put my readin' glasses on. Gladys has a system, and the system is fabulous.",
-      "Gimme a minute, darlings — I grade like my mother judged my boyfriends: fair, but thorough.",
+      "Gimme a minute, darlings. I grade like my mother judged my boyfriends: unfairly, but with notes.",
       "Markin' now, sweeties. No peeking, no bribing... well, maybe a little bribing. Hah!",
-      "One moment while I squint at your penmanship. Oy, some of you write like Grandma Yetta after her second sherry.",
-      "Crunchin' the numbers, honey. Math was never my strong suit, but neither was patience — sit tight.",
+      "One moment while I squint at your penmanship. Some of you write like you're negotiating with a hostage.",
+      "Crunchin' the numbers, honey. Math was never my strong suit. Neither was patience, so sit tight.",
     ],
     // framing quip; the real answer is read right after (see answerLeadIn)
     answers: [
-      "Ooh, this one — a classic, sweetie. Listen close.",
-      "Now THIS one, darling, I know by heart. And I know a lot by heart.",
-      "Alright, drumroll for Mama...",
-      "Here we go, bubbeleh, don't blink.",
-      "Oh, I love this one. Reminds me of a fella I dated. Anyway —",
-      "Pay attention, doll, this is the good part.",
-      "Don't be upset if you missed it — we can't all be geniuses AND this glamorous.",
-      "Ohhh, tricky little thing, wasn't it? Here's the truth of it.",
-      "Sit tight, sweetheart, Gladys is about to drop some knowledge.",
+      "Ooh, this one is a classic. It has better structure than my second marriage.",
+      "Now THIS one I know by heart, darling. I keep facts where other women keep boundaries.",
+      "Drumroll for Mama. Use your hands, the budget did not include percussion.",
+      "Here we go, bubbeleh. Blink later, learn now.",
+      "Oh, I love this one. It has range, which is more than I can say for my first agent.",
+      "Pay attention, doll. This is the educational part, so naturally it will be brief.",
+      "Don't pout if you missed it. Glamour and accuracy rarely arrive in the same cab.",
+      "Tricky little thing, wasn't it? It walked in cute and left with your dignity.",
+      "Sit tight, sweetheart. Gladys is about to make a fact feel overdressed.",
     ],
     // connective spoken between the quip and the actual answer text
     answerLeadIn: [
@@ -67,38 +68,53 @@ window.Gladys = (function () {
     ],
     reveal: [
       "Let's see who's been naughty and who's been NICE. Scores are up, sweeties!",
-      "Moment of truth, darlings — and remember, it's not the winning, it's the gloating. Hah!",
+      "Moment of truth, darlings. It's not the winning, it's the gloating. Hah!",
       "Fresh scores, hot off the press! Somebody's buyin' Gladys a cocktail.",
-      "Here come the numbers, honey. Chin up if you're losin' — you're still gorgeous.",
-      "Standings, everyone! No pushing — there's plenty of Gladys to go around.",
+      "Here come the numbers, honey. Chin up if you're losin'. You're still gorgeous, and that photographs better.",
+      "Standings, everyone! No pushing. There's plenty of Gladys to go around, medically speaking.",
     ],
     final_wager: [
-      "Final round, my loves — bet it ALL. Fortune favors the brassy, take it from me.",
-      "Time to wager, sweethearts. Go big or go home — and honestly, home's overrated.",
+      "Final round, my loves. Bet it ALL. Fortune favors the brassy, and occasionally the reckless.",
+      "Time to wager, sweethearts. Go big or go home. Home has bad lighting and your mail.",
       "Place your bets, darlings! I've gambled on worse and married two of 'em. Hah!",
-      "How much you got, bubbeleh? Wager like nobody's watchin' — 'cause it's just me, and I approve.",
+      "How much you got, bubbeleh? Wager like nobody's watchin'. It's just me, and I approve of mess.",
       "Wagers up, honey. Faint heart never won a fair anything, so don't be stingy.",
     ],
     final_open: [
-      "Here it is, sweeties — the big one. Deep breath, good posture, DAZZLE me.",
+      "Here it is, sweeties. The big one. Deep breath, good posture, DAZZLE me.",
       "The final question, darlings. Make Gladys proud, or at least make her laugh.",
-      "Everything rides on this one, doll. No pressure — that's a lie, it's all pressure.",
+      "Everything rides on this one, doll. No pressure. That's a lie, it's all pressure.",
       "Last chance to shine, honey. Give it everything, like it's a first date with somebody rich.",
     ],
     tiebreak: [
-      "A TIE?! Be still my heart — I LIVE for the drama, darlings.",
+      "A TIE?! Be still my heart. I LIVE for the drama, darlings.",
       "Would you believe it, a tiebreak! Somebody's a hero, somebody's buyin' the next round.",
-      "Neck and neck, sweeties! More suspense than my wedding day — and THAT had a runaway groom.",
+      "Neck and neck, sweeties! More suspense than my wedding day, and that had a runaway groom.",
       "A tie, a TIE! Closest guess takes it, so think hard, doll, and think fast.",
     ],
     done: [
       "And the winner is... oh, come to Gladys, you magnificent creature! Get up here!",
       "We have a champion, darlings! Somebody get this genius a crown and my number.",
-      "That's a wrap, sweethearts! Winners, you're fabulous — everyone else, ALSO fabulous, just... less.",
-      "Ohhh what a night! Give it up for our winners — and for your hostess, obviously. Hah!",
+      "That's a wrap, sweethearts! Winners, you're fabulous. Everyone else is also fabulous, just less urgently.",
+      "Ohhh what a night! Give it up for our winners, and for your hostess, obviously. Hah!",
       "Victory, doll! I'd say the best team won, but really the best team is whoever's drivin' me home.",
     ],
   };
+
+  function cadenceWarnings() {
+    const warnings = [];
+    for (const [context, bank] of Object.entries(LINES)) {
+      bank.forEach((line, index) => {
+        if ((line.match(/—/g) || []).length) {
+          warnings.push(`${context}[${index}] uses an em dash`);
+        }
+        if (line.length > 170) {
+          warnings.push(`${context}[${index}] is long (${line.length} chars)`);
+        }
+      });
+    }
+    return warnings;
+  }
 
   // FNV-1a — cheap, stable string hash so a (context, seed) pair always maps to
   // the same line. Stability is the whole point: the display re-picks on every
@@ -243,5 +259,5 @@ window.Gladys = (function () {
     };
   })();
 
-  return { LINES, hash, pickLine, answerText, Voice };
+  return { LINES, hash, pickLine, answerText, cadenceWarnings, Voice };
 })();
