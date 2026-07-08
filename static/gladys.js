@@ -137,6 +137,21 @@ window.Gladys = (function () {
     ],
   };
 
+  function cadenceWarnings() {
+    const warnings = [];
+    for (const [context, bank] of Object.entries(LINES)) {
+      bank.forEach((line, index) => {
+        if ((line.match(/—/g) || []).length) {
+          warnings.push(`${context}[${index}] uses an em dash`);
+        }
+        if (line.length > 170) {
+          warnings.push(`${context}[${index}] is long (${line.length} chars)`);
+        }
+      });
+    }
+    return warnings;
+  }
+
   // FNV-1a — cheap, stable string hash so a (context, seed) pair always maps to
   // the same line. Stability is the whole point: the display re-picks on every
   // 2.5s poll and must land on the same line each time (cf. the ticker de-dupe).
@@ -280,5 +295,5 @@ window.Gladys = (function () {
     };
   })();
 
-  return { LINES, hash, pickLine, answerText, Voice };
+  return { LINES, hash, pickLine, answerText, cadenceWarnings, Voice };
 })();
