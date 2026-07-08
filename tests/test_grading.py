@@ -21,8 +21,15 @@ def test_grade_sheet_returns_parsed_grades():
         QuestionGrade(question_id=1, transcription="Paris", is_correct=True, confidence=0.95),
     ])
 
+    class Usage:
+        input_tokens = 2000
+        output_tokens = 300
+        cache_read_input_tokens = 0
+        cache_creation_input_tokens = 0
+
     class Resp:
         parsed_output = payload
+        usage = Usage()
 
     class Msgs:
         def parse(self, **kwargs):
@@ -32,7 +39,7 @@ def test_grade_sheet_returns_parsed_grades():
     class Client:
         messages = Msgs()
 
-    result = grade_sheet(
+    result, used = grade_sheet(
         image_bytes=b"\x89PNG fake",
         media_type="image/png",
         questions=[{"id": 1, "text": "Capital of France?", "answer": "Paris",
@@ -41,6 +48,9 @@ def test_grade_sheet_returns_parsed_grades():
     )
     assert isinstance(result, SheetGrade)
     assert result.grades[0].is_correct is True
+    # usage block captured for the cost tracker
+    assert used["input_tokens"] == 2000 and used["output_tokens"] == 300
+    assert used["model"]
     # image was attached as a base64 block
     content = Msgs.captured["messages"][0]["content"]
     assert any(b.get("type") == "image" for b in content)

@@ -51,7 +51,10 @@ def _client():
     return anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
 
 
-def grade_sheet(image_bytes: bytes, media_type: str, questions: List[dict], client=None) -> SheetGrade:
+def grade_sheet(image_bytes: bytes, media_type: str, questions: List[dict],
+                client=None) -> tuple[SheetGrade, dict]:
+    """Grade one sheet photo. Returns (grades, usage) — usage carries the model
+    and token counts for cost tracking (app/usage.py)."""
     client = client or _client()
     model = os.environ.get("GRADING_MODEL", "claude-opus-4-8")
     b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
@@ -71,10 +74,16 @@ def grade_sheet(image_bytes: bytes, media_type: str, questions: List[dict], clie
         # lacks additionalProperties:false and the API 400s on it.
         output_format=SheetGrade,
     )
+    u = getattr(resp, "usage", None)
+    usage = {"model": model,
+             "input_tokens": getattr(u, "input_tokens", None),
+             "output_tokens": getattr(u, "output_tokens", None),
+             "cache_read_input_tokens": getattr(u, "cache_read_input_tokens", None),
+             "cache_creation_input_tokens": getattr(u, "cache_creation_input_tokens", None)}
     parsed = resp.parsed_output
     if isinstance(parsed, SheetGrade):
-        return parsed
+        return parsed, usage
     if isinstance(parsed, dict):
-        return SheetGrade(**parsed)
+        return SheetGrade(**parsed), usage
     # parsed_output may already be the typed object; fall back to text JSON
-    return SheetGrade(**json.loads(parsed))
+    return SheetGrade(**json.loads(parsed)), usage

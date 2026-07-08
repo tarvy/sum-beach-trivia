@@ -17,7 +17,7 @@ from fastapi.responses import PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from app import final_options, models, rounds as rounds_mod, scoring
+from app import final_options, models, rounds as rounds_mod, scoring, usage
 from app.db import connect, init_db
 from app.serializers import host_question, public_question
 
@@ -534,7 +534,9 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     def _grade(image_bytes, media_type, questions):
         grader = getattr(app.state, "grading_client", None)
         if grader is not None:
-            return grader.grade(image_bytes, media_type, questions)
+            result = grader.grade(image_bytes, media_type, questions)
+            # injected test fakes return a bare SheetGrade (no usage info)
+            return result if isinstance(result, tuple) else (result, {})
         from app import grading
         return grading.grade_sheet(image_bytes, media_type, questions)
 
@@ -575,10 +577,16 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         qpayload = [{"id": q["id"], "text": q["text"], "answer": q["answer"],
                      "acceptable": q["acceptable_answers"], "answer_items": q["answer_items"],
                      "ordered": q["ordered"]} for q in questions]
+        t0 = time.monotonic()
         try:
-            result = _grade(data, photo.content_type or "image/png", qpayload)
-        except Exception:
+            result, grade_usage = _grade(data, photo.content_type or "image/png", qpayload)
+        except Exception as e:
+            usage.record("grading", game_code=g["code"], duration_ms=int((time.monotonic() - t0) * 1000),
+                         ok=False, error=repr(e), team_id=team_id, round_id=round_id)
             return {"ok": True, "graded": False}
+        usage.record("grading", game_code=g["code"], model=grade_usage.pop("model", ""),
+                     usage=grade_usage, duration_ms=int((time.monotonic() - t0) * 1000),
+                     team_id=team_id, round_id=round_id)
 
         by_id = {q["id"]: q for q in questions}
         try:
