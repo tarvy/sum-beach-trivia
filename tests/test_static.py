@@ -31,3 +31,4 @@ async def test_gladys_script_served(client):
     body = r.text
     assert "window.Gladys" in body      # the global the display depends on
     assert "bubbeleh" in body           # a known catchphrase — the persona is present
+    assert "/api/gladys/tts" in body    # the real (server) voice path is wired

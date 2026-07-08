@@ -398,6 +398,8 @@
       const btn = document.getElementById('gladys-voice-btn');
       const V = window.Gladys && window.Gladys.Voice;
       const modeGladys = (state.mc_mode || 'gladys') === 'gladys';
+      // Prefer the real server voice when the server has one configured.
+      if (V) V.serverTTS = !!state.gladys_tts;
       const canSpeak = modeGladys && V && V.supported;
 
       // voice toggle: only in Gladys mode, only if this browser can speak

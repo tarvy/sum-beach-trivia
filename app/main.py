@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 import os
@@ -13,7 +14,7 @@ from typing import Optional
 
 import segno
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import PlainTextResponse, Response
+from fastapi.responses import FileResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -23,6 +24,11 @@ from app.serializers import host_question, public_question
 
 UPLOAD_DIR = pathlib.Path(os.environ.get("TRIVIA_UPLOADS", "uploads"))
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+# Gladys's synthesized voice lines are cached to disk beside uploads (→ /data on
+# the sprite, so they survive sleeps): the static catchphrases synthesize once
+# and replay forever. Sibling of uploads, not inside it — uploads is photos.
+TTS_CACHE_DIR = UPLOAD_DIR.parent / "gladys-tts"
 
 # The display passes its own browser origin (the public sprite URL it was loaded
 # from), so the QR points phones at the exact same address. Validated to keep
@@ -144,6 +150,11 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     # otherwise never reloads its HTML) watches this and reloads itself when
     # it changes, so it can't keep rendering a stale page after a deploy.
     app.state.boot = int(time.time())
+
+    # Gladys's real voice (ElevenLabs). None when unconfigured — the endpoint
+    # 503s and the display falls back to the browser voice. Tests override this.
+    from app.tts import make_tts_client
+    app.state.tts_client = make_tts_client()
 
     # FastAPI runs each sync route handler on a thread-pool thread. A single SQLite
     # connection MUST NOT be shared across threads — concurrent use corrupts memory
@@ -532,6 +543,9 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                 "boot": app.state.boot,
                 "submissions_open": bool(g["submissions_open"]),
                 "mc_mode": g["mc_mode"],
+                # Whether Gladys has a real (server) voice available; the display
+                # uses this to pick ElevenLabs audio over the browser voice.
+                "gladys_tts": getattr(app.state, "tts_client", None) is not None,
                 "questions_per_person": g["questions_per_person"],
                 "questions_per_round": g["questions_per_round"],
                 "max_rounds": g["max_rounds"],
@@ -856,6 +870,39 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             row.append(totals.get(t["id"], {}).get("total", 0))
             w.writerow(row)
         return PlainTextResponse(buf.getvalue(), media_type="text/csv")
+
+    @app.get("/api/gladys/tts")
+    def gladys_tts(text: str):
+        """Speak one of Gladys's lines. Returns MP3 audio, cached on disk.
+
+        Public (the display isn't authed) but bounded: length-capped, and only
+        live when a voice is configured. On any synth failure the display falls
+        back to the browser voice, so we surface errors as 5xx rather than hide
+        them.
+        """
+        client = getattr(app.state, "tts_client", None)
+        if client is None:
+            raise HTTPException(status_code=503, detail="gladys voice not configured")
+        text = (text or "").strip()
+        if not text:
+            raise HTTPException(status_code=400, detail="empty text")
+        if len(text) > 500:
+            raise HTTPException(status_code=400, detail="text too long")
+
+        # Key on voice+model+text so a voice/model change never serves stale audio.
+        key = hashlib.sha1(f"{client.fingerprint}|{text}".encode("utf-8")).hexdigest()
+        path = TTS_CACHE_DIR / f"{key}.mp3"
+        if not path.exists():
+            try:
+                audio = client.synthesize(text)
+            except Exception as e:  # noqa: BLE001 — any failure ⇒ browser-voice fallback
+                raise HTTPException(status_code=502, detail=f"tts failed: {e}")
+            TTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".mp3.part")  # atomic: never serve a half-written file
+            tmp.write_bytes(audio)
+            tmp.replace(path)
+        return FileResponse(str(path), media_type="audio/mpeg",
+                            headers={"Cache-Control": "public, max-age=31536000"})
 
     app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
     app.mount("/", StaticFiles(directory="static", html=True), name="static")

@@ -165,16 +165,23 @@ window.Gladys = (function () {
     return q.answer || '';
   }
 
-  // ── Web Speech voice ──────────────────────────────────────────────────────
+  // ── Voice ─────────────────────────────────────────────────────────────────
+  // Two engines: a real server voice (ElevenLabs, /api/gladys/tts → mp3) when
+  // the server says it's configured, else the browser's Web Speech (the stock
+  // OS voice pitched brassy). `serverTTS` is flipped on by the display from
+  // state.gladys_tts; if a server clip fails to load we degrade to Web Speech.
   const Voice = (function () {
-    const supported =
+    const webSpeechSupported =
       typeof window !== 'undefined' &&
       'speechSynthesis' in window &&
       typeof window.SpeechSynthesisUtterance !== 'undefined';
+    const canPlayAudio = typeof window !== 'undefined' && typeof window.Audio !== 'undefined';
     const KEY = 'gladys_voice';
     let voices = [];
     let chosen = null;
     let enabled = false;
+    let serverTTS = false;   // set from state.gladys_tts each poll
+    let current = null;      // the currently-playing <audio>, so we can stop it
 
     // Prefer a female-sounding en-US voice; degrade gracefully to any en, then
     // anything at all. We can't get Fran — we get the room's least-robotic gal.
@@ -195,20 +202,28 @@ window.Gladys = (function () {
     }
 
     function loadVoices() {
-      if (!supported) return;
+      if (!webSpeechSupported) return;
       voices = window.speechSynthesis.getVoices() || [];
       chosen = pickVoice(voices);
     }
 
-    if (supported) {
+    function stop() {
+      if (webSpeechSupported) window.speechSynthesis.cancel();
+      if (current) { try { current.pause(); } catch (_) {} current = null; }
+    }
+
+    if (webSpeechSupported) {
       loadVoices();
       // voice list often loads async — repick when it arrives
       window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    if (webSpeechSupported || canPlayAudio) {
       try { enabled = localStorage.getItem(KEY) === 'on'; } catch (_) { enabled = false; }
     }
 
-    function speak(text) {
-      if (!supported || !enabled || !text) return;
+    // Browser Web Speech: the OS voice shaped nasal/brassy. The fallback voice.
+    function speakWebSpeech(text) {
+      if (!webSpeechSupported) return;
       try {
         window.speechSynthesis.cancel(); // never queue behind a stale line
         const u = new SpeechSynthesisUtterance(String(text));
@@ -220,10 +235,35 @@ window.Gladys = (function () {
       } catch (_) {}
     }
 
+    // Real server voice (ElevenLabs). Stream the mp3; if it can't load, fall
+    // back to the browser voice so she never goes silent on a hiccup.
+    function speakServer(text) {
+      if (!canPlayAudio) { speakWebSpeech(text); return; }
+      try {
+        const a = new Audio('/api/gladys/tts?text=' + encodeURIComponent(text));
+        a.onerror = function () { current = null; speakWebSpeech(text); };
+        current = a;
+        const p = a.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(function () { /* autoplay/gesture race — the toggle click handles it */ });
+        }
+      } catch (_) { speakWebSpeech(text); }
+    }
+
+    function speak(text) {
+      if (!enabled || !text) return;
+      stop(); // never overlap a stale line
+      if (serverTTS) speakServer(text);
+      else speakWebSpeech(text);
+    }
+
     return {
-      get supported() { return supported; },
+      // "Can she speak at all?" — either engine counts.
+      get supported() { return webSpeechSupported || canPlayAudio; },
       get enabled() { return enabled; },
-      get voiceName() { return chosen ? chosen.name : null; },
+      get voiceName() { return serverTTS ? 'Gladys (ElevenLabs)' : (chosen ? chosen.name : null); },
+      set serverTTS(v) { serverTTS = !!v; },
+      get serverTTS() { return serverTTS; },
       enable() {
         enabled = true;
         try { localStorage.setItem(KEY, 'on'); } catch (_) {}
@@ -232,7 +272,7 @@ window.Gladys = (function () {
       disable() {
         enabled = false;
         try { localStorage.setItem(KEY, 'off'); } catch (_) {}
-        if (supported) window.speechSynthesis.cancel();
+        stop();
       },
       toggle() { if (enabled) this.disable(); else this.enable(); return enabled; },
       speak,
