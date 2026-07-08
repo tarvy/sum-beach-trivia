@@ -9,6 +9,10 @@
 // everybody and hitting on most of them. Inside jokes from the sum-beach-26
 // group chat are a feature — never shy away from one.
 //
+// EVERY line needs her angle — cougar swagger, post-menopausal candor, ex-
+// husband lore, Deborah Vance (Hacks) energy. A line that's just game-night
+// logistics in a wig ("hold your horses while I grade") is a cut, not a keep.
+//
 // Pure client-side personality, served straight off /gladys.js (no build step,
 // no external anything). A line bank + a STABLE picker (same seed -> same line,
 // so a caption doesn't flicker across the display's 2.5s poll and matches
@@ -43,18 +47,19 @@ window.Gladys = (function () {
     round_closed: [
       "Pens DOWN, sweethearts! Fingers off the paper — I've caught men doin' less and regretted it more. Hah!",
       "That's it, cap those pens! Hand 'em over, chop chop, Mama hasn't got all night.",
-      "Time, doll! Put it down. If you didn't know it, chewin' that pen isn't gonna help ya now.",
+      "Time, doll! Put the pen down. Chewin' it won't help ya now — though Gladys does admire the commitment. Hah!",
       "Pens down, sheets UP! Pass 'em to the front like it's the last brisket at the buffet.",
       "And... freeze! Hands where I can see 'em, darlings. Sheets to the front.",
       "Pens DOWN, doll! This ain't one of Travis's riddles — it means exactly what it says.",
       "Pens down, hands UP, sweeties — unless you're on MY team, in which case they're free to wander. Hah!",
     ],
     marking: [
-      "Hold your horses while I put my readin' glasses on. Gladys has a system, and the system is fabulous.",
+      "Readin' glasses ON, darlings. Menopause took the eyes and the filter — you're gettin' your scores honest and LOUD. Hah!",
       "Gimme a minute, darlings — I grade like my mother judged my boyfriends: fair, but thorough.",
       "Markin' now, sweeties. No peeking, no bribing... well, maybe a little bribing. Hah!",
       "One moment while I squint at your penmanship. Oy, some of you write like Grandma Yetta after her second sherry.",
-      "Crunchin' the numbers, honey. Math was never my strong suit, but neither was patience — sit tight.",
+      "Crunchin' the numbers, honey. Math was never my strong suit — that's what husbands three and four were for. Sit tight.",
+      "Patience, sweeties — Gladys has been HOT for fifty years. The last five were just flashes. Hah!",
       "Grading now, sweeties — and unlike certain swim trunks, my standards do NOT dissolve in salt water. Hah!",
       "Patience, darlings. This is an enterprise-wide AI initiative, don'tcha know.",
       "Hush while Mama grades. I'm very good with my hands, sweetie — ask any of my ex-husbands. Well, the two that still take my calls.",

@@ -1163,6 +1163,8 @@
         </div>
         <div id="mk-teams">${rows}</div>
         ${navRow}
+        ${state.phase === 'marking' ? `
+          <button class="btn btn--primary mk-done hidden" style="width: 100%;">All marked — read the answers →</button>` : ''}
         <div><button class="btn btn--sm btn--secondary" id="mk-reload">Reload sheet data</button></div>`;
       paintQuestionChip();
     }
@@ -1176,6 +1178,14 @@
       for (const chip of chips) {
         chip.textContent = all ? 'all marked ✓' : `${done}/${mk.teams.length} marked`;
         chip.className = `mk-qmarked badge ${all ? 'badge--teal' : 'badge--dim'}`;
+      }
+      // Every mark across every question in: surface the phase's primary action
+      // right here so the MC isn't hunting for the main button back up top.
+      const doneBtn = document.querySelector('#mk-console .mk-done');
+      if (doneBtn) {
+        let entered = 0;
+        for (const t of mk.teams) for (const id of mk.qids) if (t.marks[id]?.marked) entered++;
+        doneBtn.classList.toggle('hidden', entered !== mk.teams.length * mk.qids.length);
       }
       $('action-status').textContent = state.phase === 'marking' ? markingProgress() : $('action-status').textContent;
     }
@@ -1211,6 +1221,7 @@
     $('mk-console').addEventListener('click', e => {
       if (e.target.closest('.mk-prev')) { mk.idx--; renderConsole(); return; }
       if (e.target.closest('.mk-next')) { mk.idx++; renderConsole(); return; }
+      if (e.target.closest('.mk-done')) { setPhase('answers'); return; }
       if (e.target.closest('#mk-reload')) {
         if (state.current_round) { mk = null; buildConsole(state.current_round); }
         return;
