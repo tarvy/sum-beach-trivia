@@ -118,8 +118,6 @@ class QuestionNavIn(BaseModel):
 
 class SettingsIn(BaseModel):
     questions_per_person: Optional[int] = None
-    questions_per_round: Optional[int] = None
-    max_rounds: Optional[int] = None  # 0 clears the cap → auto
     question_seconds: Optional[int] = None
 
 
@@ -478,10 +476,6 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         try:
             if body.questions_per_person is not None:
                 models.set_questions_per_person(db(), body.questions_per_person)
-            if body.questions_per_round is not None:
-                models.set_questions_per_round(db(), body.questions_per_round)
-            if body.max_rounds is not None:
-                models.set_max_rounds(db(), body.max_rounds)
             if body.question_seconds is not None:
                 models.set_question_seconds(db(), body.question_seconds)
         except ValueError as e:
@@ -547,8 +541,6 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                 # uses this to pick ElevenLabs audio over the browser voice.
                 "gladys_tts": getattr(app.state, "tts_client", None) is not None,
                 "questions_per_person": g["questions_per_person"],
-                "questions_per_round": g["questions_per_round"],
-                "max_rounds": g["max_rounds"],
                 "question_idx": g["current_question_idx"],
                 "question_seconds": g["question_seconds"],
                 "question_elapsed": elapsed,
