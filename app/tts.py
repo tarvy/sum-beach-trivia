@@ -20,6 +20,14 @@ from typing import Optional
 # Expressive multilingual voice by default; override for cheaper/faster nights.
 DEFAULT_MODEL = "eleven_multilingual_v2"
 _TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+_VOICE_SETTINGS_VERSION = "nasal-brassy-v2"
+_VOICE_SETTINGS = {
+    "stability": 0.22,
+    "similarity_boost": 0.82,
+    "style": 0.85,
+    "use_speaker_boost": True,
+    "speed": 1.12,
+}
 
 
 class ElevenLabsTTS:
@@ -34,7 +42,7 @@ class ElevenLabsTTS:
     # that persist audio can key on this and never serve a stale voice/model.
     @property
     def fingerprint(self) -> str:
-        return f"{self.voice_id}:{self.model}"
+        return f"{self.voice_id}:{self.model}:{_VOICE_SETTINGS_VERSION}"
 
     def synthesize(self, text: str) -> bytes:
         """Return MP3 bytes for `text`. Raises on any transport/API error."""
@@ -46,15 +54,9 @@ class ElevenLabsTTS:
             json={
                 "text": text,
                 "model_id": self.model,
-                # Tuned brassy: lower stability = more expressive/variable, a
-                # touch of style, slightly quick patter.
-                "voice_settings": {
-                    "stability": 0.35,
-                    "similarity_boost": 0.75,
-                    "style": 0.55,
-                    "use_speaker_boost": True,
-                    "speed": 1.08,
-                },
+                # Push the premade voice toward Gladys: brighter, less stable,
+                # more stylized, and a little faster for nasal NY patter.
+                "voice_settings": _VOICE_SETTINGS,
             },
             timeout=30.0,
         )
