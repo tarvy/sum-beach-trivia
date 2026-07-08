@@ -24,7 +24,9 @@ CREATE TABLE IF NOT EXISTS game (
     submissions_open INTEGER NOT NULL DEFAULT 1,
     host_key TEXT NOT NULL,
     mc_mode TEXT NOT NULL DEFAULT 'gladys',  -- 'gladys' = AI grades photos, 'lacey' = human MC marks by hand
-    questions_per_person INTEGER NOT NULL DEFAULT 5,  -- keep the FIRST N of each contributor's questions at round-build
+    questions_per_person INTEGER NOT NULL DEFAULT 5,  -- keep N RANDOM of each contributor's questions at round-build
+    questions_per_round INTEGER NOT NULL DEFAULT 5,   -- target size of each round (bigger → fewer rounds)
+    max_rounds INTEGER,                               -- NULL = auto; soft cap, consolidates smallest rounds into Mixed Bag
     current_question_idx INTEGER NOT NULL DEFAULT 0,  -- one-question-at-a-time cursor within the open round
     question_seconds INTEGER NOT NULL DEFAULT 60,     -- loose per-question timer (visual cue only)
     question_opened_at TEXT,                          -- when the current question went up (elapsed computed in SQL)
@@ -160,6 +162,10 @@ def init_db(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE game ADD COLUMN mc_mode TEXT NOT NULL DEFAULT 'gladys'")
     if "questions_per_person" not in gcols:
         conn.execute("ALTER TABLE game ADD COLUMN questions_per_person INTEGER NOT NULL DEFAULT 5")
+    if "questions_per_round" not in gcols:
+        conn.execute("ALTER TABLE game ADD COLUMN questions_per_round INTEGER NOT NULL DEFAULT 5")
+    if "max_rounds" not in gcols:
+        conn.execute("ALTER TABLE game ADD COLUMN max_rounds INTEGER")
     if "current_question_idx" not in gcols:
         conn.execute("ALTER TABLE game ADD COLUMN current_question_idx INTEGER NOT NULL DEFAULT 0")
         conn.execute("ALTER TABLE game ADD COLUMN question_seconds INTEGER NOT NULL DEFAULT 60")

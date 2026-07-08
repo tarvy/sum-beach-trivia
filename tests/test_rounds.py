@@ -16,7 +16,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app import models
 from app.main import create_app
-from app.rounds import build_rounds, imbalance_warnings
+from app.rounds import build_rounds, imbalance_warnings, plan_preview
 
 
 @pytest.fixture
@@ -236,6 +236,108 @@ def test_contributor_zero_selected_warning_fires(gdb):
     assert any("'A'" in w for w in imbalance_warnings(gdb))
 
 
+# --- questions_per_round (target size) drives the split ---
+
+def test_target_size_10_makes_one_big_round(gdb):
+    a, b = _contributor(gdb, "A"), _contributor(gdb, "B")
+    for _ in range(5):
+        _q(gdb, "History", a)
+        _q(gdb, "History", b)
+    rounds = build_rounds(gdb, target_size=10)
+    assert [(r["title"], r["question_count"]) for r in rounds] == [("History", 10)]
+
+
+def test_target_size_3_splits_ten_into_four_rounds(gdb):
+    a, b = _contributor(gdb, "A"), _contributor(gdb, "B")
+    for _ in range(5):
+        _q(gdb, "History", a)
+        _q(gdb, "History", b)
+    rounds = build_rounds(gdb, target_size=3)  # ceil(10/3)=4 → 3+3+2+2
+    assert [r["question_count"] for r in rounds] == [3, 3, 2, 2]
+
+
+# --- max_rounds cap: consolidate smallest into Mixed Bag, keep everything ---
+
+def test_max_rounds_consolidates_smallest(gdb):
+    # three full single-category rounds → cap to 2: two smallest merge to Mixed Bag
+    for cat in ["History", "Geography", "Sports"]:
+        cid = _contributor(gdb, cat)
+        for _ in range(5):
+            _q(gdb, cat, cid)
+    rounds = build_rounds(gdb, max_rounds=2)
+    assert len(rounds) == 2
+    counts = sorted(r["question_count"] for r in rounds)
+    assert counts == [5, 10]  # one category survives, two merged
+    assert any(r["title"] == "Mixed Bag" for r in rounds)
+    # nothing benched: all 15 contributor questions are in play
+    assert len(_assigned(gdb)) == 15
+
+
+def test_max_rounds_above_natural_is_noop(gdb):
+    for cat in ["History", "Geography"]:
+        cid = _contributor(gdb, cat)
+        for _ in range(5):
+            _q(gdb, cat, cid)
+    rounds = build_rounds(gdb, max_rounds=10)
+    assert [(r["title"], r["question_count"]) for r in rounds] == \
+        [("History", 5), ("Geography", 5)]
+
+
+# --- plan_preview parity + summary ---
+
+def test_plan_preview_matches_build(gdb):
+    # a benching case (keep 2 of 4) so the random pick matters; same seed both paths
+    for name in ["A", "B", "C"]:
+        cid = _contributor(gdb, name)
+        for cat in ["History", "Geography", "Sports"]:
+            _q(gdb, cat, cid)
+    models.set_questions_per_person(gdb, 2)
+    plan = plan_preview(gdb)  # seeds Random(0) internally
+    built = build_rounds(gdb, rng=random.Random(0))
+    assert [(t["title"], t["count"]) for t in plan["round_titles"]] == \
+        [(r["title"], r["question_count"]) for r in built]
+    assert plan["rounds"] == len(built)
+
+
+def test_plan_preview_counts_and_flags(gdb):
+    a = _contributor(gdb, "A")
+    for _ in range(5):
+        _q(gdb, "History", a)  # full round
+    b = _contributor(gdb, "B")
+    _q(gdb, "Sports", b)       # thin → Mixed Bag flag
+    plan = plan_preview(gdb)
+    assert plan["contributors"] == 2
+    assert plan["submitted"] == 6
+    assert plan["rounds"] == 2  # History + Mixed Bag
+    cats = {c["name"]: c for c in plan["by_category"]}
+    assert cats["History"]["own_round"] is True
+    assert cats["Sports"]["own_round"] is False
+    assert any("Sports" in f["msg"] for f in plan["flags"])
+
+
+def test_plan_preview_benched_flag(gdb):
+    a = _contributor(gdb, "A")
+    for cat in ["History", "Geography", "Sports", "Music", "Film & TV"]:
+        _q(gdb, cat, a)  # 5 categories, one each
+    models.set_questions_per_person(gdb, 2)  # keeps 2, benches 3
+    plan = plan_preview(gdb)
+    assert plan["submitted"] == 5
+    assert plan["benched"] == 3
+    assert any("benches" in f["msg"] for f in plan["flags"])
+
+
+def test_plan_preview_cap_flag(gdb):
+    for cat in ["History", "Geography", "Sports"]:
+        cid = _contributor(gdb, cat)
+        for _ in range(5):
+            _q(gdb, cat, cid)
+    models.set_max_rounds(gdb, 2)
+    plan = plan_preview(gdb)
+    assert plan["rounds"] == 2
+    assert plan["natural_rounds"] == 3
+    assert any("Capped" in f["msg"] for f in plan["flags"])
+
+
 # --- settings endpoint + state round-trip ---
 
 @pytest.fixture
@@ -277,3 +379,44 @@ async def test_settings_round_trips_through_state(app_client):
     assert r.status_code == 200
     assert r.json() == {"ok": True}
     assert (await c.get("/api/state")).json()["questions_per_person"] == 2
+
+
+@pytest.mark.anyio
+async def test_round_settings_round_trip(app_client):
+    app, c = app_client
+    hk = _hk(app)
+    st = (await c.get("/api/state")).json()
+    assert st["questions_per_round"] == 5 and st["max_rounds"] is None  # defaults
+    r = await c.post("/api/host/settings", params={"host_key": hk},
+                     json={"questions_per_round": 8, "max_rounds": 6})
+    assert r.status_code == 200
+    st = (await c.get("/api/state")).json()
+    assert st["questions_per_round"] == 8 and st["max_rounds"] == 6
+    # max_rounds=0 clears the cap → auto (null)
+    await c.post("/api/host/settings", params={"host_key": hk}, json={"max_rounds": 0})
+    assert (await c.get("/api/state")).json()["max_rounds"] is None
+
+
+@pytest.mark.anyio
+async def test_round_settings_reject_out_of_range(app_client):
+    app, c = app_client
+    hk = _hk(app)
+    for bad in (2, 13):
+        r = await c.post("/api/host/settings", params={"host_key": hk},
+                         json={"questions_per_round": bad})
+        assert r.status_code == 400
+    r = await c.post("/api/host/settings", params={"host_key": hk},
+                     json={"max_rounds": 21})
+    assert r.status_code == 400
+
+
+@pytest.mark.anyio
+async def test_round_plan_endpoint(app_client):
+    app, c = app_client
+    hk = _hk(app)
+    assert (await c.get("/api/host/round-plan", params={"host_key": "nope"})).status_code == 403
+    r = await c.get("/api/host/round-plan", params={"host_key": hk})
+    assert r.status_code == 200
+    body = r.json()
+    for key in ("contributors", "submitted", "rounds", "by_category", "flags"):
+        assert key in body

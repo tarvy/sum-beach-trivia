@@ -204,6 +204,21 @@ def set_questions_per_person(conn, n: int) -> None:
     conn.commit()
 
 
+def set_questions_per_round(conn, n: int) -> None:
+    if not 3 <= n <= 12:
+        raise ValueError("questions_per_round must be between 3 and 12")
+    conn.execute("UPDATE game SET questions_per_round = ? WHERE id = 1", (n,))
+    conn.commit()
+
+
+def set_max_rounds(conn, n: int | None) -> None:
+    """None (or 0) clears the cap → auto (as many rounds as the questions make)."""
+    if n is not None and n != 0 and not 1 <= n <= 20:
+        raise ValueError("max_rounds must be between 1 and 20 (or 0/null for auto)")
+    conn.execute("UPDATE game SET max_rounds = ? WHERE id = 1", (n or None,))
+    conn.commit()
+
+
 def join_team(conn, name: str) -> dict:
     name = name.strip()
     if not name:

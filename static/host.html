@@ -141,19 +141,34 @@
           <div class="stack">
 
             <div class="card stack">
-              <h3>1 · Questions coming in</h3>
+              <h3>1 · Game shape</h3>
               <p id="subs-count" style="font-size: var(--fs-sm);">
                 <strong>0</strong> questions submitted
                 <span id="subs-open-badge" class="badge badge--teal">open</span>
               </p>
               <ul id="subs-by-author" class="text-dim" style="font-size: var(--fs-sm); margin: 0; padding-left: 1.2em;"></ul>
-              <div class="field" style="max-width: 16rem;">
-                <label for="qpp">Questions kept per person (1–5)</label>
-                <input type="number" id="qpp" min="1" max="5" value="5">
+
+              <div class="cluster" style="align-items: flex-end;">
+                <div class="field" style="width: 10rem;">
+                  <label for="qpp">Kept per person</label>
+                  <input type="number" id="qpp" min="1" max="5" value="5">
+                </div>
+                <div class="field" style="width: 10rem;">
+                  <label for="qpr">Questions / round</label>
+                  <input type="number" id="qpr" min="3" max="12" value="5">
+                </div>
+                <div class="field" style="width: 10rem;">
+                  <label for="maxr">Max rounds</label>
+                  <input type="number" id="maxr" min="0" max="20" value="0">
+                </div>
               </div>
-              <p class="text-dim" style="font-size: var(--fs-sm);">
-                Each person's first N questions make the game. Extras stay stored, just benched.
+              <p class="text-dim" style="font-size: var(--fs-sm); margin: 0;">
+                Keep N random questions per person; aim for that many per round; cap the
+                number of rounds (0&nbsp;=&nbsp;auto). The math below updates as you tune them.
               </p>
+
+              <div id="plan-preview" class="panel" style="font-size: var(--fs-sm);"></div>
+
               <p style="font-size: var(--fs-sm);"><a href="/bank.html">Manage the question bank →</a></p>
               <div><button id="btn-reopen-subs" class="btn btn--sm btn--secondary hidden">Reopen submissions</button></div>
             </div>
@@ -252,18 +267,27 @@
                 <summary>Rounds &amp; questions <span class="badge badge--dim">adjustable</span></summary>
                 <div class="stack mt-sm">
                   <div class="cluster" style="align-items: flex-end;">
-                    <div class="field" style="max-width: 14rem;">
-                      <label for="qpp-run">Questions kept per person (1–5)</label>
+                    <div class="field" style="width: 9rem;">
+                      <label for="qpp-run">Kept per person</label>
                       <input type="number" id="qpp-run" min="1" max="5" value="5">
                     </div>
-                    <div class="field" style="max-width: 14rem;">
-                      <label for="q-seconds">Seconds per question <span class="text-dim">(loose)</span></label>
+                    <div class="field" style="width: 9rem;">
+                      <label for="qpr-run">Questions / round</label>
+                      <input type="number" id="qpr-run" min="3" max="12" value="5">
+                    </div>
+                    <div class="field" style="width: 9rem;">
+                      <label for="maxr-run">Max rounds</label>
+                      <input type="number" id="maxr-run" min="0" max="20" value="0">
+                    </div>
+                    <div class="field" style="width: 9rem;">
+                      <label for="q-seconds">Seconds / question <span class="text-dim">(loose)</span></label>
                       <input type="number" id="q-seconds" min="10" max="600" step="5" value="60">
                     </div>
                   </div>
                   <p class="text-dim" style="font-size: var(--fs-sm);">
-                    Change this any time. Rebuild to regroup the rounds — it replaces the
+                    Change these any time. Rebuild to regroup the rounds — it replaces the
                     non-final rounds and returns to the lobby so you can re-open Round 1.
+                    Max rounds 0&nbsp;=&nbsp;auto.
                   </p>
                   <div class="cluster">
                     <button class="btn btn--sm btn--secondary" id="btn-rebuild-run">Rebuild rounds</button>
@@ -411,9 +435,11 @@
     let rounds = [];        // /api/host/rounds (server-ordered by display_order)
     let lb = [];            // leaderboard teams
     let qTally = {total: 0, byAuthor: {}};   // draft-phase question tally
+    let plan = null;        // /api/host/round-plan "quick math" projection
     let sheets = null;      // {got, total} while a round is open/closed
     let tbGuesses = null;   // /api/host/tiebreak-result during tiebreak
     let tbSet = false;      // a tiebreak question has been set this session
+    let tbForced = false;   // host explicitly opened the tiebreak fold (escape hatch)
     let buildNotes = '';    // build-rounds result, echoed in the run stage
     let busy = false;       // primary action in flight — freeze its label
 
@@ -433,7 +459,7 @@
         if (lr.ok) lb = (await lr.json()).teams;
         if (rr.ok) rounds = (await rr.json()).rounds;
         if (!state) return;
-        if (state.phase === 'draft') await pollQuestions();
+        if (state.phase === 'draft') await Promise.all([pollQuestions(), pollPlan()]);
         if (state.phase === 'round_open' || state.phase === 'round_closed') await pollSheets();
         else sheets = null;
         if (state.phase === 'tiebreak') await pollTbResult();
@@ -451,6 +477,11 @@
         byAuthor[a] = (byAuthor[a] || 0) + 1;
       }
       qTally = {total: questions.length, byAuthor};
+    }
+
+    async function pollPlan() {
+      const r = await fetch(`/api/host/round-plan?${hk()}`);
+      if (r.ok) plan = await r.json();
     }
 
     async function pollSheets() {
@@ -493,46 +524,91 @@
       $('btn-reopen-subs').classList.toggle('hidden', !!state.submissions_open);
 
       syncQpp();
+      renderPlan();
       $('btn-start').disabled = qTally.total === 0;
     }
 
-    // keep the settings inputs (setup + run stages) in step with the server
+    // "quick math": what the game will look like if built right now
+    function renderPlan() {
+      const el = $('plan-preview');
+      if (!plan) { el.innerHTML = '<p class="text-dim" style="margin:0;">Crunching the numbers…</p>'; return; }
+      if (!plan.submitted) {
+        el.innerHTML = '<p class="text-dim" style="margin:0;">No questions in yet — the shape shows up here as they arrive.</p>';
+        return;
+      }
+      const cap = plan.max_rounds
+        ? ` <span class="text-dim">(cap ${plan.max_rounds}${plan.natural_rounds > plan.max_rounds ? `, from ${plan.natural_rounds}` : ''})</span>`
+        : '';
+      const bench = plan.benched ? ` · <span class="text-dim">${plan.benched} benched</span>` : '';
+      const cats = plan.by_category.map(c =>
+        `<span class="badge ${c.own_round ? 'badge--teal' : 'badge--dim'}" style="margin:0 .3em .3em 0;">`
+        + `${esc(c.name)} ${c.submitted}${c.own_round ? '' : ' → Mixed'}</span>`).join('');
+      const rounds = plan.round_titles.map(t =>
+        `<li>${esc(t.title)} — ${t.count}</li>`).join('');
+      const flags = plan.flags.map(f =>
+        `<p style="margin:.2em 0; padding-left:.6em; border-left:3px solid var(--${f.level === 'warn' ? 'danger' : 'accent'});">`
+        + `${f.level === 'warn' ? '⚠' : 'ℹ'} ${esc(f.msg)}</p>`).join('');
+      el.innerHTML =
+        `<p style="margin:0 0 .4em;"><strong>≈ ${plan.rounds} round${plan.rounds === 1 ? '' : 's'}</strong>${cap}`
+        + ` · ${plan.in_play} question${plan.in_play === 1 ? '' : 's'} in play`
+        + ` · ${plan.contributors} contributor${plan.contributors === 1 ? '' : 's'}${bench}</p>`
+        + `<div style="margin:.2em 0 .5em;">${cats}</div>`
+        + (rounds ? `<details><summary class="text-dim">Round-by-round</summary>`
+            + `<ul style="margin:.3em 0; padding-left:1.2em;">${rounds}</ul></details>` : '')
+        + (flags ? `<div style="margin-top:.4em;">${flags}</div>` : '');
+    }
+
+    // keep the settings inputs (setup + run stages) in step with the server.
+    // Each key drives one or more inputs; max_rounds null ⇒ show 0 (= auto).
+    const SETTING_INPUTS = {
+      questions_per_person: ['qpp', 'qpp-run'],
+      questions_per_round:  ['qpr', 'qpr-run'],
+      max_rounds:           ['maxr', 'maxr-run'],
+      question_seconds:     ['q-seconds'],
+    };
     function syncQpp() {
-      if (state.questions_per_person != null) {
-        for (const id of ['qpp', 'qpp-run']) {
+      for (const [key, ids] of Object.entries(SETTING_INPUTS)) {
+        let v = state[key];
+        if (key === 'max_rounds') v = v == null ? 0 : v;   // null ⇒ auto ⇒ 0
+        if (v == null) continue;
+        for (const id of ids) {
           const el = $(id);
-          if (el && document.activeElement !== el) el.value = state.questions_per_person;
+          if (el && document.activeElement !== el) el.value = v;
         }
       }
-      const qs = $('q-seconds');
-      if (qs && state.question_seconds != null && document.activeElement !== qs) {
-        qs.value = state.question_seconds;
-      }
     }
 
-    async function saveQpp(el) {
+    // clamp helper mirrors the server's validation so the UI never sends junk
+    function clampSetting(el) {
       let v = parseInt(el.value);
-      if (isNaN(v)) return;
-      v = Math.min(5, Math.max(1, v));
+      if (isNaN(v)) return null;
+      const lo = parseInt(el.min), hi = parseInt(el.max);
+      v = Math.min(hi, Math.max(lo, v));
       el.value = v;
-      const r = await post('/api/host/settings', {questions_per_person: v});
-      if (r.ok) toast(`Keeping each person's first ${v}`, 'ok');
+      return v;
+    }
+
+    async function saveSetting(key, v, okMsg) {
+      const r = await post('/api/host/settings', {[key]: v});
+      if (r.ok) { toast(okMsg, 'ok'); await tick(); }   // tick re-pulls the plan in draft
       else toast('Could not save that setting', 'err');
     }
-    $('qpp').addEventListener('change', e => saveQpp(e.currentTarget));
-    $('qpp-run').addEventListener('change', e => saveQpp(e.currentTarget));
 
-    // loose per-question timer length — settable mid-game
-    $('q-seconds').addEventListener('change', async e => {
-      const el = e.currentTarget;
-      let v = parseInt(el.value);
-      if (isNaN(v)) return;
-      v = Math.min(600, Math.max(10, v));
-      el.value = v;
-      const r = await post('/api/host/settings', {question_seconds: v});
-      if (r.ok) toast(`Timer set to ${v}s per question`, 'ok');
-      else toast('Could not save the timer', 'err');
-    });
+    function wireSetting(id, key, msg) {
+      const el = $(id);
+      if (!el) return;
+      el.addEventListener('change', () => {
+        const v = clampSetting(el);
+        if (v !== null) saveSetting(key, v, typeof msg === 'function' ? msg(v) : msg);
+      });
+    }
+    wireSetting('qpp', 'questions_per_person', v => `Keeping ${v} per person`);
+    wireSetting('qpp-run', 'questions_per_person', v => `Keeping ${v} per person`);
+    wireSetting('qpr', 'questions_per_round', v => `Targeting ${v} per round`);
+    wireSetting('qpr-run', 'questions_per_round', v => `Targeting ${v} per round`);
+    wireSetting('maxr', 'max_rounds', v => v ? `Capped at ${v} rounds` : 'Rounds: auto');
+    wireSetting('maxr-run', 'max_rounds', v => v ? `Capped at ${v} rounds` : 'Rounds: auto');
+    wireSetting('q-seconds', 'question_seconds', v => `Timer set to ${v}s per question`);
 
     async function nudgeQuestion(action) {
       const r = await post('/api/host/question', {action});
@@ -686,13 +762,24 @@
       // tiebreak side button — highlighted when the top two are tied
       const tbBtn = $('btn-tiebreak-side');
       const showTb = !!(currentAction && currentAction.tb);
+      const tied = lb.length >= 2 && lb[0].total === lb[1].total;
       tbBtn.classList.toggle('hidden', !showTb);
       if (showTb) {
-        const tied = lb.length >= 2 && lb[0].total === lb[1].total;
         tbBtn.textContent = tied ? 'Tiebreak — top two tied!' : 'Tiebreak';
         tbBtn.classList.toggle('btn--accent', tied);
         tbBtn.classList.toggle('btn--secondary', !tied);
       }
+
+      // Once the game is live in Gladys (AI) mode the host plays along, so the
+      // AI owns the answers: hide the upcoming-answer folds (final question +
+      // its answers). Lacey, the human MC, still needs them, so leave them.
+      const gladysStarted = state.mc_mode === 'gladys' && p !== 'draft';
+      $('final-details').classList.toggle('hidden', gladysStarted);
+      // Tiebreak question stays hidden until a sudden-death scenario: the
+      // tiebreak phase itself, the top-two tied at the final reveal (when the
+      // "Tiebreak" side button offers one), or the host explicitly opening it.
+      const suddenDeath = p === 'tiebreak' || (showTb && tied) || tbForced;
+      $('tb-details').classList.toggle('hidden', !suddenDeath);
 
       // done panel
       $('done-panel').classList.toggle('hidden', p !== 'done');
@@ -735,6 +822,8 @@
 
     $('btn-tiebreak-side').addEventListener('click', async e => {
       if (!tbSet) {
+        tbForced = true;   // keep the fold visible past the next render tick
+        $('tb-details').classList.remove('hidden');
         $('tb-details').open = true;
         $('tb-details').scrollIntoView({behavior: 'smooth'});
         toast('Pick a tiebreak question first', 'info');

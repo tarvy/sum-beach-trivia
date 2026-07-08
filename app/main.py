@@ -112,6 +112,8 @@ class QuestionNavIn(BaseModel):
 
 class SettingsIn(BaseModel):
     questions_per_person: Optional[int] = None
+    questions_per_round: Optional[int] = None
+    max_rounds: Optional[int] = None  # 0 clears the cap → auto
     question_seconds: Optional[int] = None
 
 
@@ -381,6 +383,13 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         rs = rounds_mod.build_rounds(db())
         return {"rounds": rs, "warnings": rounds_mod.imbalance_warnings(db())}
 
+    @app.get("/api/host/round-plan")
+    def round_plan(host_key: str):
+        # Read-only "quick math" for the setup screen — reflects the saved
+        # settings. The UI POSTs a setting change, then re-fetches this.
+        require_host(host_key)
+        return rounds_mod.plan_preview(db())
+
     @app.get("/api/host/rounds")
     def list_rounds(host_key: str):
         require_host(host_key)
@@ -458,6 +467,10 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         try:
             if body.questions_per_person is not None:
                 models.set_questions_per_person(db(), body.questions_per_person)
+            if body.questions_per_round is not None:
+                models.set_questions_per_round(db(), body.questions_per_round)
+            if body.max_rounds is not None:
+                models.set_max_rounds(db(), body.max_rounds)
             if body.question_seconds is not None:
                 models.set_question_seconds(db(), body.question_seconds)
         except ValueError as e:
@@ -520,6 +533,8 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                 "submissions_open": bool(g["submissions_open"]),
                 "mc_mode": g["mc_mode"],
                 "questions_per_person": g["questions_per_person"],
+                "questions_per_round": g["questions_per_round"],
+                "max_rounds": g["max_rounds"],
                 "question_idx": g["current_question_idx"],
                 "question_seconds": g["question_seconds"],
                 "question_elapsed": elapsed,
