@@ -31,11 +31,12 @@
     /* padding top/left so the first node's hard offset shadow isn't clipped by overflow-x */
     .progress--labeled { align-items: flex-start; overflow-x: auto; padding: 0.4rem 0.3rem 0.3rem 0.4rem; }
     .progress--labeled .node-line { margin-top: 1.05rem; min-width: 0.8rem; }
-    .step { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; flex: 0 0 auto; }
+    /* fixed column width (not label-driven) so the circles land at even intervals */
+    .step { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; flex: 0 0 5.4rem; }
     .step-label {
       font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim);
-      max-width: 5.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .step .current + .step-label { color: var(--ink); font-weight: 700; }
 
