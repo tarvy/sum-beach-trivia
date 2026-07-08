@@ -20,13 +20,13 @@ from typing import Optional
 # Expressive multilingual voice by default; override for cheaper/faster nights.
 DEFAULT_MODEL = "eleven_multilingual_v2"
 _TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-_VOICE_SETTINGS_VERSION = "nasal-brassy-v2"
+_VOICE_SETTINGS_VERSION = "jersey-cougar-v3"
 _VOICE_SETTINGS = {
-    "stability": 0.22,
-    "similarity_boost": 0.82,
-    "style": 0.85,
+    "stability": 0.28,
+    "similarity_boost": 0.9,
+    "style": 0.75,
     "use_speaker_boost": True,
-    "speed": 1.12,
+    "speed": 1.07,
 }
 
 
@@ -54,8 +54,8 @@ class ElevenLabsTTS:
             json={
                 "text": text,
                 "model_id": self.model,
-                # Push the premade voice toward Gladys: brighter, less stable,
-                # more stylized, and a little faster for nasal NY patter.
+                # Push the premade voice toward Gladys: throaty, brassy,
+                # expressive, and quick enough for Jersey shore patter.
                 "voice_settings": _VOICE_SETTINGS,
             },
             timeout=30.0,
