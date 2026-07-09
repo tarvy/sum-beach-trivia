@@ -74,7 +74,7 @@ async def test_contributor_resolve_is_stable_by_token(client):
 @pytest.mark.anyio
 async def test_questions_attributed_to_contributor_and_loaded_back(client):
     cid = (await client.post("/api/contributor", json={"token": "t1", "name": "Pat"})).json()["contributor_id"]
-    for txt, cat in (("Q1?", "History"), ("Q2?", "Geography")):  # one per category
+    for txt, cat in (("Q1?", "History"), ("Q2?", "Geography")):
         r = await client.post("/api/questions", json={
             "author": "Pat", "category": cat, "text": txt, "answer": "x",
             "contributor_id": cid,
@@ -188,7 +188,6 @@ async def test_cannot_edit_someone_elses_question(client):
     assert r.status_code in (403, 404)
 
 
-# Distinct categories per question (one-per-category rule); 9 available covers n<=6.
 _CATS = ["History", "Geography", "Science & Nature", "Sports", "Film & TV",
          "Music", "Art & Literature", "Food & Drink", "General Knowledge"]
 
@@ -243,36 +242,34 @@ async def test_individual_add_requires_all_three(client):
 
 
 @pytest.mark.anyio
-async def test_add_rejects_second_question_in_same_category(client):
+async def test_add_allows_second_question_in_same_category(client):
     cid = (await client.post("/api/contributor", json={"token": "dup", "name": "Dup"})).json()["contributor_id"]
     first = await client.post("/api/questions", json={
         "author": "Dup", "category": "History", "text": "Q1?", "answer": "a",
         "contributor_id": cid})
     assert first.status_code == 200
-    dup = await client.post("/api/questions", json={
+    second = await client.post("/api/questions", json={
         "author": "Dup", "category": "History", "text": "Q2?", "answer": "b",
         "contributor_id": cid})
-    assert dup.status_code == 400
-    # a different category is fine
-    other = await client.post("/api/questions", json={
-        "author": "Dup", "category": "Music", "text": "Q3?", "answer": "c",
-        "contributor_id": cid})
-    assert other.status_code == 200
+    assert second.status_code == 200
+    mine = (await client.get("/api/questions/mine", params={"contributor_id": cid})).json()["questions"]
+    assert len(mine) == 2
 
 
 @pytest.mark.anyio
-async def test_set_rejects_duplicate_categories(client):
+async def test_set_allows_duplicate_categories(client):
     cid = (await client.post("/api/contributor", json={"token": "dset", "name": "D"})).json()["contributor_id"]
     qs = [{"category": "History", "text": "Q1?", "answer": "a"},
           {"category": "History", "text": "Q2?", "answer": "b"},
           {"category": "Music", "text": "Q3?", "answer": "c"}]
     r = await client.post("/api/questions/set",
                           json={"contributor_id": cid, "author": "D", "questions": qs})
-    assert r.status_code == 400
+    assert r.status_code == 200
+    assert len(r.json()["ids"]) == 3
 
 
 @pytest.mark.anyio
-async def test_edit_into_used_category_rejected_but_keeping_own_ok(client):
+async def test_edit_into_already_used_category_ok(client):
     cid = (await client.post("/api/contributor", json={"token": "edc", "name": "Ec"})).json()["contributor_id"]
     await client.post("/api/questions", json={
         "author": "Ec", "category": "History", "text": "H?", "answer": "a",
@@ -280,14 +277,10 @@ async def test_edit_into_used_category_rejected_but_keeping_own_ok(client):
     q2 = (await client.post("/api/questions", json={
         "author": "Ec", "category": "Music", "text": "M?", "answer": "b",
         "contributor_id": cid})).json()["id"]
-    # moving q2 into History (already used) is rejected
-    bad = await client.put(f"/api/questions/{q2}", json={
+    # moving q2 into History (already used) is allowed
+    r = await client.put(f"/api/questions/{q2}", json={
         "contributor_id": cid, "category": "History", "text": "M?", "answer": "b"})
-    assert bad.status_code == 400
-    # editing q2 while keeping its own category (Music) is fine
-    ok = await client.put(f"/api/questions/{q2}", json={
-        "contributor_id": cid, "category": "Music", "text": "M2?", "answer": "b"})
-    assert ok.status_code == 200
+    assert r.status_code == 200
 
 
 @pytest.mark.anyio

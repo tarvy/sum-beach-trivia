@@ -93,7 +93,7 @@
     let submitCount = 0;     // = number of questions saved by this contributor
     let editingId = null;    // id of the question currently being edited, or null
     let myQuestions = [];    // cache of this contributor's saved questions
-    let allCategories = [];  // every category name (one question per category rule)
+    let allCategories = [];  // every category name
     let contributorId = null;
     let submissionsOpen = true;
     const REQUIRED_Q = 3;
@@ -146,8 +146,6 @@
       }
     }
 
-    // One question per category: hide categories this contributor already used.
-    // While editing, that question's own category stays selectable.
     function refreshCategoryOptions() {
       const sel = document.getElementById('category-select');
       if (!allCategories.length) {
@@ -155,15 +153,10 @@
         return;
       }
       const editing = editingId ? myQuestions.find(q => q.id === editingId) : null;
-      const used = new Set(
-        myQuestions.filter(q => !editing || q.id !== editing.id).map(q => q.category));
-      const avail = allCategories.filter(c => !used.has(c));
       const prev = sel.value;
-      sel.innerHTML = avail.length
-        ? avail.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
-        : '<option value="">All categories used</option>';
+      sel.innerHTML = allCategories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       if (editing) sel.value = editing.category;
-      else if (avail.includes(prev)) sel.value = prev;
+      else if (allCategories.includes(prev)) sel.value = prev;
     }
     async function loadSubmissionsState() {
       try { submissionsOpen = (await (await fetch('/api/state')).json()).submissions_open; } catch (_) {}
@@ -225,7 +218,7 @@
       editingId = null;
       ['q-text','q-answer','q-alt1','q-alt2'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('btn-cancel-edit').classList.add('hidden');
-      refreshCategoryOptions();  // exited edit mode — recompute available categories
+      refreshCategoryOptions();
       updateCount();
     }
 
@@ -274,7 +267,6 @@
             <span class="q-text">${esc(q.text)}<br><span class="badge badge--dim">${esc(q.category)}</span></span>
             <button class="btn btn--secondary btn--sm" data-edit="${q.id}" style="margin-left:auto">Edit</button>
           </li>`).join('');
-        refreshCategoryOptions();  // drop categories now used, keep the rest
         updateCount();
       } catch (_) {}
     }
@@ -286,7 +278,6 @@
       const q = myQuestions.find(x => String(x.id) === id);
       if (!q) return;
       editingId = q.id;
-      refreshCategoryOptions();  // re-add this question's own category so it's selectable
       document.getElementById('category-select').value = q.category;
       document.getElementById('q-text').value = q.text;
       document.getElementById('q-answer').value = q.answer;
