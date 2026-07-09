@@ -185,6 +185,15 @@
                   <span>Teams snap a photo; Gladys — your brassy AI hostess — transcribes, proposes marks, and works the room. You just confirm.</span>
                 </button>
               </div>
+              <div class="field" id="gladys-level-setup-wrap" style="max-width: 22rem;">
+                <label for="gladys-level-setup">Gladys humor</label>
+                <select id="gladys-level-setup">
+                  <option value="clean">Clean</option>
+                  <option value="naughty">Naughty</option>
+                  <option value="uncensored">Uncensored</option>
+                </select>
+                <span class="field-hint">Controls profanity, innuendo, and live roasts.</span>
+              </div>
               <p class="text-dim" style="font-size: var(--fs-sm);">Switchable any time, even mid-game.</p>
             </div>
 
@@ -332,6 +341,14 @@
                 <div class="cluster">
                   <button class="btn btn--sm btn--secondary" id="mc-mini-lacey">Lacey</button>
                   <button class="btn btn--sm btn--secondary" id="mc-mini-gladys">Gladys</button>
+                </div>
+                <div class="field" id="gladys-level-run-wrap">
+                  <label for="gladys-level-run">Gladys humor</label>
+                  <select id="gladys-level-run">
+                    <option value="clean">Clean</option>
+                    <option value="naughty">Naughty</option>
+                    <option value="uncensored">Uncensored</option>
+                  </select>
                 </div>
               </div>
               <div class="card stack" id="screens-card">
@@ -890,11 +907,24 @@
       $('mc-mini-lacey').classList.toggle('btn--secondary', mode !== 'lacey');
       $('mc-mini-gladys').classList.toggle('btn--teal', mode === 'gladys');
       $('mc-mini-gladys').classList.toggle('btn--secondary', mode !== 'gladys');
+      const level = state.gladys_level || 'uncensored';
+      $('gladys-level-setup').value = level;
+      $('gladys-level-run').value = level;
+      $('gladys-level-setup-wrap').classList.toggle('hidden', mode !== 'gladys');
+      $('gladys-level-run-wrap').classList.toggle('hidden', mode !== 'gladys');
     }
     $('mc-card-lacey').addEventListener('click', () => setMcMode('lacey'));
     $('mc-card-gladys').addEventListener('click', () => setMcMode('gladys'));
     $('mc-mini-lacey').addEventListener('click', () => setMcMode('lacey'));
     $('mc-mini-gladys').addEventListener('click', () => setMcMode('gladys'));
+    async function setGladysLevel(level) {
+      const r = await post('/api/host/settings', {gladys_level: level});
+      if (!r.ok) { toast('Could not change Gladys humor', 'err'); return; }
+      toast(`Gladys humor: ${level}`, 'ok');
+      await tick();
+    }
+    $('gladys-level-setup').addEventListener('change', e => setGladysLevel(e.target.value));
+    $('gladys-level-run').addEventListener('change', e => setGladysLevel(e.target.value));
 
     // ── final-round picker (rendered into setup + run) ───────
     let finalOpts = null;

@@ -17,6 +17,10 @@ def test_init_db_creates_tables_and_seeds_categories(tmp_path):
     cats = [r["name"] for r in conn.execute(
         "SELECT name FROM category ORDER BY display_order")]
     assert cats == STANDARD_CATEGORIES
+    game_cols = {r["name"] for r in conn.execute("PRAGMA table_info(game)")}
+    submission_cols = {r["name"] for r in conn.execute("PRAGMA table_info(submission)")}
+    assert "gladys_level" in game_cols
+    assert "gladys_quip" in submission_cols
 
 
 def test_init_db_is_idempotent():
