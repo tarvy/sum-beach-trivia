@@ -295,6 +295,35 @@
       color: var(--accent-2);
       margin-bottom: 0.35em;
     }
+    .gladys-live {
+      position: fixed;
+      left: 50%;
+      bottom: 3.2rem;
+      transform: translateX(-50%);
+      z-index: 65;
+      width: min(88vw, 980px);
+      padding: 0.75rem 1.15rem 0.85rem;
+      background: var(--ground-2);
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      text-align: center;
+      font-family: var(--font-body);
+      font-style: italic;
+      font-size: clamp(1rem, 2.1vw, 1.55rem);
+      line-height: 1.3;
+    }
+    .gladys-live .gladys-tag {
+      display: block;
+      margin-bottom: 0.25em;
+      color: var(--accent-2);
+      font-family: var(--font-mono);
+      font-size: 0.58em;
+      font-style: normal;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .gladys-live.hidden { display: none; }
     /* opt-in voice toggle, tucked top-right (clear of brand, prev-qs, ticker) */
     .gladys-voice-btn {
       position: fixed;
@@ -328,6 +357,7 @@
   <!-- shown on top of ANY phase while the host has the game paused -->
   <div class="prev-qs hidden" id="prev-qs"></div>
   <div class="ticker hidden" id="ticker"><div class="ticker-track" id="ticker-track"></div></div>
+  <div class="gladys-live hidden" id="gladys-live" role="status" aria-live="polite"></div>
 
   <div class="paused-overlay hidden" id="paused-overlay">
     <div class="display-phase">PAUSED</div>
@@ -367,16 +397,29 @@
 
     // timer context, re-synced on every poll; a 1s interval paints the countdown
     let timerCtx = null;   // {seconds, elapsed, at}
+    let lastTimerKey = null;
+    let latestState = null;
+    let gladysNames = [];
 
     function render(state, lb, teamsData) {
       const {phase, paused, current_round} = state;
       const teams = teamsData.teams || [];
+      latestState = state;
+      gladysNames = Array.from(new Set(
+        teams.map(t => t.name).concat(gladysAuthors).filter(Boolean)));
       document.getElementById('paused-overlay').classList.toggle('hidden', !paused);
 
       // loose per-question timer only ticks while a question is live
       timerCtx = (phase === 'round_open' || phase === 'final_open') && state.question_elapsed != null
-        ? {seconds: state.question_seconds || 60, elapsed: state.question_elapsed, at: Date.now()}
+        ? {seconds: state.question_seconds || 60, elapsed: state.question_elapsed, at: Date.now(),
+           key: `${current_round ? current_round.id : ''}:${state.question_idx}`}
         : null;
+      const timerKey = timerCtx ? timerCtx.key : null;
+      if (timerKey !== lastTimerKey) {
+        announcementQueue = announcementQueue.filter(
+          item => !item.key.startsWith('timer:') || item.key.includes(`timer:${timerKey}:`));
+        lastTimerKey = timerKey;
+      }
 
       // previous questions of the live round, upper-left (during the answer
       // read-back the earlier answers ride along)
@@ -413,6 +456,7 @@
       }
 
       driveGladys(state);
+      driveSubmissionEvents(state);
     }
 
     // ── Gladys: on-screen quips + opt-in Web Speech voice ──
@@ -423,6 +467,87 @@
       final_open: 'final_open', tiebreak: 'tiebreak', done: 'done',
     };
     let lastSpokenKey;   // undefined until the first paint (which primes silently)
+    let gladysAuthors = [];
+    let announcementQueue = [];
+    let announcementActive = false;
+    let announcementHoldUntil = 0;
+    const announcedKeys = new Set();
+    const seenSheets = new Set();
+    const seenPhotoQuips = new Set();
+    let sheetsPrimed = false;
+
+    async function loadGladysAuthors() {
+      try {
+        const r = await fetch('/api/authors');
+        if (!r.ok) return;
+        gladysAuthors = (await r.json()).authors.map(a => a.name).filter(Boolean);
+      } catch (_) {}
+    }
+    loadGladysAuthors();
+    setInterval(loadGladysAuthors, 30000);
+
+    function gladysName(seed) {
+      if (!gladysNames.length) return 'sweetie';
+      return gladysNames[window.Gladys.hash('name|' + seed) % gladysNames.length];
+    }
+
+    function queueGladysText(key, text, priority) {
+      if (!text || announcedKeys.has(key)) return;
+      announcedKeys.add(key);
+      announcementQueue.push({key, text, priority: priority || 0});
+      announcementQueue.sort((a, b) => b.priority - a.priority);
+      pumpGladysQueue();
+    }
+
+    function queueGladysLine(context, key, values, priority) {
+      if (!window.Gladys || !latestState || latestState.mc_mode !== 'gladys') return;
+      const text = window.Gladys.pickLine(
+        context, key, latestState.gladys_level || 'uncensored', values);
+      queueGladysText(key, text, priority);
+    }
+
+    function pumpGladysQueue() {
+      if (announcementActive || !announcementQueue.length) return;
+      const wait = announcementHoldUntil - Date.now();
+      if (wait > 0) { setTimeout(pumpGladysQueue, wait); return; }
+      const item = announcementQueue.shift();
+      const live = document.getElementById('gladys-live');
+      live.innerHTML = '<span class="gladys-tag">💋 Gladys interjects</span>' + esc(item.text);
+      live.classList.remove('hidden');
+      const V = window.Gladys && window.Gladys.Voice;
+      if (V && V.enabled) V.speak(item.text);
+      announcementActive = true;
+      setTimeout(() => {
+        live.classList.add('hidden');
+        announcementActive = false;
+        announcementHoldUntil = Date.now() + 1500;
+        pumpGladysQueue();
+      }, 6500);
+    }
+
+    function driveSubmissionEvents(state) {
+      const events = state.submission_events || [];
+      if (!sheetsPrimed) {
+        events.forEach(e => {
+          seenSheets.add(e.id);
+          if (e.photo_quip) seenPhotoQuips.add(e.id);
+        });
+        sheetsPrimed = true;
+        return;
+      }
+      events.forEach(e => {
+        if (!seenSheets.has(e.id)) {
+          seenSheets.add(e.id);
+          queueGladysLine(
+            'sheet_in', `sheet:${e.id}`,
+            {name: e.team_name || 'sweetie'}, 2);
+        }
+        if (e.photo_quip && !seenPhotoQuips.has(e.id)) {
+          seenPhotoQuips.add(e.id);
+          queueGladysText(`photo:${e.id}`, e.photo_quip, 3);
+        }
+      });
+    }
 
     function driveGladys(state) {
       const btn = document.getElementById('gladys-voice-btn');
@@ -447,11 +572,16 @@
       // varies it per question so each answer gets its own line.
       const seed = isAnswers ? (roundId + ':' + state.question_idx)
                              : (state.phase + ':' + roundId);
-      const key = ctx ? (ctx + '|' + seed) : null;
+      const level = state.gladys_level || 'uncensored';
+      const key = ctx ? (ctx + '|' + level + '|' + seed) : null;
+      const qs = round ? (round.questions || []) : [];
+      const liveQ = qs[qs.length - 1];
+      const values = {name: (isAnswers && liveQ && liveQ.author_name)
+        ? liveQ.author_name : gladysName(seed)};
 
       // caption under the content — present in text even with the sound off
       if (ctx) {
-        const quip = window.Gladys.pickLine(ctx, seed);
+        const quip = window.Gladys.pickLine(ctx, seed, level, values);
         if (quip) {
           const cap = document.createElement('div');
           cap.className = 'gladys-says';
@@ -465,13 +595,14 @@
       if (lastSpokenKey === undefined) { lastSpokenKey = key; return; }
       if (key !== lastSpokenKey) {
         if (key && V && V.enabled) {
-          let toSay = window.Gladys.pickLine(ctx, seed);
+          let toSay = window.Gladys.pickLine(ctx, seed, level, values);
           if (isAnswers && round) {
-            const qs = round.questions || [];
             const ans = window.Gladys.answerText(qs[qs.length - 1]);
-            if (ans) toSay += ' ' + window.Gladys.pickLine('answerLeadIn', seed) + ' ' + ans + '.';
+            if (ans) toSay += ' ' + window.Gladys.pickLine(
+              'answerLeadIn', seed, level, values) + ' ' + ans + '.';
           }
           V.speak(toSay);
+          announcementHoldUntil = Date.now() + 6000;
         }
         lastSpokenKey = key;
       }
@@ -616,6 +747,16 @@
         ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
         : 'TIME!';
       if (left <= 0) bar.style.width = '100%';
+      if (latestState && latestState.mc_mode === 'gladys' && !latestState.paused) {
+        const name = gladysName(timerCtx.key);
+        if (left <= 0) {
+          queueGladysLine('timer_time', `timer:${timerCtx.key}:time`, {name}, 1);
+        } else if (left <= 10) {
+          queueGladysLine('timer_hurry', `timer:${timerCtx.key}:hurry`, {name}, 1);
+        } else if (gone >= timerCtx.seconds / 2) {
+          queueGladysLine('timer_half', `timer:${timerCtx.key}:half`, {name}, 0);
+        }
+      }
     }
     setInterval(paintTimer, 1000);
 

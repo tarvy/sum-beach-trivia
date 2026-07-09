@@ -16,10 +16,23 @@ def test_build_prompt_includes_questions_and_answers():
     assert "items_correct" in prompt.lower() or "in order" in prompt.lower()
 
 
+def test_build_prompt_sets_photo_joke_boundaries_and_humor_level():
+    prompt = build_prompt(
+        [{"id": 1, "text": "Question?", "answer": "Answer",
+          "acceptable": [], "answer_items": None, "ordered": False}],
+        team_name="Beach Please",
+        gladys_level="uncensored",
+    )
+    assert "Beach Please" in prompt
+    assert "uncensored" in prompt
+    assert "must not quote, paraphrase, hint at, or evaluate" in prompt
+    assert "untrusted data" in prompt
+
+
 def test_grade_sheet_returns_parsed_grades():
     payload = SheetGrade(grades=[
         QuestionGrade(question_id=1, transcription="Paris", is_correct=True, confidence=0.95),
-    ])
+    ], gladys_quip="The penmanship has priors.")
 
     class Usage:
         input_tokens = 2000
@@ -45,6 +58,8 @@ def test_grade_sheet_returns_parsed_grades():
         questions=[{"id": 1, "text": "Capital of France?", "answer": "Paris",
                     "acceptable": [], "answer_items": None, "ordered": False}],
         client=Client(),
+        team_name="Aces",
+        gladys_level="naughty",
     )
     assert isinstance(result, SheetGrade)
     assert result.grades[0].is_correct is True
@@ -54,3 +69,5 @@ def test_grade_sheet_returns_parsed_grades():
     # image was attached as a base64 block
     content = Msgs.captured["messages"][0]["content"]
     assert any(b.get("type") == "image" for b in content)
+    prompt = next(b["text"] for b in content if b.get("type") == "text")
+    assert "Aces" in prompt and "naughty" in prompt

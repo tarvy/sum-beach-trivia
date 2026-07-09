@@ -136,17 +136,187 @@ window.Gladys = (function () {
     ],
   };
 
+  const CLEAN_LINES = {
+    lobby: [
+      "Welcome, gorgeous people. Pick a team and try to look employable.",
+      "Settle in, sweeties. Gladys brought questions and several unverifiable credentials.",
+    ],
+    round_closed: [
+      "Pens down, darlings. Confidence is no longer accepting applications.",
+      "Time. Hand over the sheets and whatever dignity remains.",
+    ],
+    marking: [
+      "Gladys is grading. Your handwriting has requested legal representation.",
+      "Quiet, sweeties. Mama is separating knowledge from decorative penmanship.",
+    ],
+    answers: [
+      "{name}, this one had more twists than a hotel hallway after midnight.",
+      "Listen close, {name}. A fact is about to enter the room overdressed.",
+    ],
+    answerLeadIn: ["The answer is", "You were looking for", "Correct answer:"],
+    reveal: [
+      "Scores are up. Please direct all dramatic reactions toward the good lighting.",
+      "Here are the standings, darlings. Some of you have been very educational.",
+    ],
+    final_wager: [
+      "Place your wagers. Courage is free; losing points costs extra.",
+      "Bet boldly, sweeties. Regret photographs beautifully.",
+    ],
+    final_open: [
+      "The final question. Good posture, deep breath, questionable confidence.",
+      "Last chance to impress Gladys academically.",
+    ],
+    tiebreak: [
+      "A tie! At last, tension with decent pacing.",
+      "Closest guess wins. Try to fail more accurately than everyone else.",
+    ],
+    done: [
+      "We have a winner. Everyone else has a growth opportunity.",
+      "That's the game, darlings. The champions may begin becoming unbearable.",
+    ],
+    timer_half: [
+      "{name}, half the clock is gone. Your thoughtful face is doing excellent work.",
+      "Halfway, {name}. Commit to an answer before it starts seeing other teams.",
+    ],
+    timer_hurry: [
+      "{name}, ten seconds. Pick something with confidence and plausible spelling.",
+      "Ten seconds, {name}. Panic neatly.",
+    ],
+    timer_time: [
+      "Time, {name}. That last thought will have to become a private memoir.",
+      "Clock's done, {name}. Release the pen.",
+    ],
+    sheet_in: [
+      "{name} handed it in. Confidence first, consequences later.",
+      "Sheet received from {name}. The evidence is now in Gladys's custody.",
+    ],
+  };
+
+  const NAUGHTY_LINES = {
+    lobby: [
+      "Welcome, you gorgeous disasters. Join a team before Gladys starts assigning partners by chemistry.",
+      "Pick a team, {name}. This is trivia, not a damn situationship.",
+    ],
+    round_closed: [
+      "Pens down. If it wasn't on the page, keep that shit between you and your therapist.",
+      "Time, dolls. Hand over the sheets before Gladys frisks the whole room.",
+    ],
+    marking: [
+      "Mama's grading this beautiful mess. Some of this handwriting needs a cigarette.",
+      "Quiet. Gladys is checking answers and lowering her goddamn standards.",
+    ],
+    answers: [
+      "{name}, pay attention. This fact is about to hit harder than a minibar bill.",
+      "Here comes the answer, {name}. Try not to make that face in public.",
+    ],
+    reveal: [
+      "Scores are up. Gloat responsibly or at least entertainingly.",
+      "Standings, sweeties. Somebody did the damn reading.",
+    ],
+    final_wager: [
+      "Bet big, darlings. Gladys has made worse decisions with better hair.",
+      "Wager time. Put some damn points where your confidence was.",
+    ],
+    final_open: [
+      "The big one, sweeties. Clench whatever helps.",
+      "Final question. Give Gladys brains, nerve, and one decent bad decision.",
+    ],
+    tiebreak: [
+      "A tie? This night finally learned foreplay.",
+      "Closest guess wins. Don't screw this up symmetrically.",
+    ],
+    done: [
+      "We have a champion. The rest of you were hot and occasionally literate.",
+      "Game over. Winners get glory; losers get another damn drink.",
+    ],
+    timer_half: [
+      "{name}, half the clock is gone. This is a lot of foreplay for one answer.",
+      "Halfway, {name}. Stop flirting with the wrong answer and commit.",
+    ],
+    timer_hurry: [
+      "{name}, ten damn seconds. Pick one and make it sound intentional.",
+      "Ten seconds, {name}. Panic is just confidence without underwear.",
+    ],
+    timer_time: [
+      "Time's up, {name}. Pens down and hands where Gladys can enjoy the view.",
+      "That's time, {name}. Whatever you almost knew can go to hell.",
+    ],
+    sheet_in: [
+      "{name} handed it in. Fast, confident, and possibly full of shit. My type.",
+      "Sheet received from {name}. Gladys loves a team that finishes without apologizing.",
+    ],
+  };
+
+  const UNCENSORED_LINES = {
+    lobby: [
+      "Welcome, you sexy little train wrecks. Pick a team before Gladys starts a fucking draft.",
+      "Join up, {name}. Standing around confused is foreplay for people with bad credit.",
+    ],
+    round_closed: [
+      "Pens fucking down. Gladys said time, not negotiate.",
+      "Time, sweeties. Hands off the sheets and onto a better life choice.",
+    ],
+    marking: [
+      "Gladys is grading. Some of you write like the pen was trying to escape.",
+      "Mama's checking your shit. Pray to whichever god handles partial credit.",
+    ],
+    answers: [
+      "{name}, listen the fuck up. Education is happening despite the room's best efforts.",
+      "Here comes the answer, {name}. Brace your ego and anything else unsecured.",
+    ],
+    reveal: [
+      "Scores are up. Somebody's a genius and somebody's been confidently full of shit.",
+      "Standings, motherfuckers. Try to lose with some production value.",
+    ],
+    final_wager: [
+      "Bet big. Cowardice is ugly and Gladys cannot fuck bad lighting.",
+      "Put your points on the table, darlings. Mama respects reckless commitment.",
+    ],
+    final_open: [
+      "Final question. Squeeze out one last useful thought.",
+      "This is it, sweeties. Brains out, bullshit tucked in.",
+    ],
+    tiebreak: [
+      "A fucking tie? Finally, a climax with competent pacing.",
+      "Closest guess wins. One of you is about to fuck up more precisely.",
+    ],
+    done: [
+      "We have a winner. Everybody else can eat shit beautifully.",
+      "Game over, gorgeous. Champions gloat; losers hydrate and rewrite history.",
+    ],
+    timer_half: [
+      "{name}, half the clock is gone. If thinking were foreplay, I'd have left already.",
+      "Halfway, {name}. Stop eye-fucking the question and make a move.",
+    ],
+    timer_hurry: [
+      "{name}, ten fucking seconds. Produce an answer or a safe word.",
+      "Ten seconds, {name}. Pull something credible out of your ass.",
+    ],
+    timer_time: [
+      "Time's up, {name}. Pens down, egos open.",
+      "That's fucking time, {name}. The blank space has won.",
+    ],
+    sheet_in: [
+      "{name} handed it in. Quick, shameless, and maybe wrong as hell. Gladys approves.",
+      "Sheet received from {name}. They finished hard and left the rest of you watching.",
+    ],
+  };
+
   function cadenceWarnings() {
     const warnings = [];
-    for (const [context, bank] of Object.entries(LINES)) {
-      bank.forEach((line, index) => {
-        if ((line.match(/—/g) || []).length) {
-          warnings.push(`${context}[${index}] uses an em dash`);
-        }
-        if (line.length > 170) {
-          warnings.push(`${context}[${index}] is long (${line.length} chars)`);
-        }
-      });
+    for (const [label, banks] of Object.entries({
+      base: LINES, clean: CLEAN_LINES, naughty: NAUGHTY_LINES, uncensored: UNCENSORED_LINES,
+    })) {
+      for (const [context, bank] of Object.entries(banks)) {
+        bank.forEach((line, index) => {
+          if ((line.match(/—/g) || []).length) {
+            warnings.push(`${label}.${context}[${index}] uses an em dash`);
+          }
+          if (line.length > 220) {
+            warnings.push(`${label}.${context}[${index}] is long (${line.length} chars)`);
+          }
+        });
+      }
     }
     return warnings;
   }
@@ -164,10 +334,25 @@ window.Gladys = (function () {
     return h >>> 0;
   }
 
-  function pickLine(context, seed) {
-    const bank = LINES[context];
+  function formatLine(line, values) {
+    const v = values || {};
+    return String(line || '').replace(/\{(\w+)\}/g, (_, key) => v[key] || 'sweetie');
+  }
+
+  function pickLine(context, seed, level, values) {
+    const selected = level || 'naughty';
+    let bank;
+    if (selected === 'clean') {
+      bank = CLEAN_LINES[context] || LINES[context];
+    } else {
+      const base = LINES[context] || CLEAN_LINES[context] || [];
+      const naughty = NAUGHTY_LINES[context] || [];
+      const uncensored = selected === 'uncensored' ? (UNCENSORED_LINES[context] || []) : [];
+      bank = base.concat(naughty, uncensored);
+    }
     if (!bank || !bank.length) return '';
-    return bank[hash(context + '|' + (seed == null ? '' : seed)) % bank.length];
+    const line = bank[hash(context + '|' + selected + '|' + (seed == null ? '' : seed)) % bank.length];
+    return formatLine(line, values);
   }
 
   // Flatten a question's answer to speakable text (list-aware).
@@ -294,5 +479,8 @@ window.Gladys = (function () {
     };
   })();
 
-  return { LINES, hash, pickLine, answerText, cadenceWarnings, Voice };
+  return {
+    LINES, CLEAN_LINES, NAUGHTY_LINES, UNCENSORED_LINES,
+    hash, pickLine, formatLine, answerText, cadenceWarnings, Voice,
+  };
 })();

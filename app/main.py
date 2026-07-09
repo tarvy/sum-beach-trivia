@@ -121,6 +121,7 @@ class SettingsIn(BaseModel):
     questions_per_round: Optional[int] = None
     max_rounds: Optional[int] = None  # 0 clears the cap → auto
     question_seconds: Optional[int] = None
+    gladys_level: Optional[str] = None
 
 
 class FinalIn(BaseModel):
@@ -484,6 +485,8 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                 models.set_max_rounds(db(), body.max_rounds)
             if body.question_seconds is not None:
                 models.set_question_seconds(db(), body.question_seconds)
+            if body.gladys_level is not None:
+                models.set_gladys_level(db(), body.gladys_level)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         return {"ok": True}
@@ -537,12 +540,32 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             (elapsed,) = db().execute(
                 "SELECT CAST(strftime('%s','now') - strftime('%s', question_opened_at) "
                 "AS INTEGER) FROM game WHERE id = 1").fetchone()
+        submission_events = []
+        if g["current_round_id"]:
+            rows = db().execute(
+                "SELECT s.id, s.team_id, s.submitted_at, s.gladys_quip, t.name "
+                "FROM submission s JOIN team t ON t.id = s.team_id "
+                "WHERE s.round_id = ? ORDER BY s.submitted_at, s.id",
+                (g["current_round_id"],),
+            ).fetchall()
+            quips_released = g["phase"] in {"answers", "reveal", "done"}
+            submission_events = [
+                {
+                    "id": row["id"],
+                    "team_id": row["team_id"],
+                    "team_name": row["name"],
+                    "submitted_at": row["submitted_at"],
+                    "photo_quip": row["gladys_quip"] if quips_released else None,
+                }
+                for row in rows
+            ]
         # Tiebreak QUESTION text is public once the tiebreak starts (the display
         # shows it); the tiebreak VALUE is the answer and stays host-only.
         return {"phase": g["phase"], "paused": bool(g["paused"]),
                 "boot": app.state.boot,
                 "submissions_open": bool(g["submissions_open"]),
                 "mc_mode": g["mc_mode"],
+                "gladys_level": g["gladys_level"],
                 # Whether Gladys has a real (server) voice available; the display
                 # uses this to pick ElevenLabs audio over the browser voice.
                 "gladys_tts": getattr(app.state, "tts_client", None) is not None,
@@ -553,6 +576,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                 "question_seconds": g["question_seconds"],
                 "question_elapsed": elapsed,
                 "current_round": cur,
+                "submission_events": submission_events,
                 "tiebreak_question": g["tiebreak_question"] if g["phase"] == "tiebreak" else None}
 
     # round_closed included on purpose: "pens down" stops writing, but teams still
@@ -560,14 +584,16 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
     # window truly shuts when the host moves to marking.
     SUBMIT_PHASES = {"round_open", "round_closed", "final_open"}
 
-    def _grade(image_bytes, media_type, questions):
+    def _grade(image_bytes, media_type, questions, team_name, gladys_level):
         grader = getattr(app.state, "grading_client", None)
         if grader is not None:
             result = grader.grade(image_bytes, media_type, questions)
             # injected test fakes return a bare SheetGrade (no usage info)
             return result if isinstance(result, tuple) else (result, {})
         from app import grading
-        return grading.grade_sheet(image_bytes, media_type, questions)
+        return grading.grade_sheet(
+            image_bytes, media_type, questions, team_name=team_name,
+            gladys_level=gladys_level)
 
     @app.post("/api/submit")
     async def submit(team_id: int = Form(...), round_id: int = Form(...),
@@ -575,6 +601,9 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
         g = models.get_game(db())
         if g["phase"] not in SUBMIT_PHASES or g["current_round_id"] != round_id:
             raise HTTPException(status_code=409, detail="submissions closed for this round")
+        team = db().execute("SELECT name FROM team WHERE id = ?", (team_id,)).fetchone()
+        if team is None:
+            raise HTTPException(status_code=404, detail="unknown team")
         data = await photo.read()
         raw_ext = (photo.filename or "sheet.png").rsplit(".", 1)[-1]
         ext = re.sub(r"[^a-zA-Z0-9]", "", raw_ext)[:5].lower() or "bin"
@@ -584,7 +613,7 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
             db().execute(
                 "INSERT INTO submission (team_id, round_id, photo_path) VALUES (?, ?, ?) "
                 "ON CONFLICT(team_id, round_id) DO UPDATE SET photo_path=excluded.photo_path, "
-                "submitted_at=datetime('now')",
+                "gladys_quip=NULL, submitted_at=datetime('now')",
                 (team_id, round_id, fname))
         except sqlite3.IntegrityError:
             db().rollback()  # stale team id from a previous game's localStorage
@@ -608,7 +637,9 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                      "ordered": q["ordered"]} for q in questions]
         t0 = time.monotonic()
         try:
-            result, grade_usage = _grade(data, photo.content_type or "image/png", qpayload)
+            result, grade_usage = _grade(
+                data, photo.content_type or "image/png", qpayload,
+                team["name"], g["gladys_level"])
         except Exception as e:
             usage.record("grading", game_code=g["code"], duration_ms=int((time.monotonic() - t0) * 1000),
                          ok=False, error=repr(e), team_id=team_id, round_id=round_id)
@@ -633,6 +664,10 @@ def create_app(db_path: Optional[str] = None) -> FastAPI:
                     "WHERE manually_corrected = 0",
                     (team_id, gr.question_id, gr.transcription, int(gr.is_correct), score,
                      gr.items_correct, gr.confidence, int(gr.confidence < 0.5)))
+            quip = " ".join((result.gladys_quip or "").split())[:220] or None
+            db().execute(
+                "UPDATE submission SET gladys_quip = ? WHERE team_id = ? AND round_id = ?",
+                (quip, team_id, round_id))
             db().commit()
         except sqlite3.Error:
             db().rollback()  # bad AI output must not poison the connection; MC marks by hand

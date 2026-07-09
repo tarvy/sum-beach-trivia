@@ -156,12 +156,20 @@ def set_paused(conn, paused: bool) -> None:
 
 
 MC_MODES = {"lacey", "gladys"}  # 'lacey' = human MC marks by hand, 'gladys' = AI grades photos
+GLADYS_LEVELS = {"clean", "naughty", "uncensored"}
 
 
 def set_mc_mode(conn, mode: str) -> None:
     if mode not in MC_MODES:
         raise ValueError(f"mc_mode must be one of {sorted(MC_MODES)}")
     conn.execute("UPDATE game SET mc_mode = ? WHERE id = 1", (mode,))
+    conn.commit()
+
+
+def set_gladys_level(conn, level: str) -> None:
+    if level not in GLADYS_LEVELS:
+        raise ValueError(f"gladys_level must be one of {sorted(GLADYS_LEVELS)}")
+    conn.execute("UPDATE game SET gladys_level = ? WHERE id = 1", (level,))
     conn.commit()
 
 

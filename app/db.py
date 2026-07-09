@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS game (
     submissions_open INTEGER NOT NULL DEFAULT 1,
     host_key TEXT NOT NULL,
     mc_mode TEXT NOT NULL DEFAULT 'gladys',  -- 'gladys' = AI grades photos, 'lacey' = human MC marks by hand
+    gladys_level TEXT NOT NULL DEFAULT 'uncensored',  -- 'clean' | 'naughty' | 'uncensored'
     questions_per_person INTEGER NOT NULL DEFAULT 5,  -- keep N RANDOM of each contributor's questions at round-build
     questions_per_round INTEGER NOT NULL DEFAULT 5,   -- target size of each round (bigger → fewer rounds)
     max_rounds INTEGER,                               -- NULL = auto; soft cap, consolidates smallest rounds into Mixed Bag
@@ -96,6 +97,7 @@ CREATE TABLE IF NOT EXISTS submission (
     team_id INTEGER NOT NULL REFERENCES team(id),
     round_id INTEGER NOT NULL REFERENCES round(id),
     photo_path TEXT NOT NULL,
+    gladys_quip TEXT,
     submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (team_id, round_id)
 );
@@ -160,6 +162,8 @@ def init_db(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE game ADD COLUMN submissions_open INTEGER NOT NULL DEFAULT 1")
     if "mc_mode" not in gcols:
         conn.execute("ALTER TABLE game ADD COLUMN mc_mode TEXT NOT NULL DEFAULT 'gladys'")
+    if "gladys_level" not in gcols:
+        conn.execute("ALTER TABLE game ADD COLUMN gladys_level TEXT NOT NULL DEFAULT 'uncensored'")
     if "questions_per_person" not in gcols:
         conn.execute("ALTER TABLE game ADD COLUMN questions_per_person INTEGER NOT NULL DEFAULT 5")
     if "questions_per_round" not in gcols:
@@ -172,6 +176,9 @@ def init_db(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE game ADD COLUMN question_opened_at TEXT")
     if "source" not in cols:
         conn.execute("ALTER TABLE question ADD COLUMN source TEXT NOT NULL DEFAULT 'contributor'")
+    scols = {r["name"] for r in conn.execute("PRAGMA table_info(submission)")}
+    if "gladys_quip" not in scols:
+        conn.execute("ALTER TABLE submission ADD COLUMN gladys_quip TEXT")
     for order, name in enumerate(STANDARD_CATEGORIES):
         conn.execute(
             "INSERT OR IGNORE INTO category (name, display_order) VALUES (?, ?)",
