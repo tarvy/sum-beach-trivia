@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repo runs as a **dark factory**: Travis reviews outcomes on the live sprite, not diffs. Agents operate end-to-end on their own authority (his explicit standing instruction — it overrides the global never-push-to-main/always-PR rule for this repo only).
 
-- **No PRs, no review gates.** Work on a short-lived branch, get tests green, merge it to `main` yourself, push, deploy. Don't open a PR or wait for approval.
+- **No PRs, no review gates.** Work on a short-lived branch, get tests green, merge it to `main` yourself (`git merge --no-ff` with a `merge: <summary>` message), push, deploy. Don't open a PR or wait for approval.
 - **Clean principles still apply.** Focused branches, passing tests before merge, conventional commit messages, full-tree sprite deploys, no drive-by scope creep.
 - **Triage is yours too.** When something's reported broken, diagnose → fix → merge → deploy → verify on the sprite, without stopping to ask.
 - **GitHub identity:** pushes need Travis's personal `tarvy` account — `gh auth switch --user tarvy`, do the git work, then `gh auth switch --user travclarity` back (approved, standing).
@@ -55,7 +55,7 @@ SQLite (`app/db.py`). Key tables and non-obvious columns:
 - **category** — the 9 `STANDARD_CATEGORIES`, seeded on init.
 - **contributor** — a person who contributes questions: `token` (random, stored in their browser localStorage — this IS their identity), editable `name`, `recovery_code`. Created/updated via `POST /api/contributor`.
 - **question** — `author_name` (display label) + `contributor_id` FK → contributor. `answer` + `acceptable_answers` (JSON list) for normal questions; `answer_items` (JSON list) + `ordered` for multi-item/final questions. `round_id` is NULL until assigned by round-building.
-- **team** / **team_member** — `team.name_lower` UNIQUE, `recovery_code` to rejoin; `team_member` rows (optionally linked to a `contributor_id`) form the roster the team-builder manages.
+- **team** — `team.name_lower` UNIQUE. The `recovery_code` column and the whole `team_member` table are **vestigial** (rejoin/roster features removed; anyone taps a team to join) — don't build on them.
 - **submission** — one photo per `(team_id, round_id)` (UNIQUE); `photo_path` points at a file in `uploads/`.
 - **wager** / **tiebreak_guess** — final-round bet (0..`wager_cap`) and tiebreak number.
 - **mark** — per `(team_id, question_id)` grading result: `transcription`, `is_correct`, `score`, `items_correct` (multi-item), `confidence`, `flagged`, `manually_corrected`. This is the sole input to scoring.
@@ -64,7 +64,7 @@ Scoring note: final-round delta is proportional and can go **negative** — `sco
 
 ## Security & Configuration
 
-- **Identity mechanisms:** host `host_key` (gates all `/api/host/*` via `require_host`); team `recovery_code` (rejoin); contributor identity = a random browser `token` (localStorage) upserted to a `contributor` row via `POST /api/contributor`, which returns a `contributor_id` (used to attribute/list/edit questions) + a `recovery_code`. Edits go through `PUT /api/questions/{id}` and are allowed only for the owning `contributor_id` while `submissions_open` is true.
+- **Identity mechanisms:** host `host_key` (gates all `/api/host/*` via `require_host`); contributor identity = a random browser `token` (localStorage) upserted to a `contributor` row via `POST /api/contributor`, which returns a `contributor_id` (used to attribute/list/edit questions) + a `recovery_code`. Edits go through `PUT /api/questions/{id}` and are allowed only for the owning `contributor_id` while `submissions_open` is true.
 - **Environment** (`.env` auto-loaded by `just` via dotenv-load; see `.env.example`):
   - `ANTHROPIC_API_KEY` — only needed for photo grading, not to boot the app.
   - `GRADING_MODEL` — defaults to `claude-opus-4-8`; set `claude-haiku-4-5` for cheap nights.
